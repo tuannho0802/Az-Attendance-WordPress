@@ -1,0 +1,16 @@
+<?php if (!defined('ABSPATH')) { exit; } ?>
+<!doctype html>
+<html <?php language_attributes(); ?>>
+<head>
+    <meta charset="<?php bloginfo('charset'); ?>">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <?php wp_head(); ?>
+</head>
+<body <?php body_class(); ?>>
+<header style="background:#0b3d3b;color:#fff">
+    <div class="container" style="display:flex;align-items:center;justify-content:space-between">
+        <div><a href="<?php echo esc_url(home_url('/')); ?>" style="color:#fff;text-decoration:none">Az Academy</a></div>
+        <?php wp_nav_menu(['theme_location'=>'primary','container'=>'nav','menu_class'=>'menu']); ?>
+    </div>
+</header>
+

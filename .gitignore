@@ -1,18 +1,34 @@
-# Không push core WordPress
+# --- CHẶN CORE WORDPRESS (Chỉ chặn folder, không chặn đuôi file chung chung) ---
 wp-admin/
 wp-includes/
-*.php
-!wp-content/
+/index.php
+/wp-activate.php
+/wp-blog-header.php
+/wp-comments-post.php
+/wp-config-sample.php
+/wp-cron.php
+/wp-links-opml.php
+/wp-load.php
+/wp-login.php
+/wp-mail.php
+/wp-settings.php
+/wp-signup.php
+/wp-trackback.php
+xmlrpc.php
+license.txt
+readme.html
+local-xdebuginfo.php
+index.php
 
-# Không push các plugin/theme mặc định, chỉ push cái mình làm
+# --- QUẢN LÝ PLUGINS ---
 wp-content/plugins/*
 !wp-content/plugins/az-academy-core/
+
+# --- QUẢN LÝ THEMES ---
 wp-content/themes/*
 !wp-content/themes/az-academy/
 
-# Không push file cấu hình và database
+# --- CÁC FILE KHÁC ---
 wp-config.php
 .htaccess
 wp-content/uploads/
-license.txt
-readme.html
