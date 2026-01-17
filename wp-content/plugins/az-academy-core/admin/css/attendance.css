@@ -1,0 +1,18 @@
+.azac-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+.azac-card{background:#fff;border:1px solid #e2e2e2;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:16px;display:flex;flex-direction:column;gap:8px}
+.azac-card-title{font-weight:600;font-size:16px}
+.azac-card-actions{margin-top:auto}
+.azac-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.azac-stat{background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:12px;text-align:center}
+.azac-stat-title{font-size:13px;color:#555}
+.azac-stat-value{font-size:20px;font-weight:700;color:#0f6d5e}
+.azac-tabs{margin:16px 0}
+.azac-tab{display:none}
+.azac-tab.active{display:block}
+.azac-switch{position:relative;display:inline-block;width:46px;height:24px}
+.azac-switch input{opacity:0;width:0;height:0}
+.azac-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:#e74c3c;transition:.2s;border-radius:34px}
+.azac-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.2s;border-radius:50%}
+.azac-switch input:checked + .azac-slider{background:#2ecc71}
+.azac-switch input:checked + .azac-slider:before{transform:translateX(22px)}
+

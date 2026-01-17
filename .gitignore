@@ -1,0 +1,18 @@
+# Không push core WordPress
+wp-admin/
+wp-includes/
+*.php
+!wp-content/
+
+# Không push các plugin/theme mặc định, chỉ push cái mình làm
+wp-content/plugins/*
+!wp-content/plugins/az-academy-core/
+wp-content/themes/*
+!wp-content/themes/az-academy/
+
+# Không push file cấu hình và database
+wp-config.php
+.htaccess
+wp-content/uploads/
+license.txt
+readme.html
