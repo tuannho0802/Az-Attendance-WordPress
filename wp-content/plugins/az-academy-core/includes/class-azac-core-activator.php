@@ -56,6 +56,8 @@ class AzAC_Core_Activator
         add_role('az_teacher', 'Teacher', [
             'read' => true,
             'edit_posts' => true,
+            'edit_published_posts' => true,
+            'publish_posts' => true,
             'upload_files' => true,
             'az_manage_attendance' => true,
             'az_take_attendance' => true,

@@ -22,6 +22,7 @@ class AzAC_Core
         add_action('init', [$this, 'register_cpt_student']);
         add_action('init', [$this, 'ensure_sessions_table'], 1);
         add_action('admin_init', [$this, 'redirect_cpt_list_to_custom']);
+        add_action('init', [$this, 'ensure_teacher_caps'], 2);
         add_action('add_meta_boxes', [$this, 'add_class_meta_boxes']);
         add_action('add_meta_boxes', [$this, 'add_class_students_meta_box']);
         add_action('save_post_az_class', [$this, 'save_class_meta'], 10, 2);
@@ -446,6 +447,13 @@ class AzAC_Core
                 exit;
             }
         }
+        if ($page === 'post-new.php' && $post_type === 'az_class') {
+            $user = wp_get_current_user();
+            if ($user && in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
+                wp_redirect(admin_url('admin.php?page=azac-classes-list'));
+                exit;
+            }
+        }
     }
     public function cleanup_admin_bar($wp_admin_bar)
     {
@@ -456,6 +464,18 @@ class AzAC_Core
         $nodes = ['wp-logo', 'about', 'wporg', 'documentation', 'support-forums', 'feedback', 'updates', 'comments', 'new-content', 'customize', 'appearance', 'themes', 'users', 'search', 'site-name'];
         foreach ($nodes as $n) {
             $wp_admin_bar->remove_node($n);
+        }
+    }
+    public function ensure_teacher_caps()
+    {
+        $role = get_role('az_teacher');
+        if ($role) {
+            if (!$role->has_cap('publish_posts')) {
+                $role->add_cap('publish_posts');
+            }
+            if (!$role->has_cap('edit_published_posts')) {
+                $role->add_cap('edit_published_posts');
+            }
         }
     }
 
@@ -1091,7 +1111,7 @@ class AzAC_Core
 
     public function map_meta_cap_for_class($caps, $cap, $user_id, $args)
     {
-        if (in_array($cap, ['edit_post', 'read_post', 'delete_post'], true) && !empty($args[0])) {
+        if (in_array($cap, ['edit_post', 'read_post', 'delete_post', 'publish_post'], true) && !empty($args[0])) {
             $post_id = absint($args[0]);
             $post = get_post($post_id);
             if ($post && $post->post_type === 'az_class') {
@@ -1105,6 +1125,8 @@ class AzAC_Core
                             return ['edit_posts'];
                         } elseif ($cap === 'delete_post') {
                             return ['delete_posts'];
+                        } elseif ($cap === 'publish_post') {
+                            return ['edit_posts'];
                         }
                     }
                 }
