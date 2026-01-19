@@ -2,10 +2,25 @@
 .azac-card{background:#fff;border:1px solid #e2e2e2;border-radius:8px;box-shadow:0 1px 2px rgba(0,0,0,.05);padding:16px;display:flex;flex-direction:column;gap:8px}
 .azac-card-title{font-weight:600;font-size:16px}
 .azac-card-actions{margin-top:auto}
-.azac-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:16px 0}
+.azac-stats{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin:16px 0}
 .azac-stat{background:#fff;border:1px solid #e2e2e2;border-radius:8px;padding:12px;text-align:center}
 .azac-stat-title{font-size:13px;color:#555}
 .azac-stat-value{font-size:20px;font-weight:700;color:#0f6d5e}
+.azac-chart-row{display:flex;gap:12px;align-items:center;justify-content:center}
+.azac-chart-row{flex-wrap:wrap}
+.azac-chart-box{width:220px;height:220px;display:flex;align-items:center;justify-content:center}
+.azac-chart-box canvas{width:100% !important;height:100% !important}
+.azac-stat canvas{max-width:220px}
+.azac-info-card .az-info-header{font-weight:700;color:#0f6d5e;margin-bottom:8px}
+.azac-info-card .az-info-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px 12px}
+.azac-info-card .az-info-item{display:flex;align-items:center;justify-content:space-between;background:#f8faf9;border:1px solid #eaeaea;border-radius:8px;padding:8px 10px}
+.azac-info-card .az-info-label{color:#555}
+.azac-info-card .az-info-value{color:#0b3d3b;font-weight:600}
+.widefat.fixed.striped{table-layout:fixed}
+.widefat.fixed.striped th:nth-child(1),.widefat.fixed.striped td:nth-child(1){width:60px}
+.widefat.fixed.striped th:nth-child(3),.widefat.fixed.striped td:nth-child(3){width:140px}
+.widefat.fixed.striped td{overflow:hidden}
+.regular-text.azac-note,.regular-text.azac-note-mid{width:100% !important;max-width:100%;box-sizing:border-box}
 .azac-tabs{margin:16px 0}
 .azac-tab{display:none}
 .azac-tab.active{display:block}
@@ -15,4 +30,3 @@
 .azac-slider:before{position:absolute;content:"";height:18px;width:18px;left:3px;bottom:3px;background:white;transition:.2s;border-radius:50%}
 .azac-switch input:checked + .azac-slider{background:#2ecc71}
 .azac-switch input:checked + .azac-slider:before{transform:translateX(22px)}
-

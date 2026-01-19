@@ -145,24 +145,95 @@
     );
     fetchExisting("check-in");
     fetchExisting("mid-session");
-    if (
-      window.azacData &&
-      window.azacData.stats &&
-      typeof Chart !== "undefined"
-    ) {
-      var ctx =
-        document.getElementById("azacChart");
-      if (ctx) {
-        new Chart(ctx, {
+    function renderCharts() {
+      if (
+        !(
+          window.azacData &&
+          window.azacData.stats
+        )
+      )
+        return;
+      if (typeof Chart === "undefined") return;
+      function pct(present, absent) {
+        var total = Math.max(
+          1,
+          (parseInt(present, 10) || 0) +
+            (parseInt(absent, 10) || 0)
+        );
+        return Math.round(
+          ((parseInt(present, 10) || 0) /
+            total) *
+            100
+        );
+      }
+      var CenterText = {
+        id: "centerText",
+        beforeDraw: function (
+          chart,
+          args,
+          opts
+        ) {
+          var meta = chart.getDatasetMeta(0);
+          if (
+            !meta ||
+            !meta.data ||
+            !meta.data.length
+          )
+            return;
+          var pt = meta.data[0];
+          var x = pt.x,
+            y = pt.y;
+          var ctx = chart.ctx;
+          ctx.save();
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#0b3d3b";
+          ctx.font =
+            "600 14px system-ui,-apple-system,Segoe UI,Roboto";
+          if (opts && opts.title)
+            ctx.fillText(
+              String(opts.title),
+              x,
+              y - 12
+            );
+          ctx.fillStyle = "#0f6d5e";
+          ctx.font =
+            "700 18px system-ui,-apple-system,Segoe UI,Roboto";
+          if (opts && opts.value)
+            ctx.fillText(
+              String(opts.value),
+              x,
+              y + 8
+            );
+          ctx.restore();
+        },
+      };
+      if (
+        !Chart.registry.plugins.get(
+          "centerText"
+        )
+      ) {
+        Chart.register(CenterText);
+      }
+      var c1 = document.getElementById(
+        "azacChartCheckin"
+      );
+      var c2 = document.getElementById(
+        "azacChartMid"
+      );
+      if (c1) {
+        var p1 =
+          window.azacData.stats.checkin.present;
+        var a1 =
+          window.azacData.stats.checkin.absent;
+        var r1 = pct(p1, a1);
+        new Chart(c1, {
           type: "doughnut",
           data: {
             labels: ["Có mặt", "Vắng mặt"],
             datasets: [
               {
-                data: [
-                  window.azacData.stats.present,
-                  window.azacData.stats.absent,
-                ],
+                data: [p1, a1],
                 backgroundColor: [
                   "#2ecc71",
                   "#e74c3c",
@@ -170,9 +241,62 @@
               },
             ],
           },
-          options: { responsive: true },
+          options: {
+            responsive: true,
+            cutout: "70%",
+            plugins: {
+              legend: { position: "top" },
+              centerText: {
+                title: "Đầu giờ",
+                value: r1 + "%",
+              },
+            },
+          },
         });
       }
+      if (c2) {
+        var p2 =
+          window.azacData.stats.mid.present;
+        var a2 =
+          window.azacData.stats.mid.absent;
+        var r2 = pct(p2, a2);
+        new Chart(c2, {
+          type: "doughnut",
+          data: {
+            labels: ["Có mặt", "Vắng mặt"],
+            datasets: [
+              {
+                data: [p2, a2],
+                backgroundColor: [
+                  "#3498db",
+                  "#f39c12",
+                ],
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            cutout: "70%",
+            plugins: {
+              legend: { position: "top" },
+              centerText: {
+                title: "Giữa giờ",
+                value: r2 + "%",
+              },
+            },
+          },
+        });
+      }
+    }
+    if (typeof Chart !== "undefined") {
+      renderCharts();
+    } else {
+      var s = document.createElement("script");
+      s.src =
+        "https://cdn.jsdelivr.net/npm/chart.js";
+      s.async = true;
+      s.onload = renderCharts;
+      document.head.appendChild(s);
     }
   });
 })(jQuery);

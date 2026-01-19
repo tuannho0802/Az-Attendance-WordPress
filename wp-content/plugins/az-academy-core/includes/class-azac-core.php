@@ -352,26 +352,30 @@ class AzAC_Core
             wp_enqueue_script('azac-class-edit-js', AZAC_CORE_URL . 'admin/js/class-edit.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_style('azac-class-edit-style', AZAC_CORE_URL . 'admin/css/class-edit.css', [], AZAC_CORE_VERSION);
         }
-        if ($hook === 'toplevel_page_azac-attendance' || $hook === 'azac-attendance_page_azac-class-dashboard') {
+        if ($hook === 'toplevel_page_azac-attendance') {
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_create_class'),
+            ]);
         }
         if ($hook === 'azac-attendance_page_azac-class-dashboard') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
-            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
-            wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
-            wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('azac_create_class'),
-            ]);
+            wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
         }
-        if ($hook === 'toplevel_page_azac-attendance') {
-            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
-            wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
-            wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => wp_create_nonce('azac_create_class'),
-            ]);
+        $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        if ($page === 'azac-class-dashboard') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
+            if (!wp_script_is('chartjs', 'enqueued')) {
+                wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
+            }
+            if (!wp_script_is('azac-attendance-js', 'enqueued')) {
+                wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
+            }
         }
     }
 
@@ -569,14 +573,17 @@ class AzAC_Core
         echo '<h1>Điểm danh lớp: ' . esc_html($post->post_title) . '</h1>';
 
         echo '<div class="azac-stats">';
-        echo '<div class="azac-stat"><div class="azac-stat-title">Thông tin lớp</div><div class="azac-stat-value">' . esc_html($post->post_title) . '</div><div>Giảng viên: ' . esc_html($teacher_name ?: 'Chưa gán') . '</div><div>Sĩ số: ' . esc_html(count($students)) . '</div><div>Tổng buổi: ' . esc_html(get_post_meta($class_id, 'az_tong_so_buoi', true)) . '</div></div>';
+        echo '<div class="azac-stat azac-info-card"><div class="az-info-header">Thông tin lớp</div><div class="az-info-grid">';
+        echo '<div class="az-info-item"><span class="az-info-label">Lớp</span><span class="az-info-value">' . esc_html($post->post_title) . '</span></div>';
+        echo '<div class="az-info-item"><span class="az-info-label">Giảng viên</span><span class="az-info-value">' . esc_html($teacher_name ?: 'Chưa gán') . '</span></div>';
+        echo '<div class="az-info-item"><span class="az-info-label">Sĩ số</span><span class="az-info-value">' . esc_html(count($students)) . '</span></div>';
+        echo '<div class="az-info-item"><span class="az-info-label">Tổng buổi</span><span class="az-info-value">' . esc_html(get_post_meta($class_id, 'az_tong_so_buoi', true)) . '</span></div>';
+        echo '</div></div>';
         $checkin_total = max(1, $stats['checkin_present'] + $stats['checkin_absent']);
         $mid_total = max(1, $stats['mid_present'] + $stats['mid_absent']);
         $checkin_rate = round(($stats['checkin_present'] / $checkin_total) * 100);
         $mid_rate = round(($stats['mid_present'] / $mid_total) * 100);
-        echo '<div class="azac-stat"><div class="azac-stat-title">Đầu giờ</div><div class="azac-stat-value">' . esc_html($checkin_rate) . '%</div></div>';
-        echo '<div class="azac-stat"><div class="azac-stat-title">Giữa giờ</div><div class="azac-stat-value">' . esc_html($mid_rate) . '%</div></div>';
-        echo '<div class="azac-stat"><canvas id="azacChart" height="80"></canvas></div>';
+        echo '<div class="azac-stat"><div class="azac-chart-row"><div class="azac-chart-box"><canvas id="azacChartCheckin"></canvas></div><div class="azac-chart-box"><canvas id="azacChartMid"></canvas></div></div></div>';
         echo '</div>';
 
         echo '<h2>Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($today))) . '</h2>';
@@ -622,8 +629,14 @@ class AzAC_Core
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'today' => $today,
             'stats' => [
-                'present' => $stats['checkin_present'] + $stats['mid_present'],
-                'absent' => $stats['checkin_absent'] + $stats['mid_absent'],
+                'checkin' => [
+                    'present' => $stats['checkin_present'],
+                    'absent' => $stats['checkin_absent'],
+                ],
+                'mid' => [
+                    'present' => $stats['mid_present'],
+                    'absent' => $stats['mid_absent'],
+                ],
             ],
         ]) . ';</script>';
         echo '<script>(function(){function a(t,items){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var d=items&&items[id];if(d){el.checked=!!d.status;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');if(ne){ne.value=d.note||"";}}});}function f(t){var fd=new FormData();fd.append("action","azac_get_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.today);fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){a(t,res.data.items||{});}}).catch(function(){});}function s(t){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";var items=[];document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var st=el.checked?1:0;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');var nt=ne?String(ne.value||""):"";items.push({id:id,status:st,note:nt});});var fd=new FormData();fd.append("action","azac_save_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.today);items.forEach(function(it,i){fd.append("items["+i+"][id]",it.id);fd.append("items["+i+"][status]",it.status);fd.append("items["+i+"][note]",it.note);});fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){alert("Đã lưu "+res.data.inserted+" bản ghi");f(t);}else{alert("Lỗi lưu");}}).catch(function(){alert("Lỗi mạng");});}var b1=document.getElementById("azac-submit-checkin");if(b1){b1.addEventListener("click",function(){s("check-in");});}var b2=document.getElementById("azac-submit-mid");if(b2){b2.addEventListener("click",function(){s("mid-session");});}f("check-in");f("mid-session");})();</script>';
