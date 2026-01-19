@@ -24,12 +24,16 @@ require_once AZAC_CORE_DIR . 'includes/class-azac-core-attendance.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-sessions.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-mid.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-admin-pages.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-admin-assets.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-admin-stats.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-admin.php';
 
 register_activation_hook(__FILE__, ['AzAC_Core_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['AzAC_Core_Deactivator', 'deactivate']);
 
 add_action('plugins_loaded', function () {
-    AzAC_Core::instance();
+    AzAC_Core_Admin::register();
     AzAC_Core_CPT::register();
     AzAC_Core_RBAC::register();
     AzAC_Core_Classes::register();

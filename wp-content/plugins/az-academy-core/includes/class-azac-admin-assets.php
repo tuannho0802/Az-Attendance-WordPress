@@ -1,0 +1,160 @@
+<?php
+if (!defined('ABSPATH')) {
+    exit;
+}
+class AzAC_Admin_Assets
+{
+    public static function enqueue_admin_assets($hook)
+    {
+        wp_enqueue_style('azac-admin-style', AZAC_CORE_URL . 'admin/css/admin-style.css', [], AZAC_CORE_VERSION);
+        wp_enqueue_script('azac-admin-js', AZAC_CORE_URL . 'admin/js/admin.js', ['jquery'], AZAC_CORE_VERSION, true);
+        $screen = function_exists('get_current_screen') ? get_current_screen() : null;
+        if ($screen && $screen->post_type === 'az_class' && in_array($hook, ['post.php', 'post-new.php'], true)) {
+            wp_enqueue_script('azac-class-edit-js', AZAC_CORE_URL . 'admin/js/class-edit.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_style('azac-class-edit-style', AZAC_CORE_URL . 'admin/css/class-edit.css', [], AZAC_CORE_VERSION);
+            $user = wp_get_current_user();
+            wp_localize_script('azac-class-edit-js', 'AZAC_CLASS_EDIT', [
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+            ]);
+        }
+        if ($hook === 'toplevel_page_azac-attendance') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-list-sessions-js', AZAC_CORE_URL . 'admin/js/attendance-list-sessions.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-list-stats-js', AZAC_CORE_URL . 'admin/js/attendance-list-stats.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
+            $user = wp_get_current_user();
+            $azac_list = [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_create_class'),
+                'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+                'isStudent' => in_array('az_student', $user->roles, true),
+                'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
+            ];
+            wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list);
+            wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list);
+        }
+        if ($hook === 'azac-attendance_page_azac-class-dashboard') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
+            $cid = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+            if ($cid) {
+                wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
+                wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-charts-js', AZAC_CORE_URL . 'admin/js/attendance-charts.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-api-js', AZAC_CORE_URL . 'admin/js/attendance-api.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-charts-js'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-mid-js', AZAC_CORE_URL . 'admin/js/attendance-mid.js', ['jquery'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-session-js', 'azac-attendance-api-js', 'azac-attendance-mid-js'], AZAC_CORE_VERSION, true);
+                $user = wp_get_current_user();
+                wp_localize_script('azac-attendance-mid-js', 'AZAC_MID', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'midNonce' => wp_create_nonce('azac_mid'),
+                    'closeNonce' => wp_create_nonce('azac_mid_close'),
+                    'isTeacher' => in_array('az_teacher', $user->roles, true),
+                    'isAdmin' => in_array('administrator', $user->roles, true),
+                ]);
+            } else {
+                wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+                wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-list-sessions-js', AZAC_CORE_URL . 'admin/js/attendance-list-sessions.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-list-stats-js', AZAC_CORE_URL . 'admin/js/attendance-list-stats.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+                $user = wp_get_current_user();
+                wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'isTeacher' => in_array('az_teacher', $user->roles, true),
+                    'isAdmin' => in_array('administrator', $user->roles, true),
+                    'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                    'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+                ]);
+                wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'isTeacher' => in_array('az_teacher', $user->roles, true),
+                    'isAdmin' => in_array('administrator', $user->roles, true),
+                    'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                    'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+                ]);
+            }
+        }
+        if ($hook === 'azac-attendance_page_azac-classes-list') {
+            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-list-sessions-js', AZAC_CORE_URL . 'admin/js/attendance-list-sessions.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-list-stats-js', AZAC_CORE_URL . 'admin/js/attendance-list-stats.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            $user = wp_get_current_user();
+            $azac_list_cls = [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_create_class'),
+                'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+                'isStudent' => in_array('az_student', $user->roles, true),
+                'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+            ];
+            wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list_cls);
+            wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list_cls);
+        }
+        $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        if ($page === 'azac-class-dashboard') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
+            $cid = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+            if ($cid) {
+                if (!wp_script_is('chartjs', 'enqueued')) {
+                    wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
+                }
+                wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-charts-js', AZAC_CORE_URL . 'admin/js/attendance-charts.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-api-js', AZAC_CORE_URL . 'admin/js/attendance-api.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-charts-js'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-mid-js', AZAC_CORE_URL . 'admin/js/attendance-mid.js', ['jquery'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-session-js', 'azac-attendance-api-js', 'azac-attendance-mid-js'], AZAC_CORE_VERSION, true);
+                $user = wp_get_current_user();
+                wp_localize_script('azac-attendance-mid-js', 'AZAC_MID', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'midNonce' => wp_create_nonce('azac_mid'),
+                    'closeNonce' => wp_create_nonce('azac_mid_close'),
+                    'isTeacher' => in_array('az_teacher', $user->roles, true),
+                    'isAdmin' => in_array('administrator', $user->roles, true),
+                ]);
+            } else {
+                wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+                wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-list-sessions-js', AZAC_CORE_URL . 'admin/js/attendance-list-sessions.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+                wp_enqueue_script('azac-attendance-list-stats-js', AZAC_CORE_URL . 'admin/js/attendance-list-stats.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+                $user = wp_get_current_user();
+                $obj = [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'isTeacher' => in_array('az_teacher', $user->roles, true),
+                    'isAdmin' => in_array('administrator', $user->roles, true),
+                    'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                    'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+                ];
+                wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $obj);
+                wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $obj);
+            }
+        } elseif ($page === 'azac-classes-list') {
+            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-list-sessions-js', AZAC_CORE_URL . 'admin/js/attendance-list-sessions.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-list-stats-js', AZAC_CORE_URL . 'admin/js/attendance-list-stats.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            $user = wp_get_current_user();
+            $azac_list_cls2 = [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_create_class'),
+                'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+                'isStudent' => in_array('az_student', $user->roles, true),
+                'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+            ];
+            wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list_cls2);
+            wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list_cls2);
+        }
+    }
+}
+
