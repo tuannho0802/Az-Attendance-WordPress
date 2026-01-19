@@ -16,13 +16,26 @@ define('AZAC_CORE_URL', plugin_dir_url(__FILE__));
 
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-activator.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-deactivator.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-helper.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-cpt.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-rbac.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-classes.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-attendance.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-sessions.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-core-mid.php';
 
 register_activation_hook(__FILE__, ['AzAC_Core_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['AzAC_Core_Deactivator', 'deactivate']);
 
 add_action('plugins_loaded', function () {
     AzAC_Core::instance();
+    AzAC_Core_CPT::register();
+    AzAC_Core_RBAC::register();
+    AzAC_Core_Classes::register();
+    AzAC_Core_Attendance::register();
+    AzAC_Core_Sessions::register();
+    AzAC_Core_Mid::register();
 });
 add_action('init', function () {
     $ver = get_option('azac_core_version');

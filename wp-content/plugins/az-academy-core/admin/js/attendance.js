@@ -1,90 +1,18 @@
 (function ($) {
-  function formatDate(d) {
-    var parts = String(d || "").split("-");
-    if (parts.length === 3)
-      return [
-        parts[2],
-        parts[1],
-        parts[0],
-      ].join("/");
-    return String(d || "");
-  }
-  function updateSessionTitle(date) {
-    var list =
-      window.azacData &&
-      window.azacData.sessions
-        ? window.azacData.sessions
-        : [];
-    var idx = 0;
-    for (var i = 0; i < list.length; i++) {
-      if (
-        (list[i].date || "") ===
-        String(date || "")
-      ) {
-        idx = i + 1;
-        break;
-      }
-    }
-    var text =
-      "Buổi học thứ: " +
-      (idx || 1) +
-      " • Ngày: " +
-      formatDate(date);
-    var el = document.getElementById(
-      "azac_session_title"
-    );
-    if (el) el.textContent = text;
-  }
-  function applyItems(type, items) {
-    var isCheckin = type === "check-in";
-    var selectorStatus = isCheckin
-      ? ".azac-status"
-      : ".azac-status-mid";
-    var selectorNote = isCheckin
-      ? ".azac-note"
-      : ".azac-note-mid";
-    // apply received items onto the cleared UI
-    $(selectorStatus).each(function () {
-      var id = parseInt(
-        $(this).data("student"),
-        10
-      );
-      var data = items[id];
-      if (data) {
-        $(this).prop("checked", !!data.status);
-        $(
-          selectorNote +
-            '[data-student="' +
-            id +
-            '"]'
-        ).val(data.note || "");
-      }
-    });
-  }
-  function resetItems(type) {
-    var isCheckin = type === "check-in";
-    var selectorStatus = isCheckin
-      ? ".azac-status"
-      : ".azac-status-mid";
-    var selectorNote = isCheckin
-      ? ".azac-note"
-      : ".azac-note-mid";
-    $(selectorStatus).prop("checked", false);
-    $(selectorNote).val("");
-  }
+  
   function updateChart(type, items) {
     if (typeof Chart === "undefined") return;
     var present = 0,
       absent = 0;
-    Object.keys(items || {}).forEach(function (
-      k
-    ) {
-      var it = items[k];
-      if (!it) return;
-      if (parseInt(it.status, 10) === 1)
-        present++;
-      else absent++;
-    });
+    Object.keys(items || {}).forEach(
+      function (k) {
+        var it = items[k];
+        if (!it) return;
+        if (parseInt(it.status, 10) === 1)
+          present++;
+        else absent++;
+      }
+    );
     var total = Math.max(1, present + absent);
     var pct = Math.round(
       (present / total) * 100
@@ -203,7 +131,13 @@
     }
   }
   function fetchExisting(type) {
-    resetItems(type);
+    if (
+      window.AZACU &&
+      typeof window.AZACU.resetItems ===
+        "function"
+    ) {
+      window.AZACU.resetItems(type);
+    }
     var payload = {
       action: "azac_get_attendance",
       nonce: window.azacData.nonce,
@@ -223,41 +157,22 @@
           res.data &&
           res.data.items
         ) {
-          applyItems(type, res.data.items);
+          if (
+            window.AZACU &&
+            typeof window.AZACU.applyItems ===
+              "function"
+          ) {
+            window.AZACU.applyItems(
+              type,
+              res.data.items
+            );
+          }
           updateChart(type, res.data.items);
         }
       }
     );
   }
-  function collectItems(
-    selectorStatus,
-    selectorNote
-  ) {
-    var items = [];
-    $(selectorStatus).each(function () {
-      var id = parseInt(
-        $(this).data("student"),
-        10
-      );
-      var status = $(this).is(":checked")
-        ? 1
-        : 0;
-      var note = (
-        $(
-          selectorNote +
-            '[data-student="' +
-            id +
-            '"]'
-        ).val() || ""
-      ).toString();
-      items.push({
-        id: id,
-        status: status,
-        note: note,
-      });
-    });
-    return items;
-  }
+  
   function submit(type) {
     var items, selectorStatus, selectorNote;
     if (type === "check-in") {
@@ -267,10 +182,18 @@
       selectorStatus = ".azac-status-mid";
       selectorNote = ".azac-note-mid";
     }
-    items = collectItems(
-      selectorStatus,
-      selectorNote
-    );
+    if (
+      window.AZACU &&
+      typeof window.AZACU.collectItems ===
+        "function"
+    ) {
+      items = window.AZACU.collectItems(
+        selectorStatus,
+        selectorNote
+      );
+    } else {
+      items = [];
+    }
     var payload = {
       action: "azac_save_attendance",
       nonce: window.azacData.nonce,
@@ -298,157 +221,10 @@
       }
     );
   }
+  window.AZAC_Att = window.AZAC_Att || {};
+  window.AZAC_Att.fetchExisting = fetchExisting;
+  window.AZAC_Att.submit = submit;
   $(function () {
-    $("#azac_session_select").on(
-      "change",
-      function () {
-        var val = $(this).val();
-        if (val) {
-          window.azacData.sessionDate = val;
-          updateSessionTitle(val);
-          resetItems("check-in");
-          resetItems("mid-session");
-          fetchExisting("check-in");
-          fetchExisting("mid-session");
-        }
-      }
-    );
-    $("#azac_add_session_btn").on(
-      "click",
-      function () {
-        var d = $("#azac_session_date").val();
-        var t = $("#azac_session_time").val();
-        if (!d) {
-          alert("Chọn ngày buổi học");
-          return;
-        }
-        var payload = {
-          action: "azac_add_session",
-          nonce: window.azacData.sessionNonce,
-          class_id: window.azacData.classId,
-          date: d,
-          time: t,
-        };
-        var btn = $(this).prop(
-          "disabled",
-          true
-        );
-        $.post(
-          window.azacData.ajaxUrl,
-          payload,
-          function (res) {
-            btn.prop("disabled", false);
-            if (
-              res &&
-              res.success &&
-              res.data &&
-              res.data.sessions
-            ) {
-              var sel = $(
-                "#azac_session_select"
-              ).empty();
-              window.azacData.sessions =
-                res.data.sessions;
-              res.data.sessions.forEach(
-                function (s) {
-                  var label =
-                    s.date +
-                    (s.time
-                      ? " " + s.time
-                      : "");
-                  $("<option/>", {
-                    value: s.date,
-                    text: label,
-                  }).appendTo(sel);
-                }
-              );
-              if (res.data.selected) {
-                sel.val(res.data.selected);
-                window.azacData.sessionDate =
-                  res.data.selected;
-                updateSessionTitle(
-                  res.data.selected
-                );
-                fetchExisting("check-in");
-                fetchExisting("mid-session");
-              }
-            } else {
-              alert("Lỗi thêm buổi học");
-            }
-          }
-        );
-      }
-    );
-    $("#azac_update_session_btn").on(
-      "click",
-      function () {
-        var old = $(
-          "#azac_session_select"
-        ).val();
-        var d = $("#azac_session_date").val();
-        var t = $("#azac_session_time").val();
-        if (!old || !d) {
-          alert("Chọn buổi và ngày");
-          return;
-        }
-        var payload = {
-          action: "azac_update_session",
-          nonce: window.azacData.sessionNonce,
-          class_id: window.azacData.classId,
-          date: old,
-          new_date: d,
-          new_time: t,
-        };
-        var btn = $(this).prop(
-          "disabled",
-          true
-        );
-        $.post(
-          window.azacData.ajaxUrl,
-          payload,
-          function (res) {
-            btn.prop("disabled", false);
-            if (
-              res &&
-              res.success &&
-              res.data &&
-              res.data.sessions
-            ) {
-              var sel = $(
-                "#azac_session_select"
-              ).empty();
-              window.azacData.sessions =
-                res.data.sessions;
-              res.data.sessions.forEach(
-                function (s) {
-                  var label =
-                    s.date +
-                    (s.time
-                      ? " " + s.time
-                      : "");
-                  $("<option/>", {
-                    value: s.date,
-                    text: label,
-                  }).appendTo(sel);
-                }
-              );
-              if (res.data.selected) {
-                sel.val(res.data.selected);
-                window.azacData.sessionDate =
-                  res.data.selected;
-                updateSessionTitle(
-                  res.data.selected
-                );
-                fetchExisting("check-in");
-                fetchExisting("mid-session");
-              }
-            } else {
-              alert("Lỗi cập nhật buổi học");
-            }
-          }
-        );
-      }
-    );
     $("#azac_start_mid_btn").on(
       "click",
       function () {
@@ -660,10 +436,16 @@
     );
     fetchExisting("check-in");
     fetchExisting("mid-session");
-    updateSessionTitle(
-      window.azacData.sessionDate ||
-        window.azacData.today
-    );
+    if (
+      window.AZACU &&
+      typeof window.AZACU.updateSessionTitle ===
+        "function"
+    ) {
+      window.AZACU.updateSessionTitle(
+        window.azacData.sessionDate ||
+          window.azacData.today
+      );
+    }
     function renderCharts() {
       if (
         !(
