@@ -700,6 +700,17 @@ class AzAC_Core
         echo '</div>';
         if ($is_teacher || $is_admin || $is_student) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
+            echo '<div class="azac-session-filters">';
+            echo '<label>Nhóm ';
+            echo '<select id="azac-filter-group"><option value="session">Buổi học</option><option value="class">Lớp học</option></select>';
+            echo '</label> ';
+            echo '<label>Sắp xếp ';
+            echo '<select id="azac-filter-sort"><option value="date_desc">Ngày mới nhất</option><option value="date_asc">Ngày cũ nhất</option><option value="rate_desc">Tỉ lệ có mặt cao→thấp</option><option value="rate_asc">Tỉ lệ có mặt thấp→cao</option></select>';
+            echo '</label> ';
+            echo '<label>Lọc lớp ';
+            echo '<select id="azac-filter-class"><option value="">Tất cả</option></select>';
+            echo '</label>';
+            echo '</div>';
             echo '<div id="azac-sessions-grid" class="azac-grid">';
             echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
             echo '</div>';
@@ -1420,6 +1431,7 @@ class AzAC_Core
     public function ajax_list_sessions()
     {
         check_ajax_referer('azac_list_sessions', 'nonce');
+        global $wpdb;
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
@@ -1460,12 +1472,37 @@ class AzAC_Core
         foreach ($classes as $c) {
             $sessions = $this->get_class_sessions($c->ID);
             foreach ($sessions as $s) {
+                $att_table = $wpdb->prefix . 'az_attendance';
+                $att_rows = $wpdb->get_results($wpdb->prepare("SELECT attendance_type, status, COUNT(*) as c FROM {$att_table} WHERE class_id=%d AND session_date=%s GROUP BY attendance_type, status", $c->ID, $s['date']), ARRAY_A);
+                $checkin_present = 0;
+                $checkin_absent = 0;
+                $mid_present = 0;
+                $mid_absent = 0;
+                foreach ($att_rows as $ar) {
+                    if ($ar['attendance_type'] === 'check-in') {
+                        if (intval($ar['status']) === 1)
+                            $checkin_present += intval($ar['c']);
+                        else
+                            $checkin_absent += intval($ar['c']);
+                    } else {
+                        if (intval($ar['status']) === 1)
+                            $mid_present += intval($ar['c']);
+                        else
+                            $mid_absent += intval($ar['c']);
+                    }
+                }
+                $rate_checkin = ($checkin_present + $checkin_absent) > 0 ? round(($checkin_present / ($checkin_present + $checkin_absent)) * 100) : 0;
+                $rate_mid = ($mid_present + $mid_absent) > 0 ? round(($mid_present / ($mid_present + $mid_absent)) * 100) : 0;
+                $rate_overall = round(($rate_checkin + $rate_mid) / 2);
                 $out[] = [
                     'class_id' => $c->ID,
                     'class_title' => $c->post_title,
                     'date' => $s['date'],
                     'time' => $s['time'],
                     'link' => admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID . '&session_date=' . urlencode($s['date'])),
+                    'checkin' => ['present' => $checkin_present, 'absent' => $checkin_absent],
+                    'mid' => ['present' => $mid_present, 'absent' => $mid_absent],
+                    'rate' => ['checkin' => $rate_checkin, 'mid' => $rate_mid, 'overall' => $rate_overall],
                 ];
             }
         }
