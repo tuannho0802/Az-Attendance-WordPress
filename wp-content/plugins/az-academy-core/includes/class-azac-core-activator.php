@@ -32,7 +32,23 @@ class AzAC_Core_Activator
             UNIQUE KEY uniq_record (class_id, student_id, session_date, attendance_type)
         ) {$charset_collate};";
 
+        $sessions_table = $wpdb->prefix . 'az_sessions';
+        $sql_sessions = "CREATE TABLE {$sessions_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            class_id bigint(20) unsigned NOT NULL,
+            session_date date NOT NULL,
+            session_time time NULL,
+            title varchar(191) NULL,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY class_id (class_id),
+            KEY session_date (session_date),
+            UNIQUE KEY uniq_class_date (class_id, session_date)
+        ) {$charset_collate};";
+
         dbDelta($sql);
+        dbDelta($sql_sessions);
 
         add_option('azac_core_version', AZAC_CORE_VERSION);
         flush_rewrite_rules();

@@ -1,4 +1,6 @@
 .azac-inline-create{display:flex;gap:8px;align-items:center;margin:12px 0}
 .azac-inline-create .regular-text{width:220px}
 .azac-inline-create .small-text{width:90px}
-
+.azac-tabs{display:flex;gap:8px;margin:8px 0}
+.azac-tab{display:none}
+.azac-tab.active{display:block}

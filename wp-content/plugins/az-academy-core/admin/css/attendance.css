@@ -16,6 +16,9 @@
 .azac-info-card .az-info-item{display:flex;align-items:center;justify-content:space-between;background:#f8faf9;border:1px solid #eaeaea;border-radius:8px;padding:8px 10px}
 .azac-info-card .az-info-label{color:#555}
 .azac-info-card .az-info-value{color:#0b3d3b;font-weight:600}
+.azac-session-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0 16px}
+.azac-session-bar input[type="date"],.azac-session-bar input[type="time"]{padding:6px 8px;border:1px solid #e2e2e2;border-radius:6px}
+.azac-session-bar select{min-width:220px;padding:6px 8px;border:1px solid #e2e2e2;border-radius:6px}
 .widefat.fixed.striped{table-layout:fixed}
 .widefat.fixed.striped th:nth-child(1),.widefat.fixed.striped td:nth-child(1){width:60px}
 .widefat.fixed.striped th:nth-child(3),.widefat.fixed.striped td:nth-child(3){width:140px}

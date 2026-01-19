@@ -20,6 +20,7 @@ class AzAC_Core
     {
         add_action('init', [$this, 'register_cpt_class']);
         add_action('init', [$this, 'register_cpt_student']);
+        add_action('init', [$this, 'ensure_sessions_table'], 1);
         add_action('add_meta_boxes', [$this, 'add_class_meta_boxes']);
         add_action('add_meta_boxes', [$this, 'add_class_students_meta_box']);
         add_action('save_post_az_class', [$this, 'save_class_meta'], 10, 2);
@@ -35,6 +36,33 @@ class AzAC_Core
         add_action('wp_ajax_azac_get_attendance', [$this, 'ajax_get_attendance']);
         add_action('admin_bar_menu', [$this, 'cleanup_admin_bar'], 999);
         add_filter('map_meta_cap', [$this, 'map_meta_cap_for_class'], 10, 4);
+        add_action('wp_ajax_azac_add_session', [$this, 'ajax_add_session']);
+        add_action('wp_ajax_azac_update_session', [$this, 'ajax_update_session']);
+        add_action('wp_ajax_azac_list_sessions', [$this, 'ajax_list_sessions']);
+    }
+    public function ensure_sessions_table()
+    {
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $exists = $wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $sess_table));
+        if ($exists !== $sess_table) {
+            require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+            $charset_collate = $wpdb->get_charset_collate();
+            $sql_sessions = "CREATE TABLE {$sess_table} (
+                id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+                class_id bigint(20) unsigned NOT NULL,
+                session_date date NOT NULL,
+                session_time time NULL,
+                title varchar(191) NULL,
+                created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                PRIMARY KEY  (id),
+                KEY class_id (class_id),
+                KEY session_date (session_date),
+                UNIQUE KEY uniq_class_date (class_id, session_date)
+            ) {$charset_collate};";
+            dbDelta($sql_sessions);
+        }
     }
     public function register_cpt_class()
     {
@@ -115,6 +143,28 @@ class AzAC_Core
             'single' => true,
             'show_in_rest' => true,
             'sanitize_callback' => 'absint',
+            'auth_callback' => function () {
+                return current_user_can('edit_posts');
+            },
+        ]);
+        register_post_meta('az_class', 'az_sessions', [
+            'type' => 'array',
+            'single' => true,
+            'show_in_rest' => false,
+            'sanitize_callback' => function ($value) {
+                $items = is_array($value) ? $value : [];
+                $out = [];
+                foreach ($items as $it) {
+                    $d = isset($it['date']) ? sanitize_text_field($it['date']) : '';
+                    $t = isset($it['time']) ? sanitize_text_field($it['time']) : '';
+                    if ($d)
+                        $out[] = ['date' => $d, 'time' => $t];
+                }
+                usort($out, function ($a, $b) {
+                    return strcmp($a['date'], $b['date']);
+                });
+                return $out;
+            },
             'auth_callback' => function () {
                 return current_user_can('edit_posts');
             },
@@ -354,12 +404,14 @@ class AzAC_Core
         }
         if ($hook === 'toplevel_page_azac-attendance') {
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
-            wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
+            $user = wp_get_current_user();
             wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('azac_create_class'),
+                'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
             ]);
         }
         if ($hook === 'azac-attendance_page_azac-class-dashboard') {
@@ -435,27 +487,84 @@ class AzAC_Core
                     $stats['mid_absent'] += intval($r['c']);
             }
         }
-        $sessions = $wpdb->get_var($wpdb->prepare("SELECT COUNT(DISTINCT session_date) FROM {$table} WHERE class_id=%d", $class_id));
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $sessions = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$sess_table} WHERE class_id=%d", $class_id));
         $stats['sessions'] = intval($sessions);
         return $stats;
+    }
+
+    private function get_class_sessions($class_id)
+    {
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT session_date, session_time FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC", $class_id), ARRAY_A);
+        $out = [];
+        foreach ($rows as $r) {
+            $d = isset($r['session_date']) ? sanitize_text_field($r['session_date']) : '';
+            $t = isset($r['session_time']) ? sanitize_text_field($r['session_time']) : '';
+            if ($d) {
+                $out[] = ['date' => $d, 'time' => $t];
+            }
+        }
+        return $out;
+    }
+
+    private function upsert_class_session($class_id, $date, $time)
+    {
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $wpdb->replace(
+            $sess_table,
+            [
+                'class_id' => $class_id,
+                'session_date' => $date,
+                'session_time' => $time,
+            ],
+            ['%d', '%s', '%s']
+        );
+        return $this->get_class_sessions($class_id);
+    }
+
+    private function update_class_session($class_id, $old_date, $new_date, $new_time)
+    {
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $wpdb->update(
+            $sess_table,
+            ['session_date' => $new_date, 'session_time' => $new_time],
+            ['class_id' => $class_id, 'session_date' => $old_date],
+            ['%s', '%s'],
+            ['%d', '%s']
+        );
+        $att_table = $wpdb->prefix . 'az_attendance';
+        $wpdb->update(
+            $att_table,
+            ['session_date' => $new_date],
+            ['class_id' => $class_id, 'session_date' => $old_date],
+            ['%s'],
+            ['%d', '%s']
+        );
+        return $this->get_class_sessions($class_id);
     }
 
     public function render_attendance_list_page()
     {
         echo '<div class="wrap"><h1>Quản lý điểm danh</h1>';
-        echo '<div class="azac-inline-create">';
-        echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
-        echo '<input type="text" id="azac_new_class_teacher" class="regular-text" placeholder="Giảng viên (chuỗi)" />';
-        echo '<input type="number" id="azac_new_class_sessions" class="small-text" min="0" value="0" placeholder="Tổng số buổi" />';
-        echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
+        $user = wp_get_current_user();
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        echo '<div class="azac-tabs" style="margin-bottom:10px;">';
+        echo '<button class="button button-primary azac-tab-btn" data-target="#azac-tab-classes">Lớp học</button> ';
+        if ($is_teacher) {
+            echo '<button class="button azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
+        }
         echo '</div>';
+        
         $classes = get_posts([
             'post_type' => 'az_class',
             'numberposts' => -1,
             'orderby' => 'date',
             'order' => 'DESC',
         ]);
-        $user = wp_get_current_user();
         if (in_array('az_student', $user->roles, true)) {
             $student_post_id = $this->get_current_student_post_id();
             $classes = array_filter($classes, function ($c) use ($student_post_id) {
@@ -463,12 +572,19 @@ class AzAC_Core
                 $ids = is_array($ids) ? array_map('absint', $ids) : [];
                 return in_array($student_post_id, $ids, true);
             });
-        } elseif (in_array('az_teacher', $user->roles, true)) {
+        } elseif ($is_teacher) {
             $classes = array_filter($classes, function ($c) use ($user) {
                 $teacher_user = intval(get_post_meta($c->ID, 'az_teacher_user', true));
                 return $teacher_user === intval($user->ID);
             });
         }
+        echo '<div id="azac-tab-classes" class="azac-tab active">';
+        echo '<div class="azac-inline-create">';
+        echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
+        echo '<input type="text" id="azac_new_class_teacher" class="regular-text" placeholder="Giảng viên (chuỗi)" />';
+        echo '<input type="number" id="azac_new_class_sessions" class="small-text" min="0" value="0" placeholder="Tổng số buổi" />';
+        echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
+        echo '</div>';
         echo '<div class="azac-grid">';
         foreach ($classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
@@ -486,6 +602,14 @@ class AzAC_Core
             echo '</div>';
         }
         echo '</div></div>';
+        if ($is_teacher) {
+            echo '<div id="azac-tab-sessions" class="azac-tab">';
+            echo '<div id="azac-sessions-grid" class="azac-grid">';
+            echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
+            echo '</div>';
+            echo '</div>';
+        }
+        echo '</div>';
     }
     public function render_class_dashboard_page()
     {
@@ -567,7 +691,18 @@ class AzAC_Core
         }
         $nonce = wp_create_nonce('azac_attendance_save');
         $today = current_time('Y-m-d');
-        $sessions_count = $stats['sessions'] + 1;
+        $sessions_meta = $this->get_class_sessions($class_id);
+        $selected_date = isset($_GET['session_date']) ? sanitize_text_field($_GET['session_date']) : '';
+        if (!$selected_date) {
+            $selected_date = $sessions_meta ? $sessions_meta[count($sessions_meta) - 1]['date'] : $today;
+        }
+        $sessions_count = 1;
+        foreach ($sessions_meta as $idx => $s) {
+            if (($s['date'] ?? '') === $selected_date) {
+                $sessions_count = $idx + 1;
+                break;
+            }
+        }
 
         echo '<div class="wrap">';
         echo '<h1>Điểm danh lớp: ' . esc_html($post->post_title) . '</h1>';
@@ -586,7 +721,22 @@ class AzAC_Core
         echo '<div class="azac-stat"><div class="azac-chart-row"><div class="azac-chart-box"><canvas id="azacChartCheckin"></canvas></div><div class="azac-chart-box"><canvas id="azacChartMid"></canvas></div></div></div>';
         echo '</div>';
 
-        echo '<h2>Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($today))) . '</h2>';
+        echo '<div class="azac-session-bar">';
+        echo '<select id="azac_session_select">';
+        foreach ($sessions_meta as $s) {
+            $label = ($s['date'] ?? '') . (($s['time'] ?? '') ? (' ' . $s['time']) : '');
+            $sel = (($s['date'] ?? '') === $selected_date) ? ' selected' : '';
+            echo '<option value="' . esc_attr($s['date'] ?? '') . '"' . $sel . '>' . esc_html($label) . '</option>';
+        }
+        echo '</select> ';
+        if (!$is_student) {
+            echo '<input type="date" id="azac_session_date" value="' . esc_attr($selected_date) . '" /> ';
+            echo '<input type="time" id="azac_session_time" value="" /> ';
+            echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button> ';
+            echo '<button class="button" id="azac_update_session_btn">Cập nhật buổi</button>';
+        }
+        echo '</div>';
+        echo '<h2 id="azac_session_title">Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($selected_date))) . '</h2>';
 
         echo '<div class="azac-tabs">';
         echo '<button class="button button-primary azac-tab-btn" data-target="#azac-checkin">Điểm danh đầu giờ</button> ';
@@ -628,6 +778,9 @@ class AzAC_Core
             'nonce' => $nonce,
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'today' => $today,
+            'sessionDate' => $selected_date,
+            'sessionNonce' => wp_create_nonce('azac_session'),
+            'sessions' => $sessions_meta,
             'stats' => [
                 'checkin' => [
                     'present' => $stats['checkin_present'],
@@ -639,7 +792,7 @@ class AzAC_Core
                 ],
             ],
         ]) . ';</script>';
-        echo '<script>(function(){function a(t,items){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var d=items&&items[id];if(d){el.checked=!!d.status;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');if(ne){ne.value=d.note||"";}}});}function f(t){var fd=new FormData();fd.append("action","azac_get_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.today);fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){a(t,res.data.items||{});}}).catch(function(){});}function s(t){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";var items=[];document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var st=el.checked?1:0;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');var nt=ne?String(ne.value||""):"";items.push({id:id,status:st,note:nt});});var fd=new FormData();fd.append("action","azac_save_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.today);items.forEach(function(it,i){fd.append("items["+i+"][id]",it.id);fd.append("items["+i+"][status]",it.status);fd.append("items["+i+"][note]",it.note);});fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){alert("Đã lưu "+res.data.inserted+" bản ghi");f(t);}else{alert("Lỗi lưu");}}).catch(function(){alert("Lỗi mạng");});}var b1=document.getElementById("azac-submit-checkin");if(b1){b1.addEventListener("click",function(){s("check-in");});}var b2=document.getElementById("azac-submit-mid");if(b2){b2.addEventListener("click",function(){s("mid-session");});}f("check-in");f("mid-session");})();</script>';
+        echo '<script>(function(){function a(t,items){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var d=items&&items[id];if(d){el.checked=!!d.status;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');if(ne){ne.value=d.note||"";}}});}function f(t){var fd=new FormData();fd.append("action","azac_get_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.sessionDate||window.azacData.today);fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){a(t,res.data.items||{});}}).catch(function(){});}function s(t){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";var items=[];document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var st=el.checked?1:0;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');var nt=ne?String(ne.value||""):"";items.push({id:id,status:st,note:nt});});var fd=new FormData();fd.append("action","azac_save_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.sessionDate||window.azacData.today);items.forEach(function(it,i){fd.append("items["+i+"][id]",it.id);fd.append("items["+i+"][status]",it.status);fd.append("items["+i+"][note]",it.note);});fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){alert("Đã lưu "+res.data.inserted+" bản ghi");f(t);}else{alert("Lỗi lưu");}}).catch(function(){alert("Lỗi mạng");});}var b1=document.getElementById("azac-submit-checkin");if(b1){b1.addEventListener("click",function(){s("check-in");});}var b2=document.getElementById("azac-submit-mid");if(b2){b2.addEventListener("click",function(){s("mid-session");});}f("check-in");f("mid-session");})();</script>';
 
         echo '</div>';
     }
@@ -738,6 +891,87 @@ class AzAC_Core
             $map[intval($r['student_id'])] = ['status' => intval($r['status']), 'note' => $r['note']];
         }
         wp_send_json_success(['items' => $map]);
+    }
+    public function ajax_add_session()
+    {
+        check_ajax_referer('azac_session', 'nonce');
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+        $time = isset($_POST['time']) ? sanitize_text_field($_POST['time']) : '';
+        if (!$class_id || !$date) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        if (!$is_admin) {
+            if ($is_teacher) {
+                $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
+                if ($teacher_user !== intval($user->ID)) {
+                    wp_send_json_error(['message' => 'Capability'], 403);
+                }
+            } else {
+                wp_send_json_error(['message' => 'Capability'], 403);
+            }
+        }
+        $sessions = $this->upsert_class_session($class_id, $date, $time);
+        wp_send_json_success(['sessions' => $sessions, 'selected' => $date]);
+    }
+    public function ajax_update_session()
+    {
+        check_ajax_referer('azac_session', 'nonce');
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+        $new_date = isset($_POST['new_date']) ? sanitize_text_field($_POST['new_date']) : '';
+        $new_time = isset($_POST['new_time']) ? sanitize_text_field($_POST['new_time']) : '';
+        if (!$class_id || !$date || !$new_date) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        if (!$is_admin) {
+            if ($is_teacher) {
+                $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
+                if ($teacher_user !== intval($user->ID)) {
+                    wp_send_json_error(['message' => 'Capability'], 403);
+                }
+            } else {
+                wp_send_json_error(['message' => 'Capability'], 403);
+            }
+        }
+        $sessions = $this->update_class_session($class_id, $date, $new_date, $new_time);
+        wp_send_json_success(['sessions' => $sessions, 'selected' => $new_date]);
+    }
+    public function ajax_list_sessions()
+    {
+        check_ajax_referer('azac_list_sessions', 'nonce');
+        $user = wp_get_current_user();
+        if (!in_array('az_teacher', $user->roles, true)) {
+            wp_send_json_error(['message' => 'Capability'], 403);
+        }
+        $classes = get_posts([
+            'post_type' => 'az_class',
+            'numberposts' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'meta_key' => 'az_teacher_user',
+            'meta_value' => intval($user->ID),
+        ]);
+        $out = [];
+        foreach ($classes as $c) {
+            $sessions = $this->get_class_sessions($c->ID);
+            foreach ($sessions as $s) {
+                $out[] = [
+                    'class_id' => $c->ID,
+                    'class_title' => $c->post_title,
+                    'date' => $s['date'],
+                    'time' => $s['time'],
+                    'link' => admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID . '&session_date=' . urlencode($s['date'])),
+                ];
+            }
+        }
+        wp_send_json_success(['sessions' => $out]);
     }
     public function ajax_add_student()
     {
