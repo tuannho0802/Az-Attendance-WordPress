@@ -160,9 +160,9 @@
         }
       );
     }
-    activateTab("#azac-tab-classes");
+    activateTab("#azac-tab-sessions");
     if (AZAC_LIST && AZAC_LIST.isTeacher) {
-      // optionally preload sessions
+      loadSessions();
     }
   });
 })(jQuery);

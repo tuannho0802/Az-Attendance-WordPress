@@ -67,3 +67,63 @@
   background: #0c5a4f;
   border-color: #0c5a4f;
 }
+
+/* List pages: az_class and az_student */
+body.post-type-az_class .wrap h1,
+body.post-type-az_student .wrap h1 {
+  color: var(--az-primary);
+}
+body.post-type-az_class .wp-list-table,
+body.post-type-az_student .wp-list-table {
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+body.post-type-az_class .wp-list-table thead th,
+body.post-type-az_student .wp-list-table thead th {
+  background: var(--az-primary);
+  color: #fff;
+}
+body.post-type-az_class .wp-list-table tbody td,
+body.post-type-az_student .wp-list-table tbody td {
+  padding: 12px 14px;
+}
+body.post-type-az_class .wp-list-table tbody tr:nth-child(odd),
+body.post-type-az_student .wp-list-table tbody tr:nth-child(odd) {
+  background: #fafafa;
+}
+body.post-type-az_class .wp-list-table tbody tr:hover,
+body.post-type-az_student .wp-list-table tbody tr:hover {
+  background: #f1f8f7;
+}
+body.post-type-az_class .wp-list-table .column-title .row-title,
+body.post-type-az_student .wp-list-table .column-title .row-title {
+  color: var(--az-dark);
+  font-weight: 600;
+}
+body.post-type-az_class .tablenav,
+body.post-type-az_student .tablenav {
+  background: #fff;
+  border: 1px solid #e2e2e2;
+  border-radius: 10px;
+  padding: 8px 10px;
+  margin: 12px 0;
+}
+body.post-type-az_class .tablenav .actions select,
+body.post-type-az_class .tablenav .actions input,
+body.post-type-az_student .tablenav .actions select,
+body.post-type-az_student .tablenav .actions input {
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+}
+body.post-type-az_class .search-box input,
+body.post-type-az_student .search-box input {
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+}
+body.post-type-az_class .search-box .button,
+body.post-type-az_student .search-box .button {
+  background: var(--az-primary);
+  border-color: var(--az-primary);
+}

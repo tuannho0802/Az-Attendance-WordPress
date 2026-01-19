@@ -21,6 +21,7 @@ class AzAC_Core
         add_action('init', [$this, 'register_cpt_class']);
         add_action('init', [$this, 'register_cpt_student']);
         add_action('init', [$this, 'ensure_sessions_table'], 1);
+        add_action('admin_init', [$this, 'redirect_cpt_list_to_custom']);
         add_action('add_meta_boxes', [$this, 'add_class_meta_boxes']);
         add_action('add_meta_boxes', [$this, 'add_class_students_meta_box']);
         add_action('save_post_az_class', [$this, 'save_class_meta'], 10, 2);
@@ -39,6 +40,10 @@ class AzAC_Core
         add_action('wp_ajax_azac_add_session', [$this, 'ajax_add_session']);
         add_action('wp_ajax_azac_update_session', [$this, 'ajax_update_session']);
         add_action('wp_ajax_azac_list_sessions', [$this, 'ajax_list_sessions']);
+        add_filter('manage_az_class_posts_columns', [$this, 'columns_az_class']);
+        add_action('manage_az_class_posts_custom_column', [$this, 'column_content_az_class'], 10, 2);
+        add_filter('manage_az_student_posts_columns', [$this, 'columns_az_student']);
+        add_action('manage_az_student_posts_custom_column', [$this, 'column_content_az_student'], 10, 2);
     }
     public function ensure_sessions_table()
     {
@@ -352,6 +357,22 @@ class AzAC_Core
             'azac-class-dashboard',
             [$this, 'render_class_dashboard_page']
         );
+        add_submenu_page(
+            'azac-attendance',
+            'Lớp học',
+            'Lớp học',
+            'edit_posts',
+            'azac-classes-list',
+            [$this, 'render_classes_list_page']
+        );
+        add_submenu_page(
+            'azac-attendance',
+            'Học viên',
+            'Học viên',
+            'edit_posts',
+            'azac-students-list',
+            [$this, 'render_students_list_page']
+        );
     }
 
     public function remove_default_menus()
@@ -361,17 +382,21 @@ class AzAC_Core
             return;
         }
         if (in_array('az_teacher', $user->roles, true)) {
+            remove_menu_page('index.php');
+            remove_menu_page('index.php');
             remove_menu_page('edit.php');
             remove_menu_page('edit-comments.php');
             remove_menu_page('plugins.php');
             remove_menu_page('tools.php');
             remove_menu_page('options-general.php');
             remove_menu_page('themes.php');
+            remove_menu_page('edit.php?post_type=az_class');
+            remove_menu_page('edit.php?post_type=az_student');
             remove_menu_page('users.php');
         } elseif (in_array('az_student', $user->roles, true)) {
+            remove_menu_page('index.php');
             remove_menu_page('edit.php');
             remove_menu_page('upload.php');
-            remove_menu_page('edit-comments.php');
             remove_menu_page('plugins.php');
             remove_menu_page('tools.php');
             remove_menu_page('options-general.php');
@@ -379,6 +404,22 @@ class AzAC_Core
             remove_menu_page('users.php');
             remove_menu_page('edit.php?post_type=az_class');
             remove_menu_page('edit.php?post_type=az_student');
+        }
+    }
+    public function redirect_cpt_list_to_custom()
+    {
+        if (!is_admin())
+            return;
+        $page = basename($_SERVER['PHP_SELF']);
+        $post_type = isset($_GET['post_type']) ? sanitize_text_field($_GET['post_type']) : '';
+        if ($page === 'edit.php' && in_array($post_type, ['az_class', 'az_student'], true)) {
+            if ($post_type === 'az_class') {
+                wp_redirect(admin_url('admin.php?page=azac-classes-list'));
+                exit;
+            } else {
+                wp_redirect(admin_url('admin.php?page=azac-students-list'));
+                exit;
+            }
         }
     }
     public function cleanup_admin_bar($wp_admin_bar)
@@ -553,32 +594,42 @@ class AzAC_Core
         $user = wp_get_current_user();
         $is_teacher = in_array('az_teacher', $user->roles, true);
         echo '<div class="azac-tabs" style="margin-bottom:10px;">';
-        echo '<button class="button button-primary azac-tab-btn" data-target="#azac-tab-classes">Lớp học</button> ';
+        // if ($is_teacher) {
+        //     echo '<button class="button button-primary azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
+        // }
+        echo '</div>';
         if ($is_teacher) {
-            echo '<button class="button azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
+            echo '<div id="azac-tab-sessions" class="azac-tab active">';
+            echo '<div id="azac-sessions-grid" class="azac-grid">';
+            echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
+            echo '</div>';
+            echo '</div>';
         }
         echo '</div>';
-        
+    }
+    public function render_classes_list_page()
+    {
+        echo '<div class="wrap"><h1>Lớp học</h1>';
+        $user = wp_get_current_user();
         $classes = get_posts([
             'post_type' => 'az_class',
             'numberposts' => -1,
             'orderby' => 'date',
             'order' => 'DESC',
         ]);
-        if (in_array('az_student', $user->roles, true)) {
+        if (in_array('az_teacher', $user->roles, true)) {
+            $classes = array_filter($classes, function ($c) use ($user) {
+                $teacher_user = intval(get_post_meta($c->ID, 'az_teacher_user', true));
+                return $teacher_user === intval($user->ID);
+            });
+        } elseif (in_array('az_student', $user->roles, true)) {
             $student_post_id = $this->get_current_student_post_id();
             $classes = array_filter($classes, function ($c) use ($student_post_id) {
                 $ids = get_post_meta($c->ID, 'az_students', true);
                 $ids = is_array($ids) ? array_map('absint', $ids) : [];
                 return in_array($student_post_id, $ids, true);
             });
-        } elseif ($is_teacher) {
-            $classes = array_filter($classes, function ($c) use ($user) {
-                $teacher_user = intval(get_post_meta($c->ID, 'az_teacher_user', true));
-                return $teacher_user === intval($user->ID);
-            });
         }
-        echo '<div id="azac-tab-classes" class="azac-tab active">';
         echo '<div class="azac-inline-create">';
         echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
         echo '<input type="text" id="azac_new_class_teacher" class="regular-text" placeholder="Giảng viên (chuỗi)" />';
@@ -588,28 +639,132 @@ class AzAC_Core
         echo '<div class="azac-grid">';
         foreach ($classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
-            $tsb = get_post_meta($c->ID, 'az_tong_so_buoi', true);
-            $shv = get_post_meta($c->ID, 'az_so_hoc_vien', true);
-            $link = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
+            $tsb = intval(get_post_meta($c->ID, 'az_tong_so_buoi', true));
+            $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
+            $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
+            $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
             echo '<div class="azac-card">';
             echo '<div class="azac-card-title">' . esc_html($c->post_title) . '</div>';
             echo '<div class="azac-card-body">';
-            echo '<div>Giảng viên: ' . esc_html($gv) . '</div>';
+            echo '<div>Giảng viên: ' . esc_html($gv ?: 'Chưa gán') . '</div>';
             echo '<div>Tổng số buổi: ' . esc_html($tsb) . '</div>';
             echo '<div>Số học viên: ' . esc_html($shv) . '</div>';
             echo '</div>';
-            echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link) . '">Xem điểm danh</a></div>';
+            echo '<div class="azac-card-actions">';
+            echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+            echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+            echo '</div>';
             echo '</div>';
         }
         echo '</div></div>';
-        if ($is_teacher) {
-            echo '<div id="azac-tab-sessions" class="azac-tab">';
-            echo '<div id="azac-sessions-grid" class="azac-grid">';
-            echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
+    }
+    public function render_students_list_page()
+    {
+        echo '<div class="wrap"><h1>Học viên</h1>';
+        $user = wp_get_current_user();
+        $students = get_posts([
+            'post_type' => 'az_student',
+            'numberposts' => -1,
+            'orderby' => 'title',
+            'order' => 'ASC',
+        ]);
+        if (in_array('az_teacher', $user->roles, true)) {
+            $classes = get_posts([
+                'post_type' => 'az_class',
+                'numberposts' => -1,
+                'meta_key' => 'az_teacher_user',
+                'meta_value' => intval($user->ID),
+            ]);
+            $ids = [];
+            foreach ($classes as $c) {
+                $list = get_post_meta($c->ID, 'az_students', true);
+                $list = is_array($list) ? array_map('absint', $list) : [];
+                $ids = array_merge($ids, $list);
+            }
+            $ids = array_values(array_unique($ids));
+            $students = array_filter($students, function ($s) use ($ids) {
+                return in_array($s->ID, $ids, true);
+            });
+        }
+        echo '<div class="azac-grid">';
+        foreach ($students as $s) {
+            $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
+            $name = $s->post_title;
+            $email = '';
+            if ($uid) {
+                $u = get_userdata($uid);
+                if ($u)
+                    $email = $u->user_email ?: '';
+            }
+            $link_edit = admin_url('post.php?post=' . $s->ID . '&action=edit');
+            echo '<div class="azac-card">';
+            echo '<div class="azac-card-title">' . esc_html($name) . '</div>';
+            echo '<div class="azac-card-body">';
+            echo '<div>Tài khoản: ' . esc_html($email ?: 'Chưa liên kết') . '</div>';
             echo '</div>';
+            echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a></div>';
             echo '</div>';
         }
-        echo '</div>';
+        echo '</div></div>';
+    }
+    public function columns_az_class($cols)
+    {
+        $new = [];
+        if (isset($cols['cb']))
+            $new['cb'] = $cols['cb'];
+        $new['title'] = 'Tên lớp';
+        $new['az_teacher'] = 'Giảng viên';
+        $new['az_sessions'] = 'Tổng buổi';
+        $new['az_students'] = 'Sĩ số';
+        $new['date'] = isset($cols['date']) ? $cols['date'] : 'Ngày';
+        return $new;
+    }
+    public function column_content_az_class($column, $post_id)
+    {
+        if ($column === 'az_teacher') {
+            $teacher_name = get_post_meta($post_id, 'az_giang_vien', true);
+            if (!$teacher_name) {
+                $uid = intval(get_post_meta($post_id, 'az_teacher_user', true));
+                if ($uid) {
+                    $u = get_userdata($uid);
+                    if ($u)
+                        $teacher_name = $u->display_name ?: $u->user_login;
+                }
+            }
+            echo '<span class="azac-badge">' . esc_html($teacher_name ?: 'Chưa gán') . '</span>';
+        } elseif ($column === 'az_sessions') {
+            $tsb = intval(get_post_meta($post_id, 'az_tong_so_buoi', true));
+            echo '<span class="azac-badge">' . esc_html($tsb) . '</span>';
+        } elseif ($column === 'az_students') {
+            $shv = intval(get_post_meta($post_id, 'az_so_hoc_vien', true));
+            echo '<span class="azac-badge">' . esc_html($shv) . '</span>';
+        }
+    }
+    public function columns_az_student($cols)
+    {
+        $new = [];
+        if (isset($cols['cb']))
+            $new['cb'] = $cols['cb'];
+        $new['title'] = 'Họ và Tên';
+        $new['az_user'] = 'Tài khoản';
+        $new['date'] = isset($cols['date']) ? $cols['date'] : 'Ngày';
+        return $new;
+    }
+    public function column_content_az_student($column, $post_id)
+    {
+        if ($column === 'az_user') {
+            $uid = intval(get_post_meta($post_id, 'az_user_id', true));
+            if ($uid) {
+                $u = get_userdata($uid);
+                if ($u) {
+                    $label = ($u->display_name ?: $u->user_login);
+                    $email = $u->user_email ?: '';
+                    echo '<span class="azac-badge">' . esc_html($label) . '</span> ' . esc_html($email);
+                    return;
+                }
+            }
+            echo '<span class="azac-badge">Chưa liên kết</span>';
+        }
     }
     public function render_class_dashboard_page()
     {
@@ -645,7 +800,8 @@ class AzAC_Core
                 $gv = get_post_meta($c->ID, 'az_giang_vien', true);
                 $tsb = get_post_meta($c->ID, 'az_tong_so_buoi', true);
                 $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
-                $link = admin_url('post.php?post=' . $c->ID . '&action=edit');
+                $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
+                $link_view = get_permalink($c->ID);
                 echo '<div class="azac-card">';
                 echo '<div class="azac-card-title">' . esc_html($c->post_title) . '</div>';
                 echo '<div class="azac-card-body">';
@@ -653,7 +809,7 @@ class AzAC_Core
                 echo '<div>Tổng số buổi: ' . esc_html($tsb) . '</div>';
                 echo '<div>Sĩ số: ' . esc_html($shv) . '</div>';
                 echo '</div>';
-                echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link) . '">Vào lớp</a></div>';
+                echo '<div class="azac-card-actions"><a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
                 echo '</div>';
             }
             echo '</div></div>';
