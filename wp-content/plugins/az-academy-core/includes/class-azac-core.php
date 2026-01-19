@@ -41,6 +41,7 @@ class AzAC_Core
         add_action('wp_ajax_azac_update_session', [$this, 'ajax_update_session']);
         add_action('wp_ajax_azac_list_sessions', [$this, 'ajax_list_sessions']);
         add_action('wp_ajax_azac_update_class_status', [$this, 'ajax_update_class_status']);
+        add_action('wp_ajax_azac_delete_class', [$this, 'ajax_delete_class']);
         add_filter('manage_az_class_posts_columns', [$this, 'columns_az_class']);
         add_action('manage_az_class_posts_custom_column', [$this, 'column_content_az_class'], 10, 2);
         add_filter('manage_az_student_posts_columns', [$this, 'columns_az_student']);
@@ -383,14 +384,6 @@ class AzAC_Core
         );
         add_submenu_page(
             'azac-attendance',
-            'Lớp học',
-            'Lớp học',
-            'edit_posts',
-            'azac-classes-list',
-            [$this, 'render_classes_list_page']
-        );
-        add_submenu_page(
-            'azac-attendance',
             'Học viên',
             'Học viên',
             'edit_posts',
@@ -492,18 +485,17 @@ class AzAC_Core
         }
         if ($hook === 'azac-attendance_page_azac-classes-list') {
             wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
-            if (!wp_script_is('azac-attendance-list-js', 'enqueued')) {
-                wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
-                $user = wp_get_current_user();
-                wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'nonce' => wp_create_nonce('azac_create_class'),
-                    'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
-                    'isTeacher' => in_array('az_teacher', $user->roles, true),
-                    'isAdmin' => in_array('administrator', $user->roles, true),
-                    'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
-                ]);
-            }
+            wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
+            $user = wp_get_current_user();
+            wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_create_class'),
+                'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+                'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+            ]);
         }
         $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
         if ($page === 'azac-class-dashboard') {
@@ -514,6 +506,19 @@ class AzAC_Core
             if (!wp_script_is('azac-attendance-js', 'enqueued')) {
                 wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
             }
+        } elseif ($page === 'azac-classes-list') {
+            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
+            $user = wp_get_current_user();
+            wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_create_class'),
+                'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+                'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
+            ]);
         }
     }
 
@@ -710,12 +715,13 @@ class AzAC_Core
             echo '<div class="azac-card-actions">';
             if ($is_admin) {
                 if ($is_pending) {
-                    echo '<button class="button azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
+                    echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
                 } else {
-                    echo '<button class="button azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đặt Pending</button> ';
+                    echo '<button type="button" class="button button-warning azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đóng lớp</button> ';
                 }
                 echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
-                echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+                echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
+                echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
             } elseif ($is_teacher) {
                 if ($is_pending) {
                     echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
@@ -847,12 +853,18 @@ class AzAC_Core
         if (!$class_id) {
             echo '<div class="wrap"><h1>Chi tiết lớp</h1>';
             $user = wp_get_current_user();
-            $classes = get_posts([
+            $is_admin = in_array('administrator', $user->roles, true);
+            $is_teacher = in_array('az_teacher', $user->roles, true);
+            $args = [
                 'post_type' => 'az_class',
                 'numberposts' => -1,
                 'orderby' => 'date',
                 'order' => 'DESC',
-            ]);
+            ];
+            if ($is_admin || $is_teacher) {
+                $args['post_status'] = ['publish', 'pending'];
+            }
+            $classes = get_posts($args);
             if (in_array('az_student', $user->roles, true)) {
                 $student_post_id = $this->get_current_student_post_id();
                 $classes = array_filter($classes, function ($c) use ($student_post_id) {
@@ -879,6 +891,7 @@ class AzAC_Core
                 $is_pending = ($status === 'pending');
                 $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
                 $link_view = get_permalink($c->ID);
+                $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
                 echo '<div class="azac-card">';
                 echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
                 echo '<div class="azac-card-body">';
@@ -887,13 +900,13 @@ class AzAC_Core
                 echo '<div>Sĩ số: ' . esc_html($shv) . '</div>';
                 echo '</div>';
                 if (in_array('administrator', $user->roles, true)) {
-                    echo '<div class="azac-card-actions"><a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
+                    echo '<div class="azac-card-actions"><a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> <a class="button" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
                 } elseif (in_array('az_teacher', $user->roles, true)) {
                     echo '<div class="azac-card-actions">';
                     if ($is_pending) {
                         echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
                     } else {
-                        echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a>';
+                        echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> <a class="button" href="' . esc_url($link_view) . '">Vào lớp</a>';
                     }
                     echo '</div>';
                 } else {
@@ -1112,6 +1125,34 @@ class AzAC_Core
             wp_send_json_error(['message' => 'Update failed'], 500);
         }
         wp_send_json_success(['id' => $class_id, 'status' => $status]);
+    }
+    public function ajax_delete_class()
+    {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'azac_delete_class')) {
+            wp_send_json_error(['message' => 'Nonce'], 403);
+        }
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        if (!$class_id) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles, true)) {
+            wp_send_json_error(['message' => 'Capability'], 403);
+        }
+        $post = get_post($class_id);
+        if (!$post || $post->post_type !== 'az_class') {
+            wp_send_json_error(['message' => 'Not found'], 404);
+        }
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $att_table = $wpdb->prefix . 'az_attendance';
+        $wpdb->delete($sess_table, ['class_id' => $class_id], ['%d']);
+        $wpdb->delete($att_table, ['class_id' => $class_id], ['%d']);
+        $res = wp_delete_post($class_id, true);
+        if (!$res) {
+            wp_send_json_error(['message' => 'Delete failed'], 500);
+        }
+        wp_send_json_success(['id' => $class_id]);
     }
 
     public function ajax_save_attendance()

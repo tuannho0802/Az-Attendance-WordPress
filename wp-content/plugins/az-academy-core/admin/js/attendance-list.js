@@ -99,6 +99,43 @@
     );
     $(document).on(
       "click",
+      ".azac-delete-btn",
+      function () {
+        if (!AZAC_LIST || !AZAC_LIST.isAdmin)
+          return;
+        var $btn = $(this);
+        var id =
+          parseInt($btn.data("id"), 10) || 0;
+        if (!id) return;
+        if (
+          !confirm(
+            "Bạn chắc chắn muốn xóa lớp này? Hành động không thể hoàn tác."
+          )
+        ) {
+          return;
+        }
+        var payload = {
+          action: "azac_delete_class",
+          nonce: AZAC_LIST.deleteClassNonce,
+          class_id: id,
+        };
+        $btn.prop("disabled", true);
+        $.post(
+          AZAC_LIST.ajaxUrl,
+          payload,
+          function (res) {
+            $btn.prop("disabled", false);
+            if (res && res.success) {
+              location.reload();
+            } else {
+              alert("Không thể xóa lớp");
+            }
+          }
+        );
+      }
+    );
+    $(document).on(
+      "click",
       ".azac-status-btn",
       function () {
         if (!AZAC_LIST || !AZAC_LIST.isAdmin)
@@ -110,6 +147,11 @@
           $btn.data("status") || ""
         );
         if (!id || !status) return;
+        var msg =
+          status === "pending"
+            ? "Bạn muốn đóng lớp này? Giáo viên/học viên sẽ không thao tác."
+            : "Bạn muốn mở lớp này?";
+        if (!confirm(msg)) return;
         var payload = {
           action: "azac_update_class_status",
           nonce: AZAC_LIST.updateStatusNonce,

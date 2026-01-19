@@ -73,6 +73,36 @@
   background: #0c5a4f;
   border-color: #0c5a4f;
 }
+.button-warning {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+}
+.button-warning:hover {
+  background: #cf6d16;
+  border-color: #cf6d16;
+  color: #fff;
+}
+.button-danger {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: #fff;
+}
+.button-danger:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+.button-success {
+  background: #2ecc71;
+  border-color: #2ecc71;
+  color: #fff;
+}
+.button-success:hover {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #fff;
+}
 
 /* List pages: az_class and az_student */
 body.post-type-az_class .wrap h1,
