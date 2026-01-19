@@ -23,6 +23,12 @@
   color: #fff;
   font-size: 12px;
 }
+.azac-badge-publish {
+  background: #2ecc71;
+}
+.azac-badge-pending {
+  background: #e67e22;
+}
 
 .azac-grid {
   display: grid;

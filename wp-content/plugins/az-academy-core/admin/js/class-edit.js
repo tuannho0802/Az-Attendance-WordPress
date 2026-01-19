@@ -1,5 +1,47 @@
 ;(function($){
     $(function(){
+        if (
+          window.AZAC_CLASS_EDIT &&
+          AZAC_CLASS_EDIT.isTeacher
+        ) {
+          function hideSubmit() {
+            var nodes =
+              document.querySelectorAll(
+                "button, a"
+              );
+            nodes.forEach(function (el) {
+              var txt = (el.textContent || "")
+                .trim()
+                .toLowerCase();
+              var aria = (
+                el.getAttribute("aria-label") ||
+                ""
+              ).toLowerCase();
+              if (
+                txt === "submit for review" ||
+                txt === "gửi xét duyệt" ||
+                aria.indexOf(
+                  "submit for review"
+                ) !== -1 ||
+                aria.indexOf(
+                  "gửi xét duyệt"
+                ) !== -1
+              ) {
+                el.style.display = "none";
+              }
+            });
+          }
+          hideSubmit();
+          var obs = new MutationObserver(
+            function () {
+              hideSubmit();
+            }
+          );
+          obs.observe(document.body, {
+            childList: true,
+            subtree: true,
+          });
+        }
         $('#azac_add_student_btn').on('click', function(){
             var name = $('#azac_new_student_name').val().trim();
             var email = $('#azac_new_student_email').val().trim();
@@ -31,4 +73,3 @@
         });
     });
 })(jQuery);
-

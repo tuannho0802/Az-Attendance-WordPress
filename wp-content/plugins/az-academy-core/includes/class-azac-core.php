@@ -40,10 +40,12 @@ class AzAC_Core
         add_action('wp_ajax_azac_add_session', [$this, 'ajax_add_session']);
         add_action('wp_ajax_azac_update_session', [$this, 'ajax_update_session']);
         add_action('wp_ajax_azac_list_sessions', [$this, 'ajax_list_sessions']);
+        add_action('wp_ajax_azac_update_class_status', [$this, 'ajax_update_class_status']);
         add_filter('manage_az_class_posts_columns', [$this, 'columns_az_class']);
         add_action('manage_az_class_posts_custom_column', [$this, 'column_content_az_class'], 10, 2);
         add_filter('manage_az_student_posts_columns', [$this, 'columns_az_student']);
         add_action('manage_az_student_posts_custom_column', [$this, 'column_content_az_student'], 10, 2);
+        add_filter('wp_insert_post_data', [$this, 'prevent_teacher_pending'], 10, 2);
     }
     public function ensure_sessions_table()
     {
@@ -226,19 +228,22 @@ class AzAC_Core
         $tong_so_buoi = get_post_meta($post->ID, 'az_tong_so_buoi', true);
         $so_hoc_vien = get_post_meta($post->ID, 'az_so_hoc_vien', true);
         $teacher_user = get_post_meta($post->ID, 'az_teacher_user', true);
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $disabled = $is_admin ? '' : ' disabled';
 
         echo '<p><label for="az_giang_vien">Giảng viên</label><br />';
-        echo '<input type="text" id="az_giang_vien" name="az_giang_vien" class="regular-text" value="' . esc_attr($giang_vien) . '" /></p>';
+        echo '<input type="text" id="az_giang_vien" name="az_giang_vien" class="regular-text" value="' . esc_attr($giang_vien) . '"' . $disabled . ' /></p>';
 
         echo '<p><label for="az_tong_so_buoi">Tổng số buổi</label><br />';
-        echo '<input type="number" id="az_tong_so_buoi" name="az_tong_so_buoi" min="0" value="' . esc_attr($tong_so_buoi) . '" /></p>';
+        echo '<input type="number" id="az_tong_so_buoi" name="az_tong_so_buoi" min="0" value="' . esc_attr($tong_so_buoi) . '"' . $disabled . ' /></p>';
 
         echo '<p><label for="az_so_hoc_vien">Số học viên</label><br />';
-        echo '<input type="number" id="az_so_hoc_vien" name="az_so_hoc_vien" min="0" value="' . esc_attr($so_hoc_vien) . '" /></p>';
+        echo '<input type="number" id="az_so_hoc_vien" name="az_so_hoc_vien" min="0" value="' . esc_attr($so_hoc_vien) . '"' . $disabled . ' /></p>';
 
         $teachers = get_users(['role' => 'az_teacher']);
         echo '<p><label for="az_teacher_user">Giảng viên (User)</label><br />';
-        echo '<select id="az_teacher_user" name="az_teacher_user">';
+        echo '<select id="az_teacher_user" name="az_teacher_user"' . $disabled . '>';
         echo '<option value="">-- Chọn giảng viên --</option>';
         foreach ($teachers as $t) {
             $selected = selected(intval($teacher_user), intval($t->ID), false);
@@ -264,6 +269,8 @@ class AzAC_Core
         wp_nonce_field('azac_class_students_meta_box', 'azac_class_students_meta_nonce');
         $selected = get_post_meta($post->ID, 'az_students', true);
         $selected = is_array($selected) ? array_map('absint', $selected) : [];
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
 
         $students = get_posts([
             'post_type' => 'az_student',
@@ -271,20 +278,29 @@ class AzAC_Core
             'orderby' => 'title',
             'order' => 'ASC',
         ]);
-        echo '<div style="margin-bottom:12px;"><input type="text" id="azac_new_student_name" class="regular-text" placeholder="Họ và Tên học viên" /> ';
-        echo '<input type="email" id="azac_new_student_email" class="regular-text" placeholder="Email (tùy chọn)" /> ';
-        echo '<button type="button" class="button" id="azac_add_student_btn" data-class="' . esc_attr($post->ID) . '">Thêm học viên</button></div>';
-        echo '<div id="azac_students_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
-        foreach ($students as $s) {
-            $checked = in_array($s->ID, $selected, true) ? 'checked' : '';
-            echo '<label><input type="checkbox" name="az_students[]" value="' . esc_attr($s->ID) . '" ' . $checked . ' /> ' . esc_html($s->post_title) . '</label>';
+        if ($is_admin) {
+            echo '<div style="margin-bottom:12px;"><input type="text" id="azac_new_student_name" class="regular-text" placeholder="Họ và Tên học viên" /> ';
+            echo '<input type="email" id="azac_new_student_email" class="regular-text" placeholder="Email (tùy chọn)" /> ';
+            echo '<button type="button" class="button" id="azac_add_student_btn" data-class="' . esc_attr($post->ID) . '">Thêm học viên</button></div>';
+            echo '<div id="azac_students_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
+            foreach ($students as $s) {
+                $checked = in_array($s->ID, $selected, true) ? 'checked' : '';
+                echo '<label><input type="checkbox" name="az_students[]" value="' . esc_attr($s->ID) . '" ' . $checked . ' /> ' . esc_html($s->post_title) . '</label>';
+            }
+            echo '</div>';
+            $nonce = wp_create_nonce('azac_add_student');
+            echo '<script>window.azacClassEditData=' . wp_json_encode([
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => $nonce,
+            ]) . ';</script>';
+        } else {
+            echo '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
+            foreach ($students as $s) {
+                $checked = in_array($s->ID, $selected, true) ? '✓ ' : '';
+                echo '<div>' . esc_html($checked . $s->post_title) . '</div>';
+            }
+            echo '</div>';
         }
-        echo '</div>';
-        $nonce = wp_create_nonce('azac_add_student');
-        echo '<script>window.azacClassEditData=' . wp_json_encode([
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => $nonce,
-        ]) . ';</script>';
     }
 
     public function save_class_meta($post_id, $post)
@@ -302,6 +318,10 @@ class AzAC_Core
         }
 
         if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles, true)) {
             return;
         }
 
@@ -330,6 +350,10 @@ class AzAC_Core
             return;
         }
         if (!current_user_can('edit_post', $post_id)) {
+            return;
+        }
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles, true)) {
             return;
         }
         $ids = isset($_POST['az_students']) && is_array($_POST['az_students']) ? array_map('absint', $_POST['az_students']) : [];
@@ -442,6 +466,10 @@ class AzAC_Core
         if ($screen && $screen->post_type === 'az_class' && in_array($hook, ['post.php', 'post-new.php'], true)) {
             wp_enqueue_script('azac-class-edit-js', AZAC_CORE_URL . 'admin/js/class-edit.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_style('azac-class-edit-style', AZAC_CORE_URL . 'admin/css/class-edit.css', [], AZAC_CORE_VERSION);
+            $user = wp_get_current_user();
+            wp_localize_script('azac-class-edit-js', 'AZAC_CLASS_EDIT', [
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+            ]);
         }
         if ($hook === 'toplevel_page_azac-attendance') {
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
@@ -453,12 +481,29 @@ class AzAC_Core
                 'nonce' => wp_create_nonce('azac_create_class'),
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+                'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
             ]);
         }
         if ($hook === 'azac-attendance_page_azac-class-dashboard') {
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
             wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
+        }
+        if ($hook === 'azac-attendance_page_azac-classes-list') {
+            wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
+            if (!wp_script_is('azac-attendance-list-js', 'enqueued')) {
+                wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
+                $user = wp_get_current_user();
+                wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
+                    'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('azac_create_class'),
+                    'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
+                    'isTeacher' => in_array('az_teacher', $user->roles, true),
+                    'isAdmin' => in_array('administrator', $user->roles, true),
+                    'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                ]);
+            }
         }
         $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
         if ($page === 'azac-class-dashboard') {
@@ -593,12 +638,13 @@ class AzAC_Core
         echo '<div class="wrap"><h1>Quản lý điểm danh</h1>';
         $user = wp_get_current_user();
         $is_teacher = in_array('az_teacher', $user->roles, true);
+        $is_admin = in_array('administrator', $user->roles, true);
         echo '<div class="azac-tabs" style="margin-bottom:10px;">';
         // if ($is_teacher) {
         //     echo '<button class="button button-primary azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
         // }
         echo '</div>';
-        if ($is_teacher) {
+        if ($is_teacher || $is_admin) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
             echo '<div id="azac-sessions-grid" class="azac-grid">';
             echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
@@ -611,13 +657,19 @@ class AzAC_Core
     {
         echo '<div class="wrap"><h1>Lớp học</h1>';
         $user = wp_get_current_user();
-        $classes = get_posts([
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        $args = [
             'post_type' => 'az_class',
             'numberposts' => -1,
             'orderby' => 'date',
             'order' => 'DESC',
-        ]);
-        if (in_array('az_teacher', $user->roles, true)) {
+        ];
+        if ($is_admin || $is_teacher) {
+            $args['post_status'] = ['publish', 'pending'];
+        }
+        $classes = get_posts($args);
+        if ($is_teacher) {
             $classes = array_filter($classes, function ($c) use ($user) {
                 $teacher_user = intval(get_post_meta($c->ID, 'az_teacher_user', true));
                 return $teacher_user === intval($user->ID);
@@ -630,29 +682,50 @@ class AzAC_Core
                 return in_array($student_post_id, $ids, true);
             });
         }
-        echo '<div class="azac-inline-create">';
-        echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
-        echo '<input type="text" id="azac_new_class_teacher" class="regular-text" placeholder="Giảng viên (chuỗi)" />';
-        echo '<input type="number" id="azac_new_class_sessions" class="small-text" min="0" value="0" placeholder="Tổng số buổi" />';
-        echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
-        echo '</div>';
+        $is_admin = in_array('administrator', $user->roles, true);
+        if ($is_admin) {
+            echo '<div class="azac-inline-create">';
+            echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
+            echo '<input type="text" id="azac_new_class_teacher" class="regular-text" placeholder="Giảng viên (chuỗi)" />';
+            echo '<input type="number" id="azac_new_class_sessions" class="small-text" min="0" value="0" placeholder="Tổng số buổi" />';
+            echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
+            echo '</div>';
+        }
         echo '<div class="azac-grid">';
         foreach ($classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
             $tsb = intval(get_post_meta($c->ID, 'az_tong_so_buoi', true));
             $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
+            $status = get_post_status($c->ID);
+            $is_pending = ($status === 'pending');
             $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
             $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
             echo '<div class="azac-card">';
-            echo '<div class="azac-card-title">' . esc_html($c->post_title) . '</div>';
+            echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
             echo '<div class="azac-card-body">';
             echo '<div>Giảng viên: ' . esc_html($gv ?: 'Chưa gán') . '</div>';
             echo '<div>Tổng số buổi: ' . esc_html($tsb) . '</div>';
             echo '<div>Số học viên: ' . esc_html($shv) . '</div>';
             echo '</div>';
             echo '<div class="azac-card-actions">';
-            echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
-            echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+            if ($is_admin) {
+                if ($is_pending) {
+                    echo '<button class="button azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
+                } else {
+                    echo '<button class="button azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đặt Pending</button> ';
+                }
+                echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+            } elseif ($is_teacher) {
+                if ($is_pending) {
+                    echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
+                } else {
+                    echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                    echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+                }
+            } else {
+                echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+            }
             echo '</div>';
             echo '</div>';
         }
@@ -696,13 +769,15 @@ class AzAC_Core
                 if ($u)
                     $email = $u->user_email ?: '';
             }
-            $link_edit = admin_url('post.php?post=' . $s->ID . '&action=edit');
             echo '<div class="azac-card">';
             echo '<div class="azac-card-title">' . esc_html($name) . '</div>';
             echo '<div class="azac-card-body">';
             echo '<div>Tài khoản: ' . esc_html($email ?: 'Chưa liên kết') . '</div>';
             echo '</div>';
-            echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a></div>';
+            if (in_array('administrator', $user->roles, true)) {
+                $link_edit = admin_url('post.php?post=' . $s->ID . '&action=edit');
+                echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a></div>';
+            }
             echo '</div>';
         }
         echo '</div></div>';
@@ -800,16 +875,30 @@ class AzAC_Core
                 $gv = get_post_meta($c->ID, 'az_giang_vien', true);
                 $tsb = get_post_meta($c->ID, 'az_tong_so_buoi', true);
                 $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
+                $status = get_post_status($c->ID);
+                $is_pending = ($status === 'pending');
                 $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
                 $link_view = get_permalink($c->ID);
                 echo '<div class="azac-card">';
-                echo '<div class="azac-card-title">' . esc_html($c->post_title) . '</div>';
+                echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
                 echo '<div class="azac-card-body">';
                 echo '<div>Giảng viên: ' . esc_html($gv) . '</div>';
                 echo '<div>Tổng số buổi: ' . esc_html($tsb) . '</div>';
                 echo '<div>Sĩ số: ' . esc_html($shv) . '</div>';
                 echo '</div>';
-                echo '<div class="azac-card-actions"><a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
+                if (in_array('administrator', $user->roles, true)) {
+                    echo '<div class="azac-card-actions"><a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
+                } elseif (in_array('az_teacher', $user->roles, true)) {
+                    echo '<div class="azac-card-actions">';
+                    if ($is_pending) {
+                        echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
+                    } else {
+                        echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a>';
+                    }
+                    echo '</div>';
+                } else {
+                    echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
+                }
                 echo '</div>';
             }
             echo '</div></div>';
@@ -976,6 +1065,54 @@ class AzAC_Core
         }
         return $caps;
     }
+    public function prevent_teacher_pending($data, $postarr)
+    {
+        if (!is_admin())
+            return $data;
+        $post_type = isset($postarr['post_type']) ? $postarr['post_type'] : '';
+        $user = wp_get_current_user();
+        if (!$user || !in_array('az_teacher', $user->roles, true))
+            return $data;
+        $new_status = isset($data['post_status']) ? $data['post_status'] : '';
+        if ($new_status !== 'pending')
+            return $data;
+        $old_status = '';
+        $post_id = isset($postarr['ID']) ? absint($postarr['ID']) : 0;
+        if ($post_id) {
+            $old = get_post($post_id);
+            if ($old && $old->post_type === 'az_class') {
+                $old_status = $old->post_status;
+            }
+        }
+        if ($old_status === 'publish') {
+            $data['post_status'] = 'publish';
+        }
+        return $data;
+    }
+    public function ajax_update_class_status()
+    {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'azac_update_class_status')) {
+            wp_send_json_error(['message' => 'Nonce'], 403);
+        }
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $status = isset($_POST['status']) ? sanitize_text_field($_POST['status']) : '';
+        if (!$class_id || !in_array($status, ['publish', 'pending'], true)) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles, true)) {
+            wp_send_json_error(['message' => 'Capability'], 403);
+        }
+        $post = get_post($class_id);
+        if (!$post || $post->post_type !== 'az_class') {
+            wp_send_json_error(['message' => 'Not found'], 404);
+        }
+        $res = wp_update_post(['ID' => $class_id, 'post_status' => $status], true);
+        if (is_wp_error($res)) {
+            wp_send_json_error(['message' => 'Update failed'], 500);
+        }
+        wp_send_json_success(['id' => $class_id, 'status' => $status]);
+    }
 
     public function ajax_save_attendance()
     {
@@ -1103,17 +1240,23 @@ class AzAC_Core
     {
         check_ajax_referer('azac_list_sessions', 'nonce');
         $user = wp_get_current_user();
-        if (!in_array('az_teacher', $user->roles, true)) {
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        if (!$is_admin && !$is_teacher) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
-        $classes = get_posts([
+        $args = [
             'post_type' => 'az_class',
             'numberposts' => -1,
             'orderby' => 'date',
             'order' => 'DESC',
-            'meta_key' => 'az_teacher_user',
-            'meta_value' => intval($user->ID),
-        ]);
+            'post_status' => $is_admin ? ['publish', 'pending'] : ['publish'],
+        ];
+        if ($is_teacher && !$is_admin) {
+            $args['meta_key'] = 'az_teacher_user';
+            $args['meta_value'] = intval($user->ID);
+        }
+        $classes = get_posts($args);
         $out = [];
         foreach ($classes as $c) {
             $sessions = $this->get_class_sessions($c->ID);
@@ -1228,7 +1371,8 @@ class AzAC_Core
         if (!$title) {
             wp_send_json_error(['message' => 'Thiếu tên lớp'], 400);
         }
-        if (!current_user_can('edit_posts')) {
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles, true)) {
             wp_send_json_error(['message' => 'Không đủ quyền'], 403);
         }
         $post_id = wp_insert_post([

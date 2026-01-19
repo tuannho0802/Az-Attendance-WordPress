@@ -97,8 +97,48 @@
         );
       }
     );
+    $(document).on(
+      "click",
+      ".azac-status-btn",
+      function () {
+        if (!AZAC_LIST || !AZAC_LIST.isAdmin)
+          return;
+        var $btn = $(this);
+        var id =
+          parseInt($btn.data("id"), 10) || 0;
+        var status = String(
+          $btn.data("status") || ""
+        );
+        if (!id || !status) return;
+        var payload = {
+          action: "azac_update_class_status",
+          nonce: AZAC_LIST.updateStatusNonce,
+          class_id: id,
+          status: status,
+        };
+        $btn.prop("disabled", true);
+        $.post(
+          AZAC_LIST.ajaxUrl,
+          payload,
+          function (res) {
+            $btn.prop("disabled", false);
+            if (res && res.success) {
+              location.reload();
+            } else {
+              alert(
+                "Không thể cập nhật trạng thái lớp"
+              );
+            }
+          }
+        );
+      }
+    );
     function loadSessions() {
-      if (!AZAC_LIST || !AZAC_LIST.isTeacher)
+      if (
+        !AZAC_LIST ||
+        (!AZAC_LIST.isTeacher &&
+          !AZAC_LIST.isAdmin)
+      )
         return;
       var payload = {
         action: "azac_list_sessions",
@@ -161,7 +201,10 @@
       );
     }
     activateTab("#azac-tab-sessions");
-    if (AZAC_LIST && AZAC_LIST.isTeacher) {
+    if (
+      AZAC_LIST &&
+      (AZAC_LIST.isTeacher || AZAC_LIST.isAdmin)
+    ) {
       loadSessions();
     }
   });
