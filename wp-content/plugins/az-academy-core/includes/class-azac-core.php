@@ -1328,12 +1328,40 @@ class AzAC_Core
             $post = get_post($cid);
             if (!$post || $post->post_type !== 'az_class' || get_post_status($cid) !== 'publish')
                 continue;
+            $sess_table = $wpdb->prefix . 'az_sessions';
+            $att_table = $wpdb->prefix . 'az_attendance';
+            $sess_rows = $wpdb->get_results($wpdb->prepare("SELECT session_date FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC", $cid), ARRAY_A);
+            $att_rows = $wpdb->get_results($wpdb->prepare("SELECT session_date, attendance_type, status FROM {$att_table} WHERE class_id=%d AND student_id=%d", $cid, $student_post_id), ARRAY_A);
+            $att_map = [];
+            foreach ($att_rows as $ar) {
+                $d = sanitize_text_field($ar['session_date']);
+                if (!isset($att_map[$d])) {
+                    $att_map[$d] = ['checkin' => null, 'mid' => null];
+                }
+                if ($ar['attendance_type'] === 'check-in') {
+                    $att_map[$d]['checkin'] = intval($ar['status']) === 1 ? 1 : 0;
+                } else {
+                    $att_map[$d]['mid'] = intval($ar['status']) === 1 ? 1 : 0;
+                }
+            }
+            $sessions_detail = [];
+            foreach ($sess_rows as $sr) {
+                $d = sanitize_text_field($sr['session_date']);
+                $row = isset($att_map[$d]) ? $att_map[$d] : ['checkin' => null, 'mid' => null];
+                $sessions_detail[] = [
+                    'date' => $d,
+                    'checkin' => $row['checkin'],
+                    'mid' => $row['mid'],
+                    'link' => admin_url('admin.php?page=azac-class-dashboard&class_id=' . $cid . '&session_date=' . urlencode($d)),
+                ];
+            }
             $classes[] = [
                 'id' => $cid,
                 'title' => get_the_title($cid),
                 'link' => get_permalink($cid),
                 'checkin' => ['present' => $st['checkin_present'], 'absent' => $st['checkin_absent']],
                 'mid' => ['present' => $st['mid_present'], 'absent' => $st['mid_absent']],
+                'sessions' => $sessions_detail,
             ];
         }
         wp_send_json_success(['classes' => $classes]);

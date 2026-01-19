@@ -4,3 +4,13 @@
 .azac-tabs{display:flex;gap:8px;margin:8px 0}
 .azac-tab{display:none}
 .azac-tab.active{display:block}
+.azac-sessions-list{display:flex;flex-direction:column;gap:6px;margin-top:8px}
+.azac-session-row{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.azac-badge{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;line-height:18px;font-weight:600;color:#fff}
+.azac-badge--label{background:#f1f5f9;border:1px solid #e2e2e2;color:#333}
+.azac-badge--ci-present{background:#2ecc71}
+.azac-badge--ci-absent{background:#e74c3c}
+.azac-badge--ci-unknown{background:#bdc3c7;color:#333}
+.azac-badge--mid-present{background:#3498db}
+.azac-badge--mid-absent{background:#f39c12}
+.azac-badge--mid-unknown{background:#dfe6e9;color:#333}
