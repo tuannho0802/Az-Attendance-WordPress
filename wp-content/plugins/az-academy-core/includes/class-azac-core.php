@@ -44,6 +44,9 @@ class AzAC_Core
         add_action('wp_ajax_azac_list_sessions', [$this, 'ajax_list_sessions']);
         add_action('wp_ajax_azac_update_class_status', [$this, 'ajax_update_class_status']);
         add_action('wp_ajax_azac_delete_class', [$this, 'ajax_delete_class']);
+        add_action('wp_ajax_azac_generate_mid_pin', [$this, 'ajax_generate_mid_pin']);
+        add_action('wp_ajax_azac_close_mid_pin', [$this, 'ajax_close_mid_pin']);
+        add_action('wp_ajax_azac_mid_session_submit', [$this, 'ajax_mid_session_submit']);
         add_filter('manage_az_class_posts_columns', [$this, 'columns_az_class']);
         add_action('manage_az_class_posts_custom_column', [$this, 'column_content_az_class'], 10, 2);
         add_filter('manage_az_student_posts_columns', [$this, 'columns_az_student']);
@@ -552,6 +555,14 @@ class AzAC_Core
             if (!wp_script_is('azac-attendance-js', 'enqueued')) {
                 wp_enqueue_script('azac-attendance-js', AZAC_CORE_URL . 'admin/js/attendance.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
             }
+            $user = wp_get_current_user();
+            wp_localize_script('azac-attendance-js', 'AZAC_MID', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'midNonce' => wp_create_nonce('azac_mid'),
+                'closeNonce' => wp_create_nonce('azac_mid_close'),
+                'isTeacher' => in_array('az_teacher', $user->roles, true),
+                'isAdmin' => in_array('administrator', $user->roles, true),
+            ]);
         } elseif ($page === 'azac-classes-list') {
             wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
@@ -596,6 +607,27 @@ class AzAC_Core
             'meta_value' => $user_id,
         ]);
         return $posts ? $posts[0]->ID : 0;
+    }
+    private function is_student_in_class($student_post_id, $class_id)
+    {
+        $ids = get_post_meta($class_id, 'az_students', true);
+        $ids = is_array($ids) ? array_map('absint', $ids) : [];
+        return $student_post_id && in_array($student_post_id, $ids, true);
+    }
+    private function get_qr_checkin_url($class_id)
+    {
+        $pages = get_posts([
+            'post_type' => 'page',
+            'numberposts' => 1,
+            'meta_key' => '_wp_page_template',
+            'meta_value' => 'page-qr-checkin.php',
+            'post_status' => 'publish',
+        ]);
+        if ($pages) {
+            $url = get_permalink($pages[0]->ID);
+            return add_query_arg(['class_id' => $class_id], $url);
+        }
+        return add_query_arg(['class_id' => $class_id], site_url('/'));
     }
 
     private function get_attendance_stats($class_id)
@@ -1064,6 +1096,7 @@ class AzAC_Core
             echo '<input type="time" id="azac_session_time" value="" /> ';
             echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button> ';
             echo '<button class="button" id="azac_update_session_btn">Cập nhật buổi</button>';
+            echo ' <button class="button button-success" id="azac_start_mid_btn">Bắt đầu Điểm danh Giữa giờ</button>';
         }
         echo '</div>';
         echo '<h2 id="azac_session_title">Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($selected_date))) . '</h2>';
@@ -1097,14 +1130,26 @@ class AzAC_Core
             echo '<tr>';
             echo '<td>' . esc_html($i++) . '</td>';
             echo '<td>' . esc_html($s->post_title) . '</td>';
-            echo '<td><label class="azac-switch' . ($is_student ? ' azac-disabled' : '') . '"' . ($is_student ? ' title="Đã bị vô hiệu hóa"' : '') . '><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . ($is_student ? ' disabled' : '') . ' /><span class="azac-slider"></span></label></td>';
+            $disable_mid = ($is_student || $is_teacher) ? ' disabled' : '';
+            $disable_cls = ($is_student || $is_teacher) ? ' azac-disabled' : '';
+            $disable_tip = ($is_student || $is_teacher) ? ' title="Chỉ Admin có thể chỉnh sửa"' : '';
+            echo '<td><label class="azac-switch' . $disable_cls . '"' . $disable_tip . '><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . $disable_mid . ' /><span class="azac-slider"></span></label></td>';
             echo '<td><input type="text" class="regular-text azac-note-mid" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
-        if (!$is_student) {
+        if (!$is_student && !$is_teacher) {
             echo '<p><button class="button button-primary" id="azac-submit-mid" data-type="mid-session">Xác nhận điểm danh giữa giờ</button></p>';
         }
+        echo '</div>';
+        echo '<div id="azac-mid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">';
+        echo '<div style="background:#fff;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.2);padding:16px;max-width:640px;width:90%;display:flex;flex-direction:column;gap:12px">';
+        echo '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-weight:700;color:#0f6d5e">Điểm danh giữa giờ bằng QR + PIN</div><button type="button" class="button" id="azac_mid_close_modal">Đóng</button></div>';
+        echo '<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">';
+        echo '<div style="flex:1;min-width:240px;display:flex;align-items:center;justify-content:center"><img id="azac_mid_qr" alt="QR" style="width:280px;height:280px;border:1px solid #e2e2e2;border-radius:12px"/></div>';
+        echo '<div style="flex:1;min-width:240px"><div style="font-weight:600;margin-bottom:6px">Mã PIN</div><div id="azac_mid_pin" style="font-size:42px;font-weight:800;letter-spacing:4px;color:#0f6d5e">------</div><div style="margin-top:10px"><button type="button" class="button button-danger" id="azac_end_mid_btn">Kết thúc điểm danh</button></div></div>';
+        echo '</div>';
+        echo '</div>';
         echo '</div>';
 
         echo '<script>window.azacData=' . wp_json_encode([
@@ -1129,6 +1174,135 @@ class AzAC_Core
         echo '<script>(function(){function a(t,items){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var d=items&&items[id];if(d){el.checked=!!d.status;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');if(ne){ne.value=d.note||"";}}});}function f(t){var fd=new FormData();fd.append("action","azac_get_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.sessionDate||window.azacData.today);fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){a(t,res.data.items||{});}}).catch(function(){});}function s(t){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";var items=[];document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var st=el.checked?1:0;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');var nt=ne?String(ne.value||""):"";items.push({id:id,status:st,note:nt});});var fd=new FormData();fd.append("action","azac_save_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.sessionDate||window.azacData.today);items.forEach(function(it,i){fd.append("items["+i+"][id]",it.id);fd.append("items["+i+"][status]",it.status);fd.append("items["+i+"][note]",it.note);});fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){alert("Đã lưu "+res.data.inserted+" bản ghi");f(t);}else{alert("Lỗi lưu");}}).catch(function(){alert("Lỗi mạng");});}var b1=document.getElementById("azac-submit-checkin");if(b1){b1.addEventListener("click",function(){s("check-in");});}var b2=document.getElementById("azac-submit-mid");if(b2){b2.addEventListener("click",function(){s("mid-session");});}f("check-in");f("mid-session");})();</script>';
 
         echo '</div>';
+    }
+    public function ajax_generate_mid_pin()
+    {
+        check_ajax_referer('azac_mid', 'nonce');
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $session_date = isset($_POST['session_date']) ? sanitize_text_field($_POST['session_date']) : '';
+        if (!$class_id || !$session_date) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $today = current_time('Y-m-d');
+        if ($session_date !== $today) {
+            wp_send_json_error(['message' => 'Chỉ cho phép điểm danh trong ngày'], 403);
+        }
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        if (!$is_admin && !$is_teacher) {
+            wp_send_json_error(['message' => 'Capability'], 403);
+        }
+        if ($is_teacher) {
+            $assigned = intval(get_post_meta($class_id, 'az_teacher_user', true));
+            if ($assigned !== intval($user->ID)) {
+                wp_send_json_error(['message' => 'Capability'], 403);
+            }
+        }
+        global $wpdb;
+        $codes_table = $wpdb->prefix . 'az_session_codes';
+        $pin = AzAC_Core_Activator::generate_pin_code(6);
+        $wpdb->replace(
+            $codes_table,
+            [
+                'class_id' => $class_id,
+                'session_date' => $today,
+                'pin_code' => $pin,
+                'is_active' => 1,
+            ],
+            ['%d', '%s', '%s', '%d']
+        );
+        $url = $this->get_qr_checkin_url($class_id);
+        wp_send_json_success(['pin_code' => $pin, 'url' => $url]);
+    }
+    public function ajax_close_mid_pin()
+    {
+        check_ajax_referer('azac_mid_close', 'nonce');
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        if (!$class_id) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        if (!$is_admin && !$is_teacher) {
+            wp_send_json_error(['message' => 'Capability'], 403);
+        }
+        if ($is_teacher) {
+            $assigned = intval(get_post_meta($class_id, 'az_teacher_user', true));
+            if ($assigned !== intval($user->ID)) {
+                wp_send_json_error(['message' => 'Capability'], 403);
+            }
+        }
+        global $wpdb;
+        $codes_table = $wpdb->prefix . 'az_session_codes';
+        $today = current_time('Y-m-d');
+        $wpdb->update(
+            $codes_table,
+            ['is_active' => 0],
+            ['class_id' => $class_id, 'session_date' => $today],
+            ['%d'],
+            ['%d', '%s']
+        );
+        wp_send_json_success(['closed' => 1]);
+    }
+    public function ajax_mid_session_submit()
+    {
+        check_ajax_referer('azac_mid_submit', 'nonce');
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $pin_code = isset($_POST['pin_code']) ? sanitize_text_field($_POST['pin_code']) : '';
+        $rating = isset($_POST['rating']) ? absint($_POST['rating']) : 5;
+        $comment = isset($_POST['comment']) ? sanitize_textarea_field($_POST['comment']) : '';
+        if (!$class_id || !$pin_code) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        if (!$user || !in_array('az_student', $user->roles, true)) {
+            wp_send_json_error(['message' => 'Yêu cầu đăng nhập bằng Học viên'], 403);
+        }
+        $student_post_id = $this->get_current_student_post_id();
+        if (!$this->is_student_in_class($student_post_id, $class_id)) {
+            wp_send_json_error(['message' => 'Không thuộc lớp này'], 403);
+        }
+        global $wpdb;
+        $today = current_time('Y-m-d');
+        $codes_table = $wpdb->prefix . 'az_session_codes';
+        $row = $wpdb->get_row($wpdb->prepare("SELECT pin_code, is_active FROM {$codes_table} WHERE class_id=%d AND session_date=%s", $class_id, $today), ARRAY_A);
+        if (!$row || intval($row['is_active']) !== 1 || $row['pin_code'] !== $pin_code) {
+            wp_send_json_error(['message' => 'Mã PIN không chính xác hoặc đã hết hạn'], 400);
+        }
+        $att_table = $wpdb->prefix . 'az_attendance';
+        $exists = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$att_table} WHERE class_id=%d AND student_id=%d AND session_date=%s AND attendance_type='mid-session'", $class_id, $student_post_id, $today));
+        if (intval($exists) > 0) {
+            wp_send_json_error(['message' => 'Bạn đã điểm danh giữa giờ buổi này'], 400);
+        }
+        $feedback_table = $wpdb->prefix . 'az_feedback';
+        $wpdb->insert(
+            $feedback_table,
+            [
+                'student_id' => $student_post_id,
+                'class_id' => $class_id,
+                'session_date' => $today,
+                'rating' => max(1, min(5, $rating)),
+                'comment' => $comment,
+            ],
+            ['%d', '%d', '%s', '%d', '%s']
+        );
+        $fid = intval($wpdb->insert_id);
+        $wpdb->insert(
+            $att_table,
+            [
+                'class_id' => $class_id,
+                'student_id' => $student_post_id,
+                'session_date' => $today,
+                'attendance_type' => 'mid-session',
+                'status' => 1,
+                'note' => '',
+                'feedback_id' => $fid ?: null,
+            ],
+            ['%d', '%d', '%s', '%s', '%d', '%s', '%d']
+        );
+        wp_send_json_success(['success' => 1, 'feedback_id' => $fid]);
     }
 
     public function map_meta_cap_for_class($caps, $cap, $user_id, $args)

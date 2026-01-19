@@ -23,12 +23,14 @@ class AzAC_Core_Activator
             attendance_type varchar(20) NOT NULL,
             status tinyint(1) NOT NULL DEFAULT 0,
             note text NULL,
+            feedback_id bigint(20) unsigned NULL DEFAULT NULL,
             created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
             updated_at datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY class_id (class_id),
             KEY student_id (student_id),
             KEY session_date (session_date),
+            KEY feedback_id (feedback_id),
             UNIQUE KEY uniq_record (class_id, student_id, session_date, attendance_type)
         ) {$charset_collate};";
 
@@ -47,8 +49,42 @@ class AzAC_Core_Activator
             UNIQUE KEY uniq_class_date (class_id, session_date)
         ) {$charset_collate};";
 
+        $codes_table = $wpdb->prefix . 'az_session_codes';
+        $sql_codes = "CREATE TABLE {$codes_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            class_id bigint(20) unsigned NOT NULL,
+            session_date date NOT NULL,
+            pin_code varchar(6) NOT NULL,
+            is_active tinyint(1) NOT NULL DEFAULT 0,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY class_id (class_id),
+            KEY session_date (session_date),
+            KEY is_active (is_active),
+            UNIQUE KEY uniq_class_date (class_id, session_date)
+        ) {$charset_collate};";
+
+        $feedback_table = $wpdb->prefix . 'az_feedback';
+        $sql_feedback = "CREATE TABLE {$feedback_table} (
+            id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
+            student_id bigint(20) unsigned NOT NULL,
+            class_id bigint(20) unsigned NOT NULL,
+            session_date date NOT NULL,
+            rating tinyint(1) NOT NULL,
+            comment text NULL,
+            created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            updated_at datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+            PRIMARY KEY  (id),
+            KEY student_id (student_id),
+            KEY class_id (class_id),
+            KEY session_date (session_date)
+        ) {$charset_collate};";
+
         dbDelta($sql);
         dbDelta($sql_sessions);
+        dbDelta($sql_codes);
+        dbDelta($sql_feedback);
 
         add_option('azac_core_version', AZAC_CORE_VERSION);
         flush_rewrite_rules();
@@ -96,5 +132,13 @@ class AzAC_Core_Activator
             }
             remove_role($role_slug);
         }
+    }
+
+    public static function generate_pin_code($length = 6)
+    {
+        $length = max(4, min(8, intval($length)));
+        $max = (int) pow(10, $length) - 1;
+        $num = wp_rand(0, $max);
+        return str_pad((string) $num, $length, '0', STR_PAD_LEFT);
     }
 }
