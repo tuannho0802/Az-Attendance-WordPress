@@ -26,9 +26,11 @@ get_header();
     <aside>
         <?php dynamic_sidebar('primary'); ?>
     </aside>
+    <?php if (current_user_can('manage_options')): ?>
     <div style="margin-top:24px">
         <a class="button" href="<?php echo esc_url(admin_url('post.php?post='.get_the_ID().'&action=edit')); ?>">Chỉnh sửa lớp</a>
     </div>
+    <?php endif; ?>
 <?php
 get_footer();
 ?>

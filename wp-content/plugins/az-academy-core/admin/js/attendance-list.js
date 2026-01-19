@@ -179,7 +179,8 @@
       if (
         !AZAC_LIST ||
         (!AZAC_LIST.isTeacher &&
-          !AZAC_LIST.isAdmin)
+          !AZAC_LIST.isAdmin &&
+          !AZAC_LIST.isStudent)
       )
         return;
       var payload = {
@@ -228,7 +229,9 @@
                   "</div>",
                   '<div class="azac-card-actions"><a class="button button-primary" href="',
                   s.link,
-                  '">Vào điểm danh</a></div>',
+                  AZAC_LIST.isStudent
+                    ? '">Xem điểm danh</a></div>'
+                    : '">Vào điểm danh</a></div>',
                   "</div>",
                 ].join("");
               })
@@ -245,7 +248,9 @@
     activateTab("#azac-tab-sessions");
     if (
       AZAC_LIST &&
-      (AZAC_LIST.isTeacher || AZAC_LIST.isAdmin)
+      (AZAC_LIST.isTeacher ||
+        AZAC_LIST.isAdmin ||
+        AZAC_LIST.isStudent)
     ) {
       loadSessions();
     }
