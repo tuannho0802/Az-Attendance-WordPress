@@ -19,6 +19,11 @@
         "#azac-tab-sessions"
       ) {
         loadSessions();
+      } else if (
+        $(this).data("target") ===
+        "#azac-tab-stats"
+      ) {
+        loadStudentStats();
       }
     });
     $("#azac_create_class_btn").on(
@@ -245,14 +250,161 @@
         }
       );
     }
-    activateTab("#azac-tab-sessions");
-    if (
-      AZAC_LIST &&
-      (AZAC_LIST.isTeacher ||
-        AZAC_LIST.isAdmin ||
-        AZAC_LIST.isStudent)
+    function renderChart(
+      id,
+      present,
+      absent,
+      title
     ) {
-      loadSessions();
+      var el = document.getElementById(id);
+      if (!el) return;
+      var existing =
+        window.Chart && window.Chart.getChart
+          ? window.Chart.getChart(el)
+          : null;
+      if (existing) {
+        existing.data.datasets[0].data = [
+          present,
+          absent,
+        ];
+        existing.options.plugins.centerText.value =
+          Math.round(
+            (present /
+              Math.max(1, present + absent)) *
+              100
+          ) + "%";
+        existing.update();
+        return;
+      }
+      if (typeof Chart === "undefined") return;
+      var pct = Math.round(
+        (present /
+          Math.max(1, present + absent)) *
+          100
+      );
+      new Chart(el, {
+        type: "doughnut",
+        data: {
+          labels: ["Có mặt", "Vắng mặt"],
+          datasets: [
+            {
+              data: [present, absent],
+              backgroundColor:
+                title === "Đầu giờ"
+                  ? ["#2ecc71", "#e74c3c"]
+                  : ["#3498db", "#f39c12"],
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          cutout: "70%",
+          plugins: {
+            legend: { position: "top" },
+            centerText: {
+              title: title,
+              value: pct + "%",
+            },
+          },
+        },
+      });
+    }
+    function loadStudentStats() {
+      if (!AZAC_LIST || !AZAC_LIST.isStudent)
+        return;
+      var payload = {
+        action: "azac_student_stats",
+        nonce: AZAC_LIST.studentStatsNonce,
+      };
+      var $grid = $("#azac-stats-grid").html(
+        '<div class="azac-card"><div class="azac-card-title">Đang tải...</div></div>'
+      );
+      $.post(
+        AZAC_LIST.ajaxUrl,
+        payload,
+        function (res) {
+          if (
+            res &&
+            res.success &&
+            res.data &&
+            res.data.classes
+          ) {
+            if (!res.data.classes.length) {
+              $grid.html(
+                '<div class="azac-card"><div class="azac-card-title">Chưa có dữ liệu điểm danh</div></div>'
+              );
+              return;
+            }
+            var html = res.data.classes
+              .map(function (c) {
+                return [
+                  '<div class="azac-card">',
+                  '<div class="azac-card-title">',
+                  c.title,
+                  "</div>",
+                  '<div class="azac-card-body">',
+                  '<div class="azac-chart-row">',
+                  '<div class="azac-chart-box"><canvas id="azstc-',
+                  c.id,
+                  '"></canvas></div>',
+                  '<div class="azac-chart-box"><canvas id="azstm-',
+                  c.id,
+                  '"></canvas></div>',
+                  "</div>",
+                  "</div>",
+                  '<div class="azac-card-actions"><a class="button button-primary" href="',
+                  c.link,
+                  '">Xem lớp</a></div>',
+                  "</div>",
+                ].join("");
+              })
+              .join("");
+            $grid.html(html);
+            res.data.classes.forEach(
+              function (c) {
+                renderChart(
+                  "azstc-" + c.id,
+                  parseInt(
+                    c.checkin.present,
+                    10
+                  ) || 0,
+                  parseInt(
+                    c.checkin.absent,
+                    10
+                  ) || 0,
+                  "Đầu giờ"
+                );
+                renderChart(
+                  "azstm-" + c.id,
+                  parseInt(c.mid.present, 10) ||
+                    0,
+                  parseInt(c.mid.absent, 10) ||
+                    0,
+                  "Giữa giờ"
+                );
+              }
+            );
+          } else {
+            $grid.html(
+              '<div class="azac-card"><div class="azac-card-title">Không tải được thống kê</div></div>'
+            );
+          }
+        }
+      );
+    }
+    if (AZAC_LIST && AZAC_LIST.isStudent) {
+      activateTab("#azac-tab-stats");
+      loadStudentStats();
+    } else {
+      activateTab("#azac-tab-sessions");
+      if (
+        AZAC_LIST &&
+        (AZAC_LIST.isTeacher ||
+          AZAC_LIST.isAdmin ||
+          AZAC_LIST.isStudent)
+      ) {
+        loadSessions();
+      }
     }
   });
 })(jQuery);

@@ -477,6 +477,98 @@
         submit("mid-session");
       }
     );
+    $(document).on(
+      "change",
+      ".azac-status",
+      function () {
+        var id =
+          parseInt(
+            $(this).data("student"),
+            10
+          ) || 0;
+        if (!id) return;
+        var note = String(
+          $(
+            '.azac-note[data-student="' +
+              id +
+              '"]'
+          ).val() || ""
+        );
+        var payload = {
+          action: "azac_save_attendance",
+          nonce: window.azacData.nonce,
+          class_id: window.azacData.classId,
+          type: "check-in",
+          session_date:
+            window.azacData.sessionDate ||
+            window.azacData.today,
+          items: [
+            {
+              id: id,
+              status: $(this).is(":checked")
+                ? 1
+                : 0,
+              note: note,
+            },
+          ],
+        };
+        $.post(
+          window.azacData.ajaxUrl,
+          payload,
+          function (res) {
+            if (res && res.success) {
+              fetchExisting("check-in");
+            }
+          }
+        );
+      }
+    );
+    $(document).on(
+      "change",
+      ".azac-status-mid",
+      function () {
+        var id =
+          parseInt(
+            $(this).data("student"),
+            10
+          ) || 0;
+        if (!id) return;
+        var note = String(
+          $(
+            '.azac-note-mid[data-student="' +
+              id +
+              '"]'
+          ).val() || ""
+        );
+        var payload = {
+          action: "azac_save_attendance",
+          nonce: window.azacData.nonce,
+          class_id: window.azacData.classId,
+          type: "mid-session",
+          session_date:
+            window.azacData.sessionDate ||
+            window.azacData.today,
+          items: [
+            {
+              id: id,
+              status: $(this).is(":checked")
+                ? 1
+                : 0,
+              note: note,
+            },
+          ],
+        };
+        $.post(
+          window.azacData.ajaxUrl,
+          payload,
+          function (res) {
+            if (res && res.success) {
+              fetchExisting("mid-session");
+            }
+          }
+        );
+      }
+    );
     fetchExisting("check-in");
     fetchExisting("mid-session");
     updateSessionTitle(

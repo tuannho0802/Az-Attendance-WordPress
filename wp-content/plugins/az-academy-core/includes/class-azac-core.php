@@ -22,6 +22,7 @@ class AzAC_Core
         add_action('init', [$this, 'register_cpt_student']);
         add_action('init', [$this, 'ensure_sessions_table'], 1);
         add_action('admin_init', [$this, 'redirect_cpt_list_to_custom']);
+        add_action('wp_ajax_azac_student_stats', [$this, 'ajax_student_stats']);
         add_action('init', [$this, 'ensure_teacher_caps'], 2);
         add_action('add_meta_boxes', [$this, 'add_class_meta_boxes']);
         add_action('add_meta_boxes', [$this, 'add_class_students_meta_box']);
@@ -496,6 +497,7 @@ class AzAC_Core
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
             wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-list-js', AZAC_CORE_URL . 'admin/js/attendance-list.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
             $user = wp_get_current_user();
             wp_localize_script('azac-attendance-list-js', 'AZAC_LIST', [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
@@ -505,6 +507,7 @@ class AzAC_Core
                 'isAdmin' => in_array('administrator', $user->roles, true),
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
+                'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
             ]);
         }
         if ($hook === 'azac-attendance_page_azac-class-dashboard') {
@@ -690,9 +693,10 @@ class AzAC_Core
         $is_admin = in_array('administrator', $user->roles, true);
         $is_student = in_array('az_student', $user->roles, true);
         echo '<div class="azac-tabs" style="margin-bottom:10px;">';
-        // if ($is_teacher) {
-        //     echo '<button class="button button-primary azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
-        // }
+        echo '<button class="button azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
+        if ($is_student) {
+            echo ' <button class="button azac-tab-btn" data-target="#azac-tab-stats">Thống kê điểm danh</button>';
+        }
         echo '</div>';
         if ($is_teacher || $is_admin || $is_student) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
@@ -700,6 +704,13 @@ class AzAC_Core
             echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
             echo '</div>';
             echo '</div>';
+            if ($is_student) {
+                echo '<div id="azac-tab-stats" class="azac-tab">';
+                echo '<div id="azac-stats-grid" class="azac-grid">';
+                echo '<div class="azac-card"><div class="azac-card-title">Đang tải thống kê...</div></div>';
+                echo '</div>';
+                echo '</div>';
+            }
         }
         echo '</div>';
     }
@@ -1274,6 +1285,58 @@ class AzAC_Core
             $map[intval($r['student_id'])] = ['status' => intval($r['status']), 'note' => $r['note']];
         }
         wp_send_json_success(['items' => $map]);
+    }
+    public function ajax_student_stats()
+    {
+        check_ajax_referer('azac_student_stats', 'nonce');
+        $user = wp_get_current_user();
+        if (!$user || !in_array('az_student', $user->roles, true)) {
+            wp_send_json_error(['message' => 'Capability'], 403);
+        }
+        $student_post_id = $this->get_current_student_post_id();
+        if (!$student_post_id) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_attendance';
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT class_id, attendance_type, status, COUNT(*) as c FROM {$table} WHERE student_id=%d GROUP BY class_id, attendance_type, status", $student_post_id), ARRAY_A);
+        $map = [];
+        foreach ($rows as $r) {
+            $cid = intval($r['class_id']);
+            if (!isset($map[$cid])) {
+                $map[$cid] = [
+                    'checkin_present' => 0,
+                    'checkin_absent' => 0,
+                    'mid_present' => 0,
+                    'mid_absent' => 0,
+                ];
+            }
+            if ($r['attendance_type'] === 'check-in') {
+                if (intval($r['status']) === 1)
+                    $map[$cid]['checkin_present'] += intval($r['c']);
+                else
+                    $map[$cid]['checkin_absent'] += intval($r['c']);
+            } else {
+                if (intval($r['status']) === 1)
+                    $map[$cid]['mid_present'] += intval($r['c']);
+                else
+                    $map[$cid]['mid_absent'] += intval($r['c']);
+            }
+        }
+        $classes = [];
+        foreach ($map as $cid => $st) {
+            $post = get_post($cid);
+            if (!$post || $post->post_type !== 'az_class' || get_post_status($cid) !== 'publish')
+                continue;
+            $classes[] = [
+                'id' => $cid,
+                'title' => get_the_title($cid),
+                'link' => get_permalink($cid),
+                'checkin' => ['present' => $st['checkin_present'], 'absent' => $st['checkin_absent']],
+                'mid' => ['present' => $st['mid_present'], 'absent' => $st['mid_absent']],
+            ];
+        }
+        wp_send_json_success(['classes' => $classes]);
     }
     public function ajax_add_session()
     {
