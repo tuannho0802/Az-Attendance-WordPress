@@ -31,14 +31,6 @@ class AzAC_Admin_Pages
             'azac-students-list',
             [__CLASS__, 'render_students_list_page']
         );
-        add_submenu_page(
-            'azac-attendance',
-            'Chi tiết lớp',
-            'Chi tiết lớp',
-            'read',
-            'azac-class-dashboard',
-            [__CLASS__, 'render_class_dashboard_page']
-        );
     }
     public static function render_attendance_list_page()
     {
@@ -82,6 +74,11 @@ class AzAC_Admin_Pages
     }
     public static function render_classes_list_page()
     {
+        $class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+        if ($class_id) {
+            self::render_class_dashboard_page();
+            return;
+        }
         echo '<div class="wrap"><h1>Lớp học</h1>';
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
@@ -130,7 +127,7 @@ class AzAC_Admin_Pages
             $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
             $status = get_post_status($c->ID);
             $is_pending = ($status === 'pending');
-            $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
+            $link_dashboard = admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID);
             $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
             $link_view = get_permalink($c->ID);
             echo '<div class="azac-card">';
@@ -149,13 +146,17 @@ class AzAC_Admin_Pages
                 }
                 echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                 echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
+                if (!$is_pending) {
+                    echo '<a class="button" href="' . esc_url($link_view) . '">Vào lớp</a> ';
+                }
                 echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
             } elseif ($is_teacher) {
                 if ($is_pending) {
                     echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
                 } else {
                     echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
-                    echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
+                    echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
+                    echo '<a class="button" href="' . esc_url($link_view) . '">Vào lớp</a>';
                 }
             } else {
                 echo '<a class="button button-primary" href="' . esc_url($link_view) . '">Xem lớp</a>';
@@ -260,7 +261,7 @@ class AzAC_Admin_Pages
                 $is_pending = ($status === 'pending');
                 $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
                 $link_view = get_permalink($c->ID);
-                $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
+                $link_dashboard = admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID);
                 echo '<div class="azac-card">';
                 echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
                 echo '<div class="azac-card-body">';

@@ -327,7 +327,7 @@
                     class_id: s.class_id,
                     class_title: s.class_title,
                     link:
-                      "admin.php?page=azac-class-dashboard&class_id=" +
+                      "admin.php?page=azac-classes-list&class_id=" +
                       s.class_id,
                     checkin: {
                       present: 0,

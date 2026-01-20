@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('AZAC_CORE_VERSION', '0.1.2');
+define('AZAC_CORE_VERSION', '0.1.3');
 define('AZAC_CORE_DIR', plugin_dir_path(__FILE__));
 define('AZAC_CORE_URL', plugin_dir_url(__FILE__));
 

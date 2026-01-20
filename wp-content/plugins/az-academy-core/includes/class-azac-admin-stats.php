@@ -105,7 +105,7 @@ class AzAC_Admin_Stats
                     'date' => $d,
                     'checkin' => $row['checkin'],
                     'mid' => $row['mid'],
-                    'link' => admin_url('admin.php?page=azac-class-dashboard&class_id=' . $cid . '&session_date=' . urlencode($d)),
+                    'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $cid . '&session_date=' . urlencode($d)),
                 ];
             }
             $classes[] = [

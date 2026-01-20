@@ -208,7 +208,7 @@ class AzAC_Core_Sessions
                     'class_title' => $c->post_title,
                     'date' => $s['date'],
                     'time' => $s['time'],
-                    'link' => admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID . '&session_date=' . urlencode($s['date'])),
+                    'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID . '&session_date=' . urlencode($s['date'])),
                     'checkin' => ['present' => $checkin_present, 'absent' => $checkin_absent],
                     'mid' => ['present' => $mid_present, 'absent' => $mid_absent],
                     'rate' => ['checkin' => $rate_checkin, 'mid' => $rate_mid, 'overall' => $rate_overall],

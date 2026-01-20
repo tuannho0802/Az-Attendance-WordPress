@@ -315,7 +315,7 @@ class AzAC_Core_Admin
             $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
             $status = get_post_status($c->ID);
             $is_pending = ($status === 'pending');
-            $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
+            $link_dashboard = admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID);
             $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
             $link_view = get_permalink($c->ID);
             echo '<div class="azac-card">';
@@ -445,7 +445,7 @@ class AzAC_Core_Admin
                 $is_pending = ($status === 'pending');
                 $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
                 $link_view = get_permalink($c->ID);
-                $link_dashboard = admin_url('admin.php?page=azac-class-dashboard&class_id=' . $c->ID);
+                $link_dashboard = admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID);
                 echo '<div class="azac-card">';
                 echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
                 echo '<div class="azac-card-body">';

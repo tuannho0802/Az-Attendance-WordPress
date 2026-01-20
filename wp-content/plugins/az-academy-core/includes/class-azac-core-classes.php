@@ -100,7 +100,7 @@ class AzAC_Core_Classes
         wp_send_json_success([
             'id' => $post_id,
             'title' => get_the_title($post_id),
-            'link' => admin_url('admin.php?page=azac-class-dashboard&class_id=' . $post_id),
+            'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $post_id),
         ]);
     }
 }
