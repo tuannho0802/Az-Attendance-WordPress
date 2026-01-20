@@ -38,15 +38,24 @@ class AzAC_Core_Helper
         $ids = is_array($ids) ? array_map('absint', $ids) : [];
         return $student_post_id && in_array($student_post_id, $ids, true);
     }
-    public static function get_qr_checkin_url($class_id)
+    public static function get_qr_review_url($class_id)
     {
         $pages = get_posts([
             'post_type' => 'page',
             'numberposts' => 1,
             'meta_key' => '_wp_page_template',
-            'meta_value' => 'page-qr-checkin.php',
+            'meta_value' => 'page-qr-review.php',
             'post_status' => 'publish',
         ]);
+        if (!$pages) {
+            $pages = get_posts([
+                'post_type' => 'page',
+                'numberposts' => 1,
+                'meta_key' => '_wp_page_template',
+                'meta_value' => 'page-qr-checkin.php',
+                'post_status' => 'publish',
+            ]);
+        }
         if ($pages) {
             $url = get_permalink($pages[0]->ID);
             return add_query_arg(['class_id' => $class_id], $url);

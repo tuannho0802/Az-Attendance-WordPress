@@ -10,7 +10,8 @@
 <header style="background:#0b3d3b;color:#fff">
     <div class="container" style="display:flex;align-items:center;justify-content:space-between">
         <div><a href="<?php echo esc_url(home_url('/')); ?>" style="color:#fff;text-decoration:none">Az Academy</a></div>
-        <?php wp_nav_menu(['theme_location'=>'primary','container'=>'nav','menu_class'=>'menu']); ?>
+        <?php if (has_nav_menu('primary')) {
+            wp_nav_menu(['theme_location'=>'primary','container'=>'nav','menu_class'=>'menu','fallback_cb'=>false]);
+        } ?>
     </div>
 </header>
-
