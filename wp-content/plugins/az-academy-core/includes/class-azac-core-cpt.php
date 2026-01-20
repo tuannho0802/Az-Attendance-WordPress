@@ -8,6 +8,9 @@ class AzAC_Core_CPT
     {
         add_action('init', [__CLASS__, 'register_cpt_class']);
         add_action('init', [__CLASS__, 'register_cpt_student']);
+        add_action('init', [__CLASS__, 'add_rewrite_rules'], 11);
+        add_filter('request', [__CLASS__, 'map_request']);
+        add_filter('post_type_link', [__CLASS__, 'filter_class_permalink'], 10, 2);
         add_action('add_meta_boxes', [__CLASS__, 'add_class_meta_boxes']);
         add_action('add_meta_boxes', [__CLASS__, 'add_class_students_meta_box']);
         add_action('save_post_az_class', [__CLASS__, 'save_class_meta'], 10, 2);
@@ -43,6 +46,8 @@ class AzAC_Core_CPT
             'supports' => ['title', 'editor', 'thumbnail', 'excerpt'],
             'capability_type' => 'post',
             'rewrite' => ['slug' => 'lop-hoc', 'with_front' => false],
+            'publicly_queryable' => true,
+            'query_var' => 'az_class',
         ];
         register_post_type('az_class', $args);
         register_post_meta('az_class', 'az_giang_vien', [
@@ -205,6 +210,30 @@ class AzAC_Core_CPT
         ]);
         register_post_type('az_student', $args);
     }
+    public static function add_rewrite_rules()
+    {
+        add_rewrite_rule('^lop-hoc/([^/]+)/?$', 'index.php?az_class=$matches[1]', 'top');
+        add_rewrite_rule('^lop-hoc/?$', 'index.php?post_type=az_class', 'top');
+    }
+    public static function filter_class_permalink($permalink, $post)
+    {
+        if ($post && $post->post_type === 'az_class') {
+            return home_url('lop-hoc/' . $post->post_name . '/');
+        }
+        return $permalink;
+    }
+    public static function map_request($vars)
+    {
+        if (isset($vars['pagename']) && is_string($vars['pagename'])) {
+            if (preg_match('#^lop-hoc/([^/]+)$#', $vars['pagename'], $m)) {
+                $vars['post_type'] = 'az_class';
+                $vars['name'] = $m[1];
+                unset($vars['pagename']);
+            }
+        }
+        return $vars;
+    }
+
     public static function add_class_meta_boxes()
     {
         add_meta_box(
