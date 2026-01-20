@@ -157,6 +157,31 @@
   gap: 2px;
   font-size: 16px;
 }
+.azac-review-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.azac-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #0f6d5e;
+  color: #fff;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.azac-badge {
+  background: #106d5e1a;
+  color: #0f6d5e;
+  border: 1px solid #0f6d5e;
+  border-radius: 999px;
+  padding: 2px 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
 .azac-review-comment {
   color: #333;
   margin-top: 4px;
@@ -165,6 +190,21 @@
   color: #777;
   font-size: 12px;
   margin-top: 2px;
+}
+#azacReviewsAvg.azac-grade-good {
+  color: #2ecc71;
+  font-weight: 700;
+  font-size: 20px;
+}
+#azacReviewsAvg.azac-grade-mid {
+  color: #f39c12;
+  font-weight: 700;
+  font-size: 20px;
+}
+#azacReviewsAvg.azac-grade-bad {
+  color: #e74c3c;
+  font-weight: 700;
+  font-size: 20px;
 }
 @media (max-width: 900px) {
   .azac-reviews-grid {

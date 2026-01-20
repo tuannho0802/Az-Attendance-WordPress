@@ -185,11 +185,14 @@ class AzAC_Admin_Stats
                 'date' => sanitize_text_field($it['session_date']),
             ];
         }
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $sess_rows = $wpdb->get_col($wpdb->prepare("SELECT session_date FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC", $class_id));
         wp_send_json_success([
             'total' => $total,
             'average' => round($avg, 1),
             'counts' => $counts,
             'items' => $list,
+            'sessions' => array_map('sanitize_text_field', (array) $sess_rows),
         ]);
     }
 }
