@@ -258,10 +258,8 @@
             }
             function renderInlineBar(
               id,
-              ciPresent,
-              ciAbsent,
-              midPresent,
-              midAbsent
+              presentTotal,
+              absentTotal,
             ) {
               var el =
                 document.getElementById(id);
@@ -271,12 +269,8 @@
                 window.Chart.getChart
                   ? window.Chart.getChart(el)
                   : null;
-              var p =
-                (ciPresent || 0) +
-                (midPresent || 0);
-              var a =
-                (ciAbsent || 0) +
-                (midAbsent || 0);
+              var p = presentTotal || 0;
+              var a = absentTotal || 0;
               if (ex) {
                 ex.data.datasets[0].data = [
                   p,
@@ -338,7 +332,13 @@
                       absent: 0,
                     },
                     latest: s.date,
+                    total: parseInt(s.total, 10) || 0,
+                    _session_count: 0,
                   };
+                }
+                byClass[k]._session_count++;
+                if (!byClass[k].total) {
+                  byClass[k].total = parseInt(s.total, 10) || byClass[k].total;
                 }
                 byClass[k].checkin.present +=
                   (s.checkin &&
@@ -356,20 +356,29 @@
                   byClass[k].latest = s.date;
               });
               var arr = Object.keys(
-                byClass
+                byClass,
               ).map(function (k) {
                 var o = byClass[k];
-                var rp =
+                var present =
                   o.checkin.present +
                     o.mid.present || 0;
-                var ra =
-                  o.checkin.absent +
-                    o.mid.absent || 0;
+                var totalSessions =
+                  o._session_count || 0;
+                var totalRoster = o.total || 0;
+                var grandTotal = Math.max(
+                  1,
+                  totalSessions *
+                    2 *
+                    totalRoster,
+                );
+                var absent = Math.max(
+                  0,
+                  grandTotal - present,
+                );
                 var rate =
                   Math.round(
-                    (rp /
-                      Math.max(1, rp + ra)) *
-                      100
+                    (present / grandTotal) *
+                      100,
                   ) || 0;
                 return {
                   class_id: o.class_id,
@@ -377,6 +386,9 @@
                   link: o.link,
                   checkin: o.checkin,
                   mid: o.mid,
+                  total: o.total,
+                  grandTotal: grandTotal,
+                  presentSum: present,
                   rate: rate,
                   latest: o.latest,
                 };
@@ -414,20 +426,15 @@
                       .getClassColor ===
                       "function"
                       ? window.AZACU.getClassColor(
-                          c.class_id
+                          c.class_id,
                         )
                       : "#3498db";
-                  var p =
-                    (c.checkin &&
-                      c.checkin.present) +
-                      (c.mid &&
-                        c.mid.present) || 0;
-                  var a =
-                    (c.checkin &&
-                      c.checkin.absent) +
-                      (c.mid && c.mid.absent) ||
-                    0;
-                  var t = Math.max(1, p + a);
+                  var p = c.presentSum || 0;
+                  var t = Math.max(
+                    1,
+                    c.grandTotal || 0,
+                  );
+                  var a = Math.max(0, t - p);
                   var pp =
                     Math.round((p / t) * 100) ||
                     0;
@@ -489,13 +496,15 @@
                       renderInlineBar(
                         "azpie-class-" +
                           c.class_id,
-                        c.checkin.present,
-                        c.checkin.absent,
-                        c.mid.present,
-                        c.mid.absent
+                        c.presentSum || 0,
+                        Math.max(
+                          0,
+                          (c.grandTotal || 0) -
+                            (c.presentSum || 0),
+                        ),
                       );
                     });
-                  }
+                  },
                 );
               }
             }
@@ -509,7 +518,7 @@
                   )
                     return false;
                   return true;
-                }
+                },
               );
               var arr = sortSessions(filtered);
               var html = arr
@@ -519,7 +528,7 @@
                     "-" +
                     String(s.date).replace(
                       /[^0-9]/g,
-                      ""
+                      "",
                     );
                   var color =
                     window.AZACU &&
@@ -527,26 +536,29 @@
                       .getClassColor ===
                       "function"
                       ? window.AZACU.getClassColor(
-                          s.class_id
+                          s.class_id,
                         )
                       : "#3498db";
+                  var total =
+                    parseInt(s.total, 10) || 0;
                   var p =
-                    ((s.checkin &&
-                      s.checkin.present) ||
-                      (s.checkin === 1
-                        ? 1
-                        : 0)) +
-                    ((s.mid && s.mid.present) ||
-                      (s.mid === 1 ? 1 : 0));
-                  var a =
-                    ((s.checkin &&
-                      s.checkin.absent) ||
-                      (s.checkin === 0
-                        ? 1
-                        : 0)) +
-                    ((s.mid && s.mid.absent) ||
-                      (s.mid === 0 ? 1 : 0));
-                  var t = Math.max(1, p + a);
+                    parseInt(
+                      (s.checkin &&
+                        s.checkin.present) ||
+                        0,
+                      10,
+                    ) +
+                      parseInt(
+                        (s.mid &&
+                          s.mid.present) ||
+                          0,
+                        10,
+                      ) || 0;
+                  var t = Math.max(
+                    1,
+                    total * 2,
+                  );
+                  var a = Math.max(0, t - p);
                   var pp =
                     Math.round((p / t) * 100) ||
                     0;
@@ -618,25 +630,40 @@
                         "-" +
                         String(s.date).replace(
                           /[^0-9]/g,
-                          ""
+                          "",
                         );
+                      var total =
+                        parseInt(s.total, 10) ||
+                        0;
+                      var p =
+                        parseInt(
+                          (s.checkin &&
+                            s.checkin
+                              .present) ||
+                            0,
+                          10,
+                        ) +
+                          parseInt(
+                            (s.mid &&
+                              s.mid.present) ||
+                              0,
+                            10,
+                          ) || 0;
+                      var t = Math.max(
+                        1,
+                        total * 2,
+                      );
+                      var a = Math.max(
+                        0,
+                        t - p,
+                      );
                       renderInlineBar(
                         "azpie-sess-" + id,
-                        (s.checkin &&
-                          s.checkin.present) ||
-                          0,
-                        (s.checkin &&
-                          s.checkin.absent) ||
-                          0,
-                        (s.mid &&
-                          s.mid.present) ||
-                          0,
-                        (s.mid &&
-                          s.mid.absent) ||
-                          0
+                        p,
+                        a,
                       );
                     });
-                  }
+                  },
                 );
               }
             }

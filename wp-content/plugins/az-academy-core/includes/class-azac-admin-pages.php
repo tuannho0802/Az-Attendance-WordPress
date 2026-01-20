@@ -336,7 +336,6 @@ class AzAC_Admin_Pages
             return;
         }
         $students = AzAC_Core_Helper::get_class_students($class_id);
-        $stats = AzAC_Admin_Stats::get_attendance_stats($class_id);
         $teacher_name = get_post_meta($class_id, 'az_giang_vien', true);
         $teacher_user_id = intval(get_post_meta($class_id, 'az_teacher_user', true));
         if (!$teacher_name && $teacher_user_id) {
@@ -351,6 +350,30 @@ class AzAC_Admin_Pages
         $selected_date = isset($_GET['session_date']) ? sanitize_text_field($_GET['session_date']) : '';
         if (!$selected_date) {
             $selected_date = $sessions_meta ? $sessions_meta[count($sessions_meta) - 1]['date'] : $today;
+        }
+        global $wpdb;
+        $att_table = $wpdb->prefix . 'az_attendance';
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT attendance_type, status, COUNT(*) as c FROM {$att_table} WHERE class_id=%d AND session_date=%s GROUP BY attendance_type, status", $class_id, $selected_date), ARRAY_A);
+        $stats = [
+            'checkin_present' => 0,
+            'checkin_absent' => 0,
+            'mid_present' => 0,
+            'mid_absent' => 0,
+        ];
+        foreach ($rows as $r) {
+            if ($r['attendance_type'] === 'check-in') {
+                if (intval($r['status']) === 1) {
+                    $stats['checkin_present'] += intval($r['c']);
+                } else {
+                    $stats['checkin_absent'] += intval($r['c']);
+                }
+            } else {
+                if (intval($r['status']) === 1) {
+                    $stats['mid_present'] += intval($r['c']);
+                } else {
+                    $stats['mid_absent'] += intval($r['c']);
+                }
+            }
         }
         $sessions_count = 1;
         foreach ($sessions_meta as $idx => $s) {

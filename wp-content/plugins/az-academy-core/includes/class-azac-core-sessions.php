@@ -200,6 +200,9 @@ class AzAC_Core_Sessions
                             $mid_absent += intval($ar['c']);
                     }
                 }
+                $ids = get_post_meta($c->ID, 'az_students', true);
+                $ids = is_array($ids) ? array_map('absint', $ids) : [];
+                $total_students = count($ids);
                 $rate_checkin = ($checkin_present + $checkin_absent) > 0 ? round(($checkin_present / ($checkin_present + $checkin_absent)) * 100) : 0;
                 $rate_mid = ($mid_present + $mid_absent) > 0 ? round(($mid_present / ($mid_present + $mid_absent)) * 100) : 0;
                 $rate_overall = round(($rate_checkin + $rate_mid) / 2);
@@ -211,6 +214,7 @@ class AzAC_Core_Sessions
                     'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID . '&session_date=' . urlencode($s['date'])),
                     'checkin' => ['present' => $checkin_present, 'absent' => $checkin_absent],
                     'mid' => ['present' => $mid_present, 'absent' => $mid_absent],
+                    'total' => $total_students,
                     'rate' => ['checkin' => $rate_checkin, 'mid' => $rate_mid, 'overall' => $rate_overall],
                 ];
             }

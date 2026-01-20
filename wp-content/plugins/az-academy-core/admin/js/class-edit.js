@@ -1,5 +1,9 @@
 ;(function($){
     $(function(){
+        function recalcStudentCount(){
+            var count = $('input[name="az_students[]"]:checked').length;
+            $('#az_so_hoc_vien').val(count);
+        }
         if (
           window.AZAC_CLASS_EDIT &&
           AZAC_CLASS_EDIT.isTeacher
@@ -66,10 +70,15 @@
                     $('#azac_students_grid').prepend(label);
                     $('#azac_new_student_name').val('');
                     $('#azac_new_student_email').val('');
+                    recalcStudentCount();
                 } else {
                     alert('Lỗi tạo học viên');
                 }
             });
         });
+        $(document).on('change', 'input[name="az_students[]"]', function(){
+            recalcStudentCount();
+        });
+        recalcStudentCount();
     });
 })(jQuery);
