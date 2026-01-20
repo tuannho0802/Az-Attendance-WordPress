@@ -219,28 +219,40 @@ class AzAC_Core_CPT
     public static function render_class_meta_box($post)
     {
         wp_nonce_field('azac_class_meta_box', 'azac_class_meta_nonce');
-        $giang_vien = get_post_meta($post->ID, 'az_giang_vien', true);
+        $teacher_user_id = intval(get_post_meta($post->ID, 'az_teacher_user', true));
+        $giang_vien = '';
+        if ($teacher_user_id) {
+            $u = get_userdata($teacher_user_id);
+            if ($u) {
+                $giang_vien = $u->display_name ?: $u->user_login;
+            }
+        }
+        if (!$giang_vien) {
+            $giang_vien = get_post_meta($post->ID, 'az_giang_vien', true);
+        }
         $tong_so_buoi = get_post_meta($post->ID, 'az_tong_so_buoi', true);
         $so_hoc_vien = get_post_meta($post->ID, 'az_so_hoc_vien', true);
-        $teacher_user = get_post_meta($post->ID, 'az_teacher_user', true);
+        $teacher_user = $teacher_user_id ?: get_post_meta($post->ID, 'az_teacher_user', true);
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
-        $disabled = $is_admin ? '' : ' disabled';
+        $disabled_admin = $is_admin ? '' : ' disabled';
+        $disabled_name = ' disabled';
         echo '<p><label for="az_giang_vien">Giảng viên</label><br />';
-        echo '<input type="text" id="az_giang_vien" name="az_giang_vien" class="regular-text" value="' . esc_attr($giang_vien) . '"' . $disabled . ' /></p>';
+        echo '<input type="text" id="az_giang_vien" name="az_giang_vien" class="regular-text" value="' . esc_attr($giang_vien) . '"' . $disabled_name . ' /></p>';
         echo '<p><label for="az_tong_so_buoi">Tổng số buổi</label><br />';
-        echo '<input type="number" id="az_tong_so_buoi" name="az_tong_so_buoi" min="0" value="' . esc_attr($tong_so_buoi) . '"' . $disabled . ' /></p>';
+        echo '<input type="number" id="az_tong_so_buoi" name="az_tong_so_buoi" min="0" value="' . esc_attr($tong_so_buoi) . '"' . $disabled_admin . ' /></p>';
         echo '<p><label for="az_so_hoc_vien">Số học viên</label><br />';
-        echo '<input type="number" id="az_so_hoc_vien" name="az_so_hoc_vien" min="0" value="' . esc_attr($so_hoc_vien) . '"' . $disabled . ' /></p>';
+        echo '<input type="number" id="az_so_hoc_vien" name="az_so_hoc_vien" min="0" value="' . esc_attr($so_hoc_vien) . '"' . $disabled_admin . ' /></p>';
         $teachers = get_users(['role' => 'az_teacher']);
         echo '<p><label for="az_teacher_user">Giảng viên (User)</label><br />';
-        echo '<select id="az_teacher_user" name="az_teacher_user"' . $disabled . '>';
+        echo '<select id="az_teacher_user" name="az_teacher_user"' . $disabled_admin . '>';
         echo '<option value="">-- Chọn giảng viên --</option>';
         foreach ($teachers as $t) {
             $selected = selected(intval($teacher_user), intval($t->ID), false);
             echo '<option value="' . esc_attr($t->ID) . '" ' . $selected . '>' . esc_html($t->display_name) . '</option>';
         }
         echo '</select></p>';
+        echo '<script>(function(){var sel=document.getElementById("az_teacher_user");var name=document.getElementById("az_giang_vien");if(sel&&name){sel.addEventListener("change",function(){var txt="";var opt=sel.options[sel.selectedIndex];if(opt){txt=opt.text;}name.value=txt;});}})();</script>';
     }
     public static function add_class_students_meta_box()
     {
@@ -304,13 +316,6 @@ class AzAC_Core_CPT
         if (!current_user_can('edit_post', $post_id)) {
             return;
         }
-        $user = wp_get_current_user();
-        if (!in_array('administrator', $user->roles, true)) {
-            return;
-        }
-        if (isset($_POST['az_giang_vien'])) {
-            update_post_meta($post_id, 'az_giang_vien', sanitize_text_field($_POST['az_giang_vien']));
-        }
         if (isset($_POST['az_tong_so_buoi'])) {
             update_post_meta($post_id, 'az_tong_so_buoi', absint($_POST['az_tong_so_buoi']));
         }
@@ -319,6 +324,14 @@ class AzAC_Core_CPT
         }
         if (isset($_POST['az_teacher_user'])) {
             update_post_meta($post_id, 'az_teacher_user', absint($_POST['az_teacher_user']));
+            $tid = absint($_POST['az_teacher_user']);
+            if ($tid) {
+                $u = get_userdata($tid);
+                if ($u) {
+                    $label = $u->display_name ?: $u->user_login;
+                    update_post_meta($post_id, 'az_giang_vien', sanitize_text_field($label));
+                }
+            }
         }
     }
     public static function save_class_students_meta($post_id, $post)
