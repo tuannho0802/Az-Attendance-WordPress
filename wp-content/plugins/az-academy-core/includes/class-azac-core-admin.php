@@ -91,10 +91,9 @@ class AzAC_Core_Admin
                 wp_enqueue_script('azac-attendance-mid-js', AZAC_CORE_URL . 'admin/js/attendance-mid.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-session-js', 'azac-attendance-api-js', 'azac-attendance-mid-js'], AZAC_CORE_VERSION, true);
                 $user = wp_get_current_user();
+                $review_url = AzAC_Core_Helper::get_qr_checkin_url($cid);
                 wp_localize_script('azac-attendance-mid-js', 'AZAC_MID', [
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'midNonce' => wp_create_nonce('azac_mid'),
-                    'closeNonce' => wp_create_nonce('azac_mid_close'),
+                    'reviewUrl' => $review_url,
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                 ]);
@@ -108,6 +107,7 @@ class AzAC_Core_Admin
                     'ajaxUrl' => admin_url('admin-ajax.php'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
+                    'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                     'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
                 ]);
@@ -115,6 +115,7 @@ class AzAC_Core_Admin
                     'ajaxUrl' => admin_url('admin-ajax.php'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
+                    'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                     'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
                 ]);
@@ -133,6 +134,7 @@ class AzAC_Core_Admin
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
                 'isAdmin' => in_array('administrator', $user->roles, true),
                 'isStudent' => in_array('az_student', $user->roles, true),
+                'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
             ];
@@ -154,10 +156,9 @@ class AzAC_Core_Admin
                 wp_enqueue_script('azac-attendance-mid-js', AZAC_CORE_URL . 'admin/js/attendance-mid.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-session-js', 'azac-attendance-api-js', 'azac-attendance-mid-js'], AZAC_CORE_VERSION, true);
                 $user = wp_get_current_user();
+                $review_url2 = AzAC_Core_Helper::get_qr_checkin_url($cid);
                 wp_localize_script('azac-attendance-mid-js', 'AZAC_MID', [
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'midNonce' => wp_create_nonce('azac_mid'),
-                    'closeNonce' => wp_create_nonce('azac_mid_close'),
+                    'reviewUrl' => $review_url2,
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                 ]);
@@ -546,7 +547,7 @@ class AzAC_Core_Admin
             echo '<input type="time" id="azac_session_time" value="" /> ';
             echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button> ';
             echo '<button class="button" id="azac_update_session_btn">Cập nhật buổi</button>';
-            echo ' <button class="button button-success" id="azac_start_mid_btn">Bắt đầu Điểm danh Giữa giờ</button>';
+            echo ' <button class="button button-success" id="azac_start_mid_btn">Hiện mã QR Review</button>';
         }
         echo '</div>';
         echo '<h2 id="azac_session_title">Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($selected_date))) . '</h2>';
@@ -577,24 +578,24 @@ class AzAC_Core_Admin
             echo '<tr>';
             echo '<td>' . esc_html($i++) . '</td>';
             echo '<td>' . esc_html($s->post_title) . '</td>';
-            $disable_mid = ($is_student || $is_teacher) ? ' disabled' : '';
-            $disable_cls = ($is_student || $is_teacher) ? ' azac-disabled' : '';
-            $disable_tip = ($is_student || $is_teacher) ? ' title="Chỉ Admin có thể chỉnh sửa"' : '';
+            $disable_mid = ($is_student) ? ' disabled' : '';
+            $disable_cls = ($is_student) ? ' azac-disabled' : '';
+            $disable_tip = ($is_student) ? ' title="Chỉ Admin/Giảng viên có thể chỉnh sửa"' : '';
             echo '<td><label class="azac-switch' . $disable_cls . '"' . $disable_tip . '><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . $disable_mid . ' /><span class="azac-slider"></span></label></td>';
             echo '<td><input type="text" class="regular-text azac-note-mid" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
-        if (!$is_student && !$is_teacher) {
+        if (!$is_student) {
             echo '<p><button class="button button-primary" id="azac-submit-mid" data-type="mid-session">Xác nhận điểm danh giữa giờ</button></p>';
         }
         echo '</div>';
         echo '<div id="azac-mid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">';
         echo '<div style="background:#fff;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.2);padding:16px;max-width:640px;width:90%;display:flex;flex-direction:column;gap:12px">';
-        echo '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-weight:700;color:#0f6d5e">Điểm danh giữa giờ bằng QR + PIN</div><button type="button" class="button" id="azac_mid_close_modal">Đóng</button></div>';
-        echo '<div style="display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap">';
+        echo '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-weight:700;color:#0f6d5e">Công cụ Review buổi học</div><button type="button" class="button" id="azac_mid_close_modal">Đóng</button></div>';
+        echo '<div style="font-weight:600;color:#333">Mời học viên quét mã để đánh giá buổi học</div>';
+        echo '<div style="display:flex;gap:12px;align-items:center;justify-content:center;flex-wrap:wrap">';
         echo '<div style="flex:1;min-width:240px;display:flex;align-items:center;justify-content:center"><img id="azac_mid_qr" alt="QR" style="width:280px;height:280px;border:1px solid #e2e2e2;border-radius:12px"/></div>';
-        echo '<div style="flex:1;min-width:240px"><div style="font-weight:600;margin-bottom:6px">Mã PIN</div><div id="azac_mid_pin" style="font-size:42px;font-weight:800;letter-spacing:4px;color:#0f6d5e">------</div><div style="margin-top:10px"><button type="button" class="button button-danger" id="azac_end_mid_btn">Kết thúc điểm danh</button></div></div>';
         echo '</div>';
         echo '</div>';
         echo '</div>';

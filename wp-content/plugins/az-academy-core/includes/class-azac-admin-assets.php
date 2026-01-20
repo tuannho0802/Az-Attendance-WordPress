@@ -50,10 +50,9 @@ class AzAC_Admin_Assets
                 wp_enqueue_script('azac-attendance-mid-js', AZAC_CORE_URL . 'admin/js/attendance-mid.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-session-js', 'azac-attendance-api-js', 'azac-attendance-mid-js'], AZAC_CORE_VERSION, true);
                 $user = wp_get_current_user();
+                $review_url = AzAC_Core_Helper::get_qr_checkin_url($cid);
                 wp_localize_script('azac-attendance-mid-js', 'AZAC_MID', [
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'midNonce' => wp_create_nonce('azac_mid'),
-                    'closeNonce' => wp_create_nonce('azac_mid_close'),
+                    'reviewUrl' => $review_url,
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                 ]);
@@ -113,10 +112,9 @@ class AzAC_Admin_Assets
                 wp_enqueue_script('azac-attendance-mid-js', AZAC_CORE_URL . 'admin/js/attendance-mid.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils', 'azac-attendance-session-js', 'azac-attendance-api-js', 'azac-attendance-mid-js'], AZAC_CORE_VERSION, true);
                 $user = wp_get_current_user();
+                $review_url2 = AzAC_Core_Helper::get_qr_checkin_url($cid);
                 wp_localize_script('azac-attendance-mid-js', 'AZAC_MID', [
-                    'ajaxUrl' => admin_url('admin-ajax.php'),
-                    'midNonce' => wp_create_nonce('azac_mid'),
-                    'closeNonce' => wp_create_nonce('azac_mid_close'),
+                    'reviewUrl' => $review_url2,
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                 ]);
@@ -157,4 +155,3 @@ class AzAC_Admin_Assets
         }
     }
 }
-

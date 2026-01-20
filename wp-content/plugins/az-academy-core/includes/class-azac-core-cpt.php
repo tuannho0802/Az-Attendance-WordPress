@@ -38,11 +38,11 @@ class AzAC_Core_CPT
             'labels' => $labels,
             'public' => true,
             'show_in_rest' => true,
-            'has_archive' => true,
+            'has_archive' => 'lop-hoc',
             'menu_icon' => 'dashicons-welcome-learn-more',
             'supports' => ['title', 'editor', 'thumbnail', 'excerpt'],
             'capability_type' => 'post',
-            'rewrite' => ['slug' => 'lop-hoc'],
+            'rewrite' => ['slug' => 'lop-hoc', 'with_front' => false],
         ];
         register_post_type('az_class', $args);
         register_post_meta('az_class', 'az_giang_vien', [

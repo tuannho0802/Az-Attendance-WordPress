@@ -10,7 +10,7 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
-define('AZAC_CORE_VERSION', '0.1.1');
+define('AZAC_CORE_VERSION', '0.1.2');
 define('AZAC_CORE_DIR', plugin_dir_path(__FILE__));
 define('AZAC_CORE_URL', plugin_dir_url(__FILE__));
 
@@ -39,6 +39,7 @@ add_action('plugins_loaded', function () {
     AzAC_Core_Classes::register();
     AzAC_Core_Attendance::register();
     AzAC_Core_Sessions::register();
+    AzAC_Admin_Stats::register();
     AzAC_Core_Mid::register();
 });
 add_action('init', function () {
