@@ -144,22 +144,22 @@ class AzAC_Admin_Pages
                 } else {
                     echo '<button type="button" class="button button-warning azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đóng lớp</button> ';
                 }
-                echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                 echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
                 if (!$is_pending) {
-                    echo '<a class="button" href="' . esc_url($link_view) . '">Vào lớp</a> ';
+                    echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a> ';
                 }
                 echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
             } elseif ($is_teacher) {
                 if ($is_pending) {
                     echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
                 } else {
-                    echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                    echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                     echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
-                    echo '<a class="button" href="' . esc_url($link_view) . '">Vào lớp</a>';
+                    echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a>';
                 }
             } else {
-                echo '<a class="button button-primary" href="' . esc_url($link_view) . '">Xem lớp</a>';
+                echo '<a class="button button-info" href="' . esc_url($link_view) . '">Xem lớp</a>';
             }
             echo '</div>';
             echo '</div>';
@@ -276,9 +276,9 @@ class AzAC_Admin_Pages
                     } else {
                         echo '<button type="button" class="button button-warning azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đóng lớp</button> ';
                     }
-                    echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                    echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                     echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
-                    echo '<a class="button" href="' . esc_url($link_view) . '">Vào lớp</a> ';
+                    echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a> ';
                     echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
                     echo '</div>';
                 } elseif (in_array('az_teacher', $user->roles, true)) {
@@ -286,11 +286,11 @@ class AzAC_Admin_Pages
                     if ($is_pending) {
                         echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
                     } else {
-                        echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> <a class="button" href="' . esc_url($link_view) . '">Vào lớp</a>';
+                        echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> <a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> <a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a>';
                     }
                     echo '</div>';
                 } else {
-                    echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
+                    echo '<div class="azac-card-actions"><a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
                 }
                 echo '</div>';
             }

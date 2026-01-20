@@ -363,14 +363,6 @@ class AzAC_Core
             'azac-students-list',
             [$this, 'render_students_list_page']
         );
-        add_submenu_page(
-            'azac-attendance',
-            'Chi tiết lớp',
-            'Chi tiết lớp',
-            'read',
-            'azac-class-dashboard',
-            [$this, 'render_class_dashboard_page']
-        );
     }
 
     public function remove_default_menus()
