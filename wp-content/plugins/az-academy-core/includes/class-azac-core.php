@@ -501,6 +501,7 @@ class AzAC_Core
                 $user = wp_get_current_user();
                 wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', [
                     'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('azac_create_class'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
@@ -508,6 +509,7 @@ class AzAC_Core
                 ]);
                 wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', [
                     'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('azac_create_class'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),

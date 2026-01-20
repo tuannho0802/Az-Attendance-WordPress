@@ -125,6 +125,10 @@ class AzAC_Admin_Pages
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
             $tsb = intval(get_post_meta($c->ID, 'az_tong_so_buoi', true));
             $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
+            $current_sessions = count(AzAC_Core_Sessions::get_class_sessions($c->ID));
+            $progress_total = max(0, $tsb);
+            $progress_done = $current_sessions;
+            $progress_percent = ($progress_total > 0) ? min(100, round(($progress_done / $progress_total) * 100)) : 0;
             $status = get_post_status($c->ID);
             $is_pending = ($status === 'pending');
             $link_dashboard = admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID);
@@ -133,9 +137,13 @@ class AzAC_Admin_Pages
             echo '<div class="azac-card">';
             echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
             echo '<div class="azac-card-body">';
-            echo '<div>Giảng viên: ' . esc_html($gv ?: 'Chưa gán') . '</div>';
-            echo '<div>Tổng số buổi: ' . esc_html($tsb) . '</div>';
-            echo '<div>Số học viên: ' . esc_html($shv) . '</div>';
+            echo '<div class="azac-meta-list">';
+            echo '<div class="azac-meta-item"><span class="azac-meta-label">Giảng viên</span><span class="azac-meta-value">' . esc_html($gv ?: 'Chưa gán') . '</span></div>';
+            echo '<div class="azac-meta-item"><span class="azac-meta-label">Tổng số buổi</span><span class="azac-meta-value">' . esc_html($tsb) . '</span></div>';
+            echo '<div class="azac-meta-item"><span class="azac-meta-label">Số học viên</span><span class="azac-meta-value">' . esc_html($shv) . '</span></div>';
+            echo '<div class="azac-meta-item"><span class="azac-meta-label">Số buổi hiện tại</span><span class="azac-meta-value">' . esc_html($progress_done . '/' . $progress_total) . '</span></div>';
+            echo '</div>';
+            echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
             echo '</div>';
             echo '<div class="azac-card-actions">';
             if ($is_admin) {
@@ -164,7 +172,14 @@ class AzAC_Admin_Pages
             echo '</div>';
             echo '</div>';
         }
-        echo '</div></div>';
+        echo '</div>';
+        echo '<script>';
+        echo 'document.addEventListener("DOMContentLoaded",function(){';
+        echo 'var bars=document.querySelectorAll(".azac-progress-bar");';
+        echo 'bars.forEach(function(bar){var cid=bar.getAttribute("data-cid");if(cid && window.AZACU && typeof window.AZACU.getClassColor==="function"){bar.style.backgroundColor=window.AZACU.getClassColor(cid);}});';
+        echo '});';
+        echo '</script>';
+        echo '</div>';
     }
     public static function render_students_list_page()
     {
@@ -255,8 +270,12 @@ class AzAC_Admin_Pages
             echo '<div class="azac-grid">';
             foreach ($classes as $c) {
                 $gv = get_post_meta($c->ID, 'az_giang_vien', true);
-                $tsb = get_post_meta($c->ID, 'az_tong_so_buoi', true);
+                $tsb = intval(get_post_meta($c->ID, 'az_tong_so_buoi', true));
                 $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
+                $current_sessions = count(AzAC_Core_Sessions::get_class_sessions($c->ID));
+                $progress_total = max(0, $tsb);
+                $progress_done = $current_sessions;
+                $progress_percent = ($progress_total > 0) ? min(100, round(($progress_done / $progress_total) * 100)) : 0;
                 $status = get_post_status($c->ID);
                 $is_pending = ($status === 'pending');
                 $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
@@ -265,9 +284,13 @@ class AzAC_Admin_Pages
                 echo '<div class="azac-card">';
                 echo '<div class="azac-card-title">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
                 echo '<div class="azac-card-body">';
-                echo '<div>Giảng viên: ' . esc_html($gv) . '</div>';
-                echo '<div>Tổng số buổi: ' . esc_html($tsb) . '</div>';
-                echo '<div>Sĩ số: ' . esc_html($shv) . '</div>';
+                echo '<div class="azac-meta-list">';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Giảng viên</span><span class="azac-meta-value">' . esc_html($gv ?: 'Chưa gán') . '</span></div>';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Tổng số buổi</span><span class="azac-meta-value">' . esc_html($tsb) . '</span></div>';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Sĩ số</span><span class="azac-meta-value">' . esc_html($shv) . '</span></div>';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Số buổi hiện tại</span><span class="azac-meta-value">' . esc_html($progress_done . '/' . $progress_total) . '</span></div>';
+                echo '</div>';
+                echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
                 echo '</div>';
                 if (in_array('administrator', $user->roles, true)) {
                     echo '<div class="azac-card-actions">';
@@ -295,6 +318,7 @@ class AzAC_Admin_Pages
                 echo '</div>';
             }
             echo '</div></div>';
+            echo '<script>(function(){if(window.AZACU&&typeof window.AZACU.getClassColor===\"function\"){document.querySelectorAll(\".azac-progress-bar[data-cid]\").forEach(function(el){var cid=parseInt(el.getAttribute(\"data-cid\"),10)||0;var color=window.AZACU.getClassColor(cid);el.style.background=color;});}})();</script>';
             return;
         }
         $post = get_post($class_id);

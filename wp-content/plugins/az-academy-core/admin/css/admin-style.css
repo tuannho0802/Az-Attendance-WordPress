@@ -53,6 +53,36 @@
 .azac-card-actions {
   margin-top: auto;
 }
+.azac-meta-list{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:8px 12px;
+  margin-bottom:8px
+}
+.azac-meta-item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  background:#f8faf9;
+  border:1px solid #eaeaea;
+  border-radius:8px;
+  padding:6px 10px
+}
+.azac-meta-label{color:#555;font-size:13px}
+.azac-meta-value{color:var(--az-dark);font-weight:600}
+.azac-progress {
+  height: 8px;
+  border-radius: 999px;
+  background: #e6eaee;
+  overflow: hidden;
+  margin-top: 4px;
+}
+.azac-progress-bar {
+  height: 100%;
+  background: var(--az-primary);
+  width: 0%;
+  transition: width .2s ease;
+}
 
 .widefat.fixed.striped thead th {
   background: var(--az-primary);

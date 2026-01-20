@@ -108,6 +108,7 @@ class AzAC_Admin_Assets
                 $user = wp_get_current_user();
                 $obj = [
                     'ajaxUrl' => admin_url('admin-ajax.php'),
+                    'nonce' => wp_create_nonce('azac_create_class'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
