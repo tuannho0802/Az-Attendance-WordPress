@@ -264,7 +264,7 @@
                   : "",
                 "</div>",
                 "</div>",
-                '<div class="azac-card-actions"><a class="button button-primary" href="',
+                '<div class="azac-card-actions azac-actions--single"><a class="button button-primary" href="',
                 c.link,
                 '">Xem lớp</a></div>',
                 "</div>",

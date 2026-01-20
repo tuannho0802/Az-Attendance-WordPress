@@ -145,7 +145,7 @@ class AzAC_Admin_Pages
             echo '</div>';
             echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
             echo '</div>';
-            echo '<div class="azac-card-actions">';
+            echo '<div class="azac-card-actions azac-actions--classes">';
             if ($is_admin) {
                 if ($is_pending) {
                     echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
@@ -226,7 +226,7 @@ class AzAC_Admin_Pages
             echo '</div>';
             if (in_array('administrator', $user->roles, true)) {
                 $link_edit = admin_url('post.php?post=' . $s->ID . '&action=edit');
-                echo '<div class="azac-card-actions"><a class="button button-primary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a></div>';
+                echo '<div class="azac-card-actions azac-actions--single"><a class="button button-primary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a></div>';
             }
             echo '</div>';
         }
@@ -293,7 +293,7 @@ class AzAC_Admin_Pages
                 echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
                 echo '</div>';
                 if (in_array('administrator', $user->roles, true)) {
-                    echo '<div class="azac-card-actions">';
+                    echo '<div class="azac-card-actions azac-actions--classes">';
                     if ($is_pending) {
                         echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
                     } else {
@@ -305,7 +305,7 @@ class AzAC_Admin_Pages
                     echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
                     echo '</div>';
                 } elseif (in_array('az_teacher', $user->roles, true)) {
-                    echo '<div class="azac-card-actions">';
+                    echo '<div class="azac-card-actions azac-actions--classes">';
                     if ($is_pending) {
                         echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
                     } else {
@@ -313,7 +313,7 @@ class AzAC_Admin_Pages
                     }
                     echo '</div>';
                 } else {
-                    echo '<div class="azac-card-actions"><a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
+                    echo '<div class="azac-card-actions azac-actions--single"><a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a></div>';
                 }
                 echo '</div>';
             }

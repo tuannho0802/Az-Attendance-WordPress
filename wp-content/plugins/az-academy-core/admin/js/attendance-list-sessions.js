@@ -332,13 +332,17 @@
                       absent: 0,
                     },
                     latest: s.date,
-                    total: parseInt(s.total, 10) || 0,
+                    total:
+                      parseInt(s.total, 10) ||
+                      0,
                     _session_count: 0,
                   };
                 }
                 byClass[k]._session_count++;
                 if (!byClass[k].total) {
-                  byClass[k].total = parseInt(s.total, 10) || byClass[k].total;
+                  byClass[k].total =
+                    parseInt(s.total, 10) ||
+                    byClass[k].total;
                 }
                 byClass[k].checkin.present +=
                   (s.checkin &&
@@ -477,7 +481,7 @@
                     "</div>",
                     "</div>",
                     "</div>",
-                    '<div class="azac-card-actions"><a class="button button-primary" href="',
+                    '<div class="azac-card-actions azac-actions--single"><a class="button button-primary" href="',
                     c.link,
                     '">Xem lớp</a></div>',
                     "</div>",
@@ -607,7 +611,7 @@
                     "</div>",
                     "</div>",
                     "</div>",
-                    '<div class="azac-card-actions"><a class="button button-primary" href="',
+                    '<div class="azac-card-actions azac-actions--single"><a class="button button-primary" href="',
                     s.link,
                     AZAC_LIST.isStudent
                       ? '">Xem điểm danh</a></div>'
