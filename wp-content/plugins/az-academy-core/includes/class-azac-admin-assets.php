@@ -85,6 +85,7 @@ class AzAC_Admin_Assets
             }
             wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-reviews-js', AZAC_CORE_URL . 'admin/js/reviews.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
         }
         $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
         if ($page === 'azac-classes-list') {
@@ -126,6 +127,16 @@ class AzAC_Admin_Assets
                 ];
                 wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $obj);
                 wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $obj);
+            }
+        } elseif ($page === 'azac-reviews') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
+            if (!wp_script_is('chartjs', 'enqueued')) {
+                wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
+            }
+            wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-ui-js', AZAC_CORE_URL . 'admin/js/attendance-ui.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+            if (!wp_script_is('azac-reviews-js', 'enqueued')) {
+                wp_enqueue_script('azac-reviews-js', AZAC_CORE_URL . 'admin/js/reviews.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
             }
         }
     }

@@ -525,7 +525,10 @@ class AzAC_Admin_Pages
         echo '<div class="azac-reviews-grid">';
         echo '<div class="azac-reviews-visual">';
         echo '<div class="azac-stat-title">Tổng quan đánh giá</div>';
-        echo '<div class="azac-chart-box"><canvas id="azacReviewsChart"></canvas></div>';
+        echo '<div class="azac-chart-row"><div class="azac-toggle">';
+        echo '<button type="button" class="button button-primary azac-view-btn" id="azacViewClass" data-view="class">Tổng lớp</button> ';
+        echo '<button type="button" class="button azac-view-btn" id="azacViewSessions" data-view="sessions">Theo buổi</button>';
+        echo '</div><div class="azac-chart-box" style="flex:1;min-width:300px"><canvas id="azacReviewsMixedChart"></canvas></div></div>';
         echo '<div class="azac-info-card" style="margin-top:8px"><div class="az-info-grid">';
         echo '<div class="az-info-item"><span class="az-info-label">Điểm trung bình</span><span class="az-info-value" id="azacReviewsAvg">0.0/5.0</span></div>';
         echo '<div class="az-info-item"><span class="az-info-label">Tổng lượt đánh giá</span><span class="az-info-value" id="azacReviewsTotal">0</span></div>';
@@ -540,7 +543,7 @@ class AzAC_Admin_Pages
             'nonce' => wp_create_nonce('azac_get_reviews'),
             'classId' => $class_id,
         ]) . ';</script>';
-        echo "<script>(function(){function draw(labels,ds){var el=document.getElementById('azacReviewsChart');function run(){var ex=window.Chart&&window.Chart.getChart?window.Chart.getChart(el):null;if(ex){ex.data.labels=labels;ex.data.datasets[0].data=ds;ex.update();}else{new Chart(el,{type:'bar',data:{labels:labels,datasets:[{data:ds,backgroundColor:['#e74c3c','#e74c3c','#f39c12','#2ecc71','#3498db']}]},options:{responsive:true,plugins:{legend:{display:false}}}});}}if(typeof Chart==='undefined'){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js';s.async=true;s.onload=run;document.head.appendChild(s);}else{run();}}function render(data){var avg=document.getElementById('azacReviewsAvg');var tot=document.getElementById('azacReviewsTotal');if(avg)avg.textContent=(Number(data.average)||0).toFixed(1)+'/5.0';if(tot)tot.textContent=String(data.total||0);var labels=['1 sao','2 sao','3 sao','4 sao','5 sao'];var ds=[data.counts&&data.counts[1]||0,data.counts&&data.counts[2]||0,data.counts&&data.counts[3]||0,data.counts&&data.counts[4]||0,data.counts&&data.counts[5]||0];draw(labels,ds);var list=document.getElementById('azacReviewsList');if(list){var html=(data.items||[]).map(function(it){var stars=Array(it.rating||0).fill('<span class=\"dashicons dashicons-star-filled\" style=\"color:#f5b301\"></span>').join('');return '<div class=\"azac-review-item\"><div class=\"azac-review-top\"><span class=\"azac-review-name\">'+(it.name||'')+'</span><span class=\"azac-review-stars\">'+stars+'</span></div><div class=\"azac-review-comment\">'+(it.comment||'')+'</div><div class=\"azac-review-date\">'+(it.date||'')+'</div></div>';}).join('');list.innerHTML=html||'<div>Chưa có đánh giá</div>';}}function load(){var c=document.getElementById('azacReviewsClass');var f=document.getElementById('azacReviewsFilter');var cid=parseInt(c?c.value:window.azacReviews.classId,10)||0;var stars=f?f.value:'';var fd=new FormData();fd.append('action','azac_get_reviews');fd.append('nonce',window.azacReviews.nonce);fd.append('class_id',cid);if(stars)fd.append('stars',stars);fetch(window.azacReviews.ajaxUrl,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){render(res.data||{});}});}var c=document.getElementById('azacReviewsClass');var f=document.getElementById('azacReviewsFilter');if(c)c.addEventListener('change',load);if(f)f.addEventListener('change',load);load();})();</script>";
+        echo '<script>if(window.AZAC_Reviews&&typeof window.AZAC_Reviews.init==="function"){window.AZAC_Reviews.init();}</script>';
         echo '</div>';
     }
 }
