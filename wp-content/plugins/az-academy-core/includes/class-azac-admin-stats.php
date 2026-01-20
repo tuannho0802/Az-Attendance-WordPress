@@ -7,6 +7,7 @@ class AzAC_Admin_Stats
     public static function register()
     {
         add_action('wp_ajax_azac_student_stats', [__CLASS__, 'ajax_student_stats']);
+        add_action('wp_ajax_azac_get_reviews', [__CLASS__, 'ajax_get_reviews']);
     }
     public static function get_attendance_stats($class_id)
     {
@@ -118,5 +119,77 @@ class AzAC_Admin_Stats
             ];
         }
         wp_send_json_success(['classes' => $classes]);
+    }
+    public static function ajax_get_reviews()
+    {
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'azac_get_reviews')) {
+            wp_send_json_error(['message' => 'Nonce'], 403);
+        }
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        if (!$class_id) {
+            wp_send_json_error(['message' => 'Invalid'], 400);
+        }
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+        if (!$is_admin) {
+            if ($is_teacher) {
+                $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
+                if ($teacher_user !== intval($user->ID)) {
+                    wp_send_json_error(['message' => 'Capability'], 403);
+                }
+            } else {
+                wp_send_json_error(['message' => 'Capability'], 403);
+            }
+        }
+        global $wpdb;
+        $feedback_table = $wpdb->prefix . 'az_feedback';
+        $stars_raw = isset($_POST['stars']) ? sanitize_text_field($_POST['stars']) : '';
+        $stars_arr = array_filter(array_map('absint', explode(',', $stars_raw)));
+        $where = $wpdb->prepare("class_id=%d", $class_id);
+        if ($stars_arr) {
+            $stars_arr = array_values(array_intersect($stars_arr, [1,2,3,4,5]));
+            if ($stars_arr) {
+                $in = implode(',', array_map('intval', $stars_arr));
+                $where .= " AND rating IN ({$in})";
+            }
+        }
+        $counts_rows = $wpdb->get_results("SELECT rating, COUNT(*) as c FROM {$feedback_table} WHERE {$where} GROUP BY rating", ARRAY_A);
+        $counts = [1=>0,2=>0,3=>0,4=>0,5=>0];
+        $total = 0;
+        foreach ($counts_rows as $r) {
+            $rt = max(1, min(5, intval($r['rating'])));
+            $c = intval($r['c']);
+            $counts[$rt] += $c;
+            $total += $c;
+        }
+        $avg = floatval($wpdb->get_var("SELECT AVG(rating) FROM {$feedback_table} WHERE {$where}"));
+        $pm = $wpdb->postmeta;
+        $users = $wpdb->users;
+        $items = $wpdb->get_results("
+            SELECT f.student_id, f.rating, f.comment, f.session_date, COALESCE(u.display_name, p.post_title) AS name
+            FROM {$feedback_table} f
+            LEFT JOIN {$pm} pm ON pm.post_id = f.student_id AND pm.meta_key = 'az_user_id'
+            LEFT JOIN {$users} u ON u.ID = pm.meta_value
+            LEFT JOIN {$wpdb->posts} p ON p.ID = f.student_id
+            WHERE {$where}
+            ORDER BY f.session_date DESC
+            LIMIT 200
+        ", ARRAY_A);
+        $list = [];
+        foreach ($items as $it) {
+            $list[] = [
+                'name' => sanitize_text_field($it['name']),
+                'rating' => max(1, min(5, intval($it['rating']))),
+                'comment' => sanitize_textarea_field($it['comment']),
+                'date' => sanitize_text_field($it['session_date']),
+            ];
+        }
+        wp_send_json_success([
+            'total' => $total,
+            'average' => round($avg, 1),
+            'counts' => $counts,
+            'items' => $list,
+        ]);
     }
 }

@@ -108,6 +108,54 @@
   align-items: center;
   margin: 8px 0 16px;
 }
+.azac-reviews-grid {
+  display: grid;
+  grid-template-columns: 2fr 3fr;
+  gap: 16px;
+}
+.azac-reviews-list .azac-reviews-scroll {
+  max-height: 360px;
+  overflow-y: auto;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  padding: 8px 10px;
+  background: #fff;
+}
+.azac-review-item {
+  padding: 8px 0;
+  border-bottom: 1px solid #eee;
+}
+.azac-review-item:last-child {
+  border-bottom: none;
+}
+.azac-review-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.azac-review-name {
+  font-weight: 600;
+  color: #0b3d3b;
+}
+.azac-review-stars {
+  display: inline-flex;
+  gap: 2px;
+}
+.azac-review-comment {
+  color: #333;
+  margin-top: 4px;
+}
+.azac-review-date {
+  color: #777;
+  font-size: 12px;
+  margin-top: 2px;
+}
+@media (max-width: 900px) {
+  .azac-reviews-grid {
+    grid-template-columns: 1fr;
+  }
+}
 .azac-session-bar input[type="date"],
 .azac-session-bar input[type="time"] {
   padding: 6px 8px;

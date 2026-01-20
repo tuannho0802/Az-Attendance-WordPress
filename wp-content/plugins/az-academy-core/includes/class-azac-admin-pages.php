@@ -31,6 +31,14 @@ class AzAC_Admin_Pages
             'azac-students-list',
             [__CLASS__, 'render_students_list_page']
         );
+        add_submenu_page(
+            'azac-attendance',
+            'Reviews',
+            'Reviews',
+            'manage_options',
+            'azac-reviews',
+            [__CLASS__, 'render_reviews_page']
+        );
     }
     public static function render_attendance_list_page()
     {
@@ -416,7 +424,7 @@ class AzAC_Admin_Pages
         echo '<h2 id="azac_session_title">Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($selected_date))) . '</h2>';
         echo '<div class="azac-tabs">';
         echo '<button class="button button-primary azac-tab-btn" data-target="#azac-checkin">Điểm danh đầu giờ</button> ';
-        echo '<button class="button azac-tab-btn" data-target="#azac-mid">Điểm danh giữa giờ</button>';
+        echo '<button class="button azac-tab-btn" data-target="#azac-mid">Điểm danh giữa giờ</button> ';
         echo '</div>';
         echo '<div id="azac-checkin" class="azac-tab active">';
         echo '<table class="widefat fixed striped"><thead><tr><th>STT</th><th>Họ và Tên</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>';
@@ -433,6 +441,7 @@ class AzAC_Admin_Pages
         if (!$is_student) {
             echo '<p><button class="button button-primary" id="azac-submit-checkin" data-type="check-in">Xác nhận điểm danh đầu giờ</button></p>';
         }
+        echo '</div>';
         echo '</div>';
         echo '<div id="azac-mid" class="azac-tab">';
         echo '<table class="widefat fixed striped"><thead><tr><th>STT</th><th>Họ và Tên</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>';
@@ -481,7 +490,57 @@ class AzAC_Admin_Pages
                 ],
             ],
         ]) . ';</script>';
-        echo '<script>(function(){function a(t,items){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var d=items&&items[id];if(d){el.checked=!!d.status;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');if(ne){ne.value=d.note||"";}}});}function f(t){var fd=new FormData();fd.append("action","azac_get_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.sessionDate||window.azacData.today);fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){a(t,res.data.items||{});}}).catch(function(){});}function s(t){var ss=t==="check-in"?".azac-status":".azac-status-mid";var sn=t==="check-in"?".azac-note":".azac-note-mid";var items=[];document.querySelectorAll(ss).forEach(function(el){var id=parseInt(el.getAttribute("data-student"),10)||0;var st=el.checked?1:0;var ne=document.querySelector(sn+\'[data-student="\'+id+\'"]\');var nt=ne?String(ne.value||""):"";items.push({id:id,status:st,note:nt});});var fd=new FormData();fd.append("action","azac_save_attendance");fd.append("nonce",window.azacData.nonce);fd.append("class_id",window.azacData.classId);fd.append("type",t);fd.append("session_date",window.azacData.sessionDate||window.azacData.today);items.forEach(function(it,i){fd.append("items["+i+"][id]",it.id);fd.append("items["+i+"][status]",it.status);fd.append("items["+i+"][note]",it.note);});fetch(window.azacData.ajaxUrl,{method:"POST",body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){alert("Đã lưu "+res.data.inserted+" bản ghi");f(t);}else{alert("Lỗi lưu");}}).catch(function(){alert("Lỗi mạng");});}var b1=document.getElementById("azac-submit-checkin");if(b1){b1.addEventListener("click",function(){s("check-in");});}var b2=document.getElementById("azac-submit-mid");if(b2){b2.addEventListener("click",function(){s("mid-session");});}document.querySelectorAll(".azac-tab-btn").forEach(function(btn){btn.addEventListener("click",function(){document.querySelectorAll(".azac-tab-btn").forEach(function(b){b.classList.remove("button-primary");});btn.classList.add("button-primary");document.querySelectorAll(".azac-tab").forEach(function(t){t.classList.remove("active");});var tgt=btn.getAttribute("data-target");var el=document.querySelector(tgt);if(el){el.classList.add("active");}f(tgt==="#azac-checkin"?"check-in":"mid-session");});});f("check-in");f("mid-session");})();</script>';
+        echo '</div>';
+    }
+    public static function render_reviews_page()
+    {
+        if (!current_user_can('manage_options')) {
+            echo '<div class="wrap"><h1>Reviews</h1><p>Chỉ Admin có thể truy cập trang này.</p></div>';
+            return;
+        }
+        $classes = get_posts([
+            'post_type' => 'az_class',
+            'numberposts' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post_status' => ['publish', 'pending'],
+        ]);
+        $class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+        if (!$class_id && $classes) {
+            $class_id = $classes[0]->ID;
+        }
+        echo '<div class="wrap"><h1>Reviews</h1>';
+        echo '<div class="azac-session-bar">';
+        echo '<label>Chọn lớp ';
+        echo '<select id="azacReviewsClass">';
+        foreach ($classes as $c) {
+            $sel = ($class_id === $c->ID) ? ' selected' : '';
+            echo '<option value="' . esc_attr($c->ID) . '"' . $sel . '>' . esc_html($c->post_title) . '</option>';
+        }
+        echo '</select></label> ';
+        echo '<label>Lọc theo sao ';
+        echo '<select id="azacReviewsFilter"><option value="">Tất cả</option><option value="1,2">1-2 sao</option><option value="3">3 sao</option><option value="4,5">4-5 sao</option></select>';
+        echo '</label>';
+        echo '</div>';
+        echo '<div class="azac-reviews-grid">';
+        echo '<div class="azac-reviews-visual">';
+        echo '<div class="azac-stat-title">Tổng quan đánh giá</div>';
+        echo '<div class="azac-chart-box"><canvas id="azacReviewsChart"></canvas></div>';
+        echo '<div class="azac-info-card" style="margin-top:8px"><div class="az-info-grid">';
+        echo '<div class="az-info-item"><span class="az-info-label">Điểm trung bình</span><span class="az-info-value" id="azacReviewsAvg">0.0/5.0</span></div>';
+        echo '<div class="az-info-item"><span class="az-info-label">Tổng lượt đánh giá</span><span class="az-info-value" id="azacReviewsTotal">0</span></div>';
+        echo '</div></div>';
+        echo '</div>';
+        echo '<div class="azac-reviews-list">';
+        echo '<div id="azacReviewsList" class="azac-reviews-scroll"></div>';
+        echo '</div>';
+        echo '</div>';
+        echo '<script>window.azacReviews=' . wp_json_encode([
+            'ajaxUrl' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('azac_get_reviews'),
+            'classId' => $class_id,
+        ]) . ';</script>';
+        echo "<script>(function(){function draw(labels,ds){var el=document.getElementById('azacReviewsChart');function run(){var ex=window.Chart&&window.Chart.getChart?window.Chart.getChart(el):null;if(ex){ex.data.labels=labels;ex.data.datasets[0].data=ds;ex.update();}else{new Chart(el,{type:'bar',data:{labels:labels,datasets:[{data:ds,backgroundColor:['#e74c3c','#e74c3c','#f39c12','#2ecc71','#3498db']}]},options:{responsive:true,plugins:{legend:{display:false}}}});}}if(typeof Chart==='undefined'){var s=document.createElement('script');s.src='https://cdn.jsdelivr.net/npm/chart.js';s.async=true;s.onload=run;document.head.appendChild(s);}else{run();}}function render(data){var avg=document.getElementById('azacReviewsAvg');var tot=document.getElementById('azacReviewsTotal');if(avg)avg.textContent=(Number(data.average)||0).toFixed(1)+'/5.0';if(tot)tot.textContent=String(data.total||0);var labels=['1 sao','2 sao','3 sao','4 sao','5 sao'];var ds=[data.counts&&data.counts[1]||0,data.counts&&data.counts[2]||0,data.counts&&data.counts[3]||0,data.counts&&data.counts[4]||0,data.counts&&data.counts[5]||0];draw(labels,ds);var list=document.getElementById('azacReviewsList');if(list){var html=(data.items||[]).map(function(it){var stars=Array(it.rating||0).fill('<span class=\"dashicons dashicons-star-filled\" style=\"color:#f5b301\"></span>').join('');return '<div class=\"azac-review-item\"><div class=\"azac-review-top\"><span class=\"azac-review-name\">'+(it.name||'')+'</span><span class=\"azac-review-stars\">'+stars+'</span></div><div class=\"azac-review-comment\">'+(it.comment||'')+'</div><div class=\"azac-review-date\">'+(it.date||'')+'</div></div>';}).join('');list.innerHTML=html||'<div>Chưa có đánh giá</div>';}}function load(){var c=document.getElementById('azacReviewsClass');var f=document.getElementById('azacReviewsFilter');var cid=parseInt(c?c.value:window.azacReviews.classId,10)||0;var stars=f?f.value:'';var fd=new FormData();fd.append('action','azac_get_reviews');fd.append('nonce',window.azacReviews.nonce);fd.append('class_id',cid);if(stars)fd.append('stars',stars);fetch(window.azacReviews.ajaxUrl,{method:'POST',body:fd}).then(function(r){return r.json();}).then(function(res){if(res&&res.success){render(res.data||{});}});}var c=document.getElementById('azacReviewsClass');var f=document.getElementById('azacReviewsFilter');if(c)c.addEventListener('change',load);if(f)f.addEventListener('change',load);load();})();</script>";
         echo '</div>';
     }
 }
