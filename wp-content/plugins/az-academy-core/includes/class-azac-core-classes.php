@@ -66,6 +66,7 @@ class AzAC_Core_Classes
     {
         check_ajax_referer('azac_create_class', 'nonce');
         $title = isset($_POST['title']) ? sanitize_text_field($_POST['title']) : '';
+        $teacher_id = isset($_POST['teacher_id']) ? absint($_POST['teacher_id']) : 0;
         $teacher = isset($_POST['teacher']) ? sanitize_text_field($_POST['teacher']) : '';
         $sessions = isset($_POST['sessions']) ? absint($_POST['sessions']) : 0;
         if (!$title) {
@@ -83,14 +84,17 @@ class AzAC_Core_Classes
         if (is_wp_error($post_id) || !$post_id) {
             wp_send_json_error(['message' => 'Tạo lớp thất bại'], 500);
         }
-        update_post_meta($post_id, 'az_giang_vien', $teacher);
-        update_post_meta($post_id, 'az_tong_so_buoi', $sessions);
+        update_post_meta($post_id, 'az_tong_so_buoi', $sessions ?: 0);
         update_post_meta($post_id, 'az_so_hoc_vien', 0);
-        $user = wp_get_current_user();
-        if (in_array('az_teacher', $user->roles, true)) {
-            update_post_meta($post_id, 'az_teacher_user', absint($user->ID));
-            if (!$teacher) {
-                update_post_meta($post_id, 'az_giang_vien', $user->display_name ?: $user->user_login);
+        if ($teacher_id) {
+            $u = get_userdata($teacher_id);
+            if ($u && in_array('az_teacher', $u->roles, true)) {
+                update_post_meta($post_id, 'az_teacher_user', $teacher_id);
+                update_post_meta($post_id, 'az_giang_vien', $u->display_name ?: $u->user_login);
+            }
+        } else {
+            if ($teacher) {
+                update_post_meta($post_id, 'az_giang_vien', $teacher);
             }
         }
         wp_send_json_success([

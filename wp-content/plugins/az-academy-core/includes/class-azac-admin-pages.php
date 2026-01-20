@@ -113,8 +113,13 @@ class AzAC_Admin_Pages
         if ($is_admin) {
             echo '<div class="azac-inline-create">';
             echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
-            echo '<input type="text" id="azac_new_class_teacher" class="regular-text" placeholder="Giảng viên (chuỗi)" />';
-            echo '<input type="number" id="azac_new_class_sessions" class="small-text" min="0" value="0" placeholder="Tổng số buổi" />';
+            $teachers = get_users(['role' => 'az_teacher']);
+            echo '<select id="azac_new_class_teacher" class="regular-text">';
+            echo '<option value="">-- Chọn giảng viên --</option>';
+            foreach ($teachers as $t) {
+                echo '<option value="' . esc_attr($t->ID) . '">' . esc_html($t->display_name ?: $t->user_login) . '</option>';
+            }
+            echo '</select>';
             echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
             echo '</div>';
         }

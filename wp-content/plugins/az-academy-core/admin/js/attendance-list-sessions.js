@@ -6,15 +6,10 @@
         var title = $("#azac_new_class_title")
           .val()
           .trim();
-        var teacher = $(
-          "#azac_new_class_teacher"
-        )
-          .val()
-          .trim();
-        var sessions =
+        var teacherId =
           parseInt(
-            $("#azac_new_class_sessions").val(),
-            10
+            $("#azac_new_class_teacher").val(),
+            10,
           ) || 0;
         if (!title) {
           alert("Nhập tên lớp");
@@ -24,8 +19,7 @@
           action: "azac_create_class",
           nonce: AZAC_LIST && AZAC_LIST.nonce,
           title: title,
-          teacher: teacher,
-          sessions: sessions,
+          teacher_id: teacherId,
         };
         var btn = $(this).prop(
           "disabled",
