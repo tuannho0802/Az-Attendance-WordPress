@@ -18,6 +18,8 @@ if ($can_edit) {
     // acf_form_head(); // Removed to avoid dependency error
     wp_enqueue_media();
 }
+// Ensure jQuery is loaded for all users (including Students)
+wp_enqueue_script('jquery');
 
 get_header();
 ?>
