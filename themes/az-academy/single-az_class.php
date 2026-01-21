@@ -30,55 +30,239 @@ get_header();
         --az-bg: #f5f7fa;
     }
 
-    .azac-layout {
+    /* Modal Styles */
+    .azac-modal {
+        display: none; 
+        position: fixed; 
+        z-index: 9999; 
+        left: 0;
+        top: 0;
+        width: 100%; 
+        height: 100%; 
+        overflow: auto; 
+        background-color: rgba(0,0,0,0.6); 
+        backdrop-filter: blur(5px);
+    }
+
+    .azac-modal-content {
+        background-color: #fefefe;
+        margin: 2% auto; 
+        padding: 0;
+        border: 1px solid #888;
+        width: 80%; 
+        max-width: 900px;
+        border-radius: 12px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
         display: flex;
-        gap: 20px;
-        margin-top: 20px;
-        flex-wrap: wrap;
+        flex-direction: column;
+        height: 90vh;
     }
 
-    /* Sidebar / Timeline */
-    .azac-sidebar {
-        flex: 0 0 250px;
-        background: #fff;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 10px 0;
-        height: fit-content;
+    .azac-modal-header {
+        padding: 15px 20px;
+        background: #004E44;
+        color: white;
+        border-top-left-radius: 12px;
+        border-top-right-radius: 12px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
 
-    .azac-tab {
-        display: block;
-        padding: 12px 20px;
+    .azac-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        color: white;
+    }
+
+    .azac-close {
+        color: white;
+        font-size: 28px;
+        font-weight: bold;
         cursor: pointer;
-        border-left: 4px solid transparent;
-        transition: all 0.2s;
+        line-height: 1;
+    }
+
+    .azac-close:hover,
+    .azac-close:focus {
+        color: #ddd;
+        text-decoration: none;
+        cursor: pointer;
+    }
+     .azac-actions{
+        display: flex;
+        gap: 10px;
+     }
+
+    .azac-modal-body {
+        flex: 1;
+        padding: 0;
+        background: #525659; /* PDF Viewer Background */
+        overflow: hidden;
+    }
+
+    .azac-modal-body iframe {
+        width: 100%;
+        height: 100%;
+        border: none;
+    }
+
+    .azac-modal-footer {
+        padding: 15px 20px;
+        border-top: 1px solid #ddd;
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        background: #fff;
+        border-bottom-left-radius: 12px;
+        border-bottom-right-radius: 12px;
+    }
+
+    /* Layout Structure */
+    .azac-layout {
+        display: grid;
+        grid-template-columns: 3fr 1fr; /* 75% - 25% */
+        gap: 30px;
+        margin-top: 30px;
+    }
+
+    @media (max-width: 991px) {
+        .azac-layout {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    /* Main Column */
+    .azac-main-col {
+        min-width: 0;
+    }
+
+    /* Timeline / Tabs (Horizontal) */
+    .azac-timeline {
+        display: flex;
+        gap: 10px;
+        overflow-x: auto;
+        padding-bottom: 10px;
+        padding-top: 10px;
+        margin-bottom: 20px;
+        border-bottom: 2px solid #eee;
+        scrollbar-width: thin;
+    }
+    
+    .azac-tab {
+        flex: 0 0 auto;
+        padding: 10px 20px;
+        background: #fff;
+        border-radius: 20px;
+        border: 1px solid #ddd;
+        cursor: pointer;
+        transition: all 0.3s ease;
         font-weight: 500;
-        color: #333;
+        white-space: nowrap;
+        color: #555;
     }
 
     .azac-tab:hover {
-        background: #f0f4f8;
+        border-color: var(--az-teal);
         color: var(--az-teal);
+        transform: translateY(-2px);
     }
 
     .azac-tab.active {
-        border-left-color: var(--az-teal);
-        background: #eef3f9;
-        color: var(--az-teal);
-        font-weight: 700;
+        background: var(--az-teal);
+        color: white;
+        border-color: var(--az-teal);
+        box-shadow: 0 4px 6px rgba(21, 52, 90, 0.2);
     }
 
-    /* Content Area */
+    /* Content Box */
     .azac-content-area {
-        flex: 1;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        padding: 40px;
+        min-height: 600px; /* Fixed min-height */
+        transition: opacity 0.3s ease;
+    }
+
+    .azac-fade-in {
+        animation: fadeIn 0.4s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Right Sidebar (Class Info) */
+    .azac-info-sidebar {
+        position: sticky;
+        top: 20px;
+    }
+
+    .azac-info-card {
         background: #fff;
         border-radius: 8px;
-        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        padding: 30px;
-        min-width: 0;
-        /* Prevent overflow */
+        box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        overflow: hidden;
     }
+
+    .azac-info-header {
+        background: #004E44; /* Teal for Header */
+        color: white;
+        padding: 15px 20px;
+        font-size: 16px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .azac-info-body {
+        padding: 20px;
+    }
+
+    .azac-info-row {
+        margin-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        padding-bottom: 10px;
+    }
+    .azac-info-row:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+
+    .azac-info-label {
+        font-size: 12px;
+        color: #888;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+        display: block;
+    }
+
+    .azac-info-value {
+        font-size: 15px;
+        font-weight: 600;
+        color: #333;
+    }
+
+    /* Progress Bar */
+    .azac-progress-wrapper {
+        margin-top: 10px;
+    }
+    .azac-progress-bar {
+        height: 8px;
+        background: #eee;
+        border-radius: 4px;
+        overflow: hidden;
+    }
+    .azac-progress-fill {
+        height: 100%;
+        background: var(--az-teal);
+        border-radius: 4px;
+    }
+
+    /* Hide Sidebar styling from previous version */
+    .azac-sidebar { display: none; }
 
     .azac-content-header {
         display: flex;
@@ -297,84 +481,162 @@ get_header();
                 <h1><?php the_title(); ?></h1>
                 
                 <div class="azac-layout">
-                    <!-- Sidebar Tabs -->
-                    <div class="azac-sidebar">
-                        <div class="azac-tab active" data-target="overview" data-id="0">Tổng quan</div>
-                        <?php foreach ($sessions as $index => $sess): ?>
+    <!-- Main Column (75%) -->
+    <div class="azac-main-col">
+        <!-- Horizontal Timeline -->
+        <div class="azac-timeline">
+            <div class="azac-tab active" data-target="overview" data-id="0">Tổng quan</div>
+            <?php foreach ($sessions as $index => $sess): ?>
                             <div class="azac-tab" data-target="session" data-id="<?php echo esc_attr($sess['id']); ?>"
-                                data-date="<?php echo esc_attr($sess['date']); ?>">
-                                Buổi <?php echo $index + 1; ?>: <?php echo date('d/m', strtotime($sess['date'])); ?>
-                            </div>
-                        <?php endforeach; ?>
-                    </div>
+                    data-date="<?php echo esc_attr($sess['date']); ?>">
+                    Buổi <?php echo $index + 1; ?>: <?php echo date('d/m', strtotime($sess['date'])); ?>
+                </div>
+                <?php endforeach; ?>
+                </div>
                 
-                    <!-- Content Area -->
-                    <div class="azac-content-area">
-                        <div class="azac-content-header">
-                            <h2 id="azac-view-title">Tổng quan lớp học</h2>
-                            <div class="azac-actions">
-                                <?php if ($can_edit): ?>
-                                    <button id="azac-edit-btn" class="azac-btn">
-                                        <span class="dashicons dashicons-edit"></span> Chỉnh sửa
-                                    </button>
-                                <?php endif; ?>
-                                <button id="azac-print-btn" class="azac-btn azac-btn-outline">
-                                    <span class="dashicons dashicons-printer"></span> Xuất PDF
-                                </button>
-                            </div>
-                        </div>
+                <!-- Content Area -->
+        <div class="azac-content-area" id="azac-pdf-content">
+            <div class="azac-content-header">
+                <h2 id="azac-view-title">Tổng quan lớp học</h2>
+                <div class="azac-actions">
+                    <?php if ($can_edit): ?>
+                        <button id="azac-edit-btn" class="azac-btn">
+                            <span class="dashicons dashicons-edit"></span> Chỉnh sửa
+                        </button>
+                    <?php endif; ?>
+                    <button id="azac-print-btn" class="azac-btn azac-btn-outline">
+                        <span class="dashicons dashicons-printer"></span> Xuất PDF
+                    </button>
+                </div>
+            </div>
+        
+            <!-- Display View -->
+            <div id="azac-display-view" class="azac-fade-in">
+                <div id="azac-main-content">
+                    <?php the_content(); ?>
+                </div>
                 
-                        <!-- Display View -->
-                        <div id="azac-display-view">
-                            <div id="azac-main-content">
-                                <?php the_content(); ?>
-                            </div>
-                
-                            <div id="azac-attachments-section" class="azac-attachments" style="display:none;">
-                                <h3>Tài liệu đính kèm</h3>
-                                <div id="azac-attachments-list" class="azac-att-grid"></div>
-                            </div>
-                        </div>
-                
-                        <!-- Editor View (Hidden) -->
-                        <?php if ($can_edit): ?>
-                        <div id="azac-editor-container">
-                            <div class="azac-editor-instruction">
-                                <h4>Soạn thảo nội dung buổi học</h4>
-                                <p>Sử dụng trình soạn thảo bên dưới để nhập nội dung chi tiết cho buổi học này. Bạn có thể chèn hình
-                                    ảnh, định dạng văn bản và tải lên tài liệu đính kèm.</p>
-                            </div>
+                <div id="azac-attachments-section" class="azac-attachments" style="display:none;">
+                    <h3>Tài liệu đính kèm</h3>
+                    <div id="azac-attachments-list" class="azac-att-grid"></div>
+                </div>
+            </div>
 
-                            <?php
-                            wp_editor('', 'azac_session_editor', [
-                                'media_buttons' => true,
-                                'textarea_rows' => 25, // Increased rows
-                                'teeny' => false,
-                                'quicktags' => true,
-                                'editor_height' => 500 // Try to force height
-                            ]);
-                            ?>
-                            <div class="azac-editor-meta" style="margin-top: 15px;">
-                                <h4>Tài liệu</h4>
-                                <div id="azac-editor-attachments" class="azac-att-grid"></div>
-                                <button type="button" id="azac-upload-btn" class="azac-btn azac-btn-outline" style="margin-top:10px;">
-                                    <span class="dashicons dashicons-upload"></span> Upload Tài liệu
-                                </button>
-                                <input type="hidden" id="azac-att-ids" value="[]">
-                            </div>
-                            
-                            <div class="azac-editor-controls"
-                                style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; text-align: right;">
-                                <button id="azac-cancel-btn" class="azac-btn azac-btn-outline" style="margin-right: 10px;">Hủy</button>
-                                <button id="azac-save-btn" class="azac-btn">Lưu thay đổi</button>
-                            </div>
-                            </div>
-                        <?php endif; ?>
-                        
-                        </div>
+            <!-- Editor View (Hidden) -->
+            <?php if ($can_edit): ?>
+                <div id="azac-editor-container">
+                    <div class="azac-editor-instruction">
+                        <h4>Soạn thảo nội dung buổi học</h4>
+                    <p>Sử dụng trình soạn thảo bên dưới để nhập nội dung chi tiết cho buổi học này. Bạn có thể chèn hình ảnh, định dạng văn bản và tải lên tài liệu đính kèm.</p>
                 </div>
 
-            </article>
+                <?php
+                    wp_editor('', 'azac_session_editor', [
+                        'media_buttons' => true,
+                    'textarea_rows' => 25,
+                    'teeny' => false,
+                    'quicktags' => true,
+                    'editor_height' => 500
+                ]);
+                ?>
+                
+                <div class="azac-editor-meta" style="margin-top: 15px;">
+                    <h4>Tài liệu</h4>
+                    <div id="azac-editor-attachments" class="azac-att-grid"></div>
+                    <button type="button" id="azac-upload-btn" class="azac-btn azac-btn-outline" style="margin-top:10px;">
+                        <span class="dashicons dashicons-upload"></span> Upload Tài liệu
+                    </button>
+                    <input type="hidden" id="azac-att-ids" value="[]">
+                </div>
+
+                <div class="azac-editor-controls" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 15px; text-align: right;">
+                    <button id="azac-cancel-btn" class="azac-btn azac-btn-outline" style="margin-right: 10px;">Hủy</button>
+                    <button id="azac-save-btn" class="azac-btn">Lưu thay đổi</button>
+                </div>
+            </div>
+            <?php endif; ?>
+                                                                                </div>
+                                                                                </div>
+                                                                        
+                                                                                <!-- Right Sidebar (25%) -->
+                                                                                <div class="azac-info-sidebar">
+                                                                                    <div class="azac-info-card">
+                                                                                        <div class="azac-info-header">Thông tin lớp học</div>
+                                                                                        <div class="azac-info-body">
+                                                                                            <div class="azac-info-row">
+                                                                                                <span class="azac-info-label">Tên lớp</span>
+                                                                                                <span class="azac-info-value" id="azac-class-name">
+                                                                                            <?php the_title(); ?>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div class="azac-info-row">
+                                                                                        <span class="azac-info-label">Giảng viên</span>
+                                                                                        <span class="azac-info-value" id="azac-teacher-name">
+                                                                                            <?php
+                                                                                            $teacher_name = get_post_meta($post_id, 'az_giang_vien', true);
+                                                                                            echo $teacher_name ? esc_html($teacher_name) : 'Chưa cập nhật';
+                                                                                            ?>
+                                                                                        </span>
+                                                                                    </div>
+                                                                                    <div class="azac-info-row">
+                                                                                        <span class="azac-info-label">Sĩ số</span>
+                                                                                        <span class="azac-info-value">
+                                                                                            <?php
+                                                                                            $students = get_post_meta($post_id, 'az_students', true);
+                                                                                            echo is_array($students) ? count($students) : 0;
+                                                                                            ?> Học viên
+                                                                                        </span>
+                                                                                    </div>
+                
+                <!-- Progress Bar -->
+                <?php
+                    $total_sessions = count($sessions); // Currently created sessions
+                    // Assuming total sessions plan is somewhere? For now use current vs total created or just current count
+                    // Let's use logic: Created Sessions vs Total Sessions (if we had a field for plan).
+                    // Or just "Buổi đã dạy" based on date < now?
+                    // Let's stick to "Số buổi đã tạo" for now as per context.
+                    $taught = 0;
+                    foreach ($sessions as $s) {
+                        if (strtotime($s['date']) <= current_time('timestamp'))
+                            $taught++;
+                    }
+                    $percent = $total_sessions > 0 ? ($taught / $total_sessions) * 100 : 0;
+                    ?>
+                <div class="azac-info-row" style="border:none;">
+                    <span class="azac-info-label">Tiến độ (
+                        <?php echo $taught; ?>/
+                        <?php echo $total_sessions; ?> buổi)
+                    </span>
+                    <div class="azac-progress-wrapper">
+                        <div class="azac-progress-bar">
+                            <div class="azac-progress-fill" style="width: <?php echo $percent; ?>%"></div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+                </div>
+    </div>
+</div>
+
+                <!-- PDF Preview Modal -->
+    <div id="azac-pdf-modal" class="azac-modal">
+        <div class="azac-modal-content">
+            <div class="azac-modal-header">
+                <h3>Xem trước PDF</h3>
+                <span class="azac-close">&times;</span>
+            </div>
+            <div class="azac-modal-body">
+                <iframe id="azac-pdf-preview-frame"></iframe>
+            </div>
+            <div class="azac-modal-footer">
+                <button id="azac-confirm-download" class="azac-btn">
+                    <span class="dashicons dashicons-download" style="margin-top:4px;"></span> Tải xuống
+                </button>
+                <button class="azac-btn azac-btn-outline azac-close-modal">Hủy</button>
+            </div>
+        </div>
+    </div>
+</article>
         <?php endwhile; endif; ?>
     </main>
 </div>
@@ -636,9 +898,126 @@ jQuery(document).ready(function($) {
         }
     };
 
-    // Print PDF
-    $('#azac-print-btn').on('click', function () {
-        window.print();
+    // Load HTML2PDF
+    $.getScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
+
+    // Print PDF Logic with Preview
+    $('#azac-print-btn').on('click', function() {
+        var $btn = $(this);
+        var originalText = $btn.html();
+        $btn.html('<span class="dashicons dashicons-update is-spin"></span> Đang tạo PDF...').prop('disabled', true);
+
+        var element = document.getElementById('azac-pdf-content');
+        
+        // Generate Dynamic Filename
+        function formatName(str) {
+            if (!str) return '';
+            return str.normalize("NFD")
+                      .replace(/[\u0300-\u036f]/g, "")
+                      .replace(/đ/g, "d").replace(/Đ/g, "D")
+                      .replace(/[^a-zA-Z0-9\s]/g, "") // Keep alphanumeric and spaces
+                      .split(/\s+/)
+                      .map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); })
+                      .join("");
+        }
+
+        var className = formatName($('#azac-class-name').text());
+        var teacherName = formatName($('#azac-teacher-name').text());
+        var activeTab = $('.azac-tab.active');
+        var mode = activeTab.data('target'); // 'overview' or 'session'
+        var filename = 'Document.pdf';
+
+        if (mode === 'overview') {
+            filename = className + '_' + teacherName + '.pdf';
+        } else {
+            var dateRaw = activeTab.data('date'); // YYYY-MM-DD
+            if(dateRaw) {
+                var parts = dateRaw.split('-');
+                var yy = parts[0].slice(-2);
+                var dateFormatted = parts[2] + '_' + parts[1] + '_' + yy; // dd_mm_yy
+                // Format: TaiLieu_26_12_25_LopFacebookAds
+                filename = 'TaiLieu_' + dateFormatted + '_' + className + '.pdf';
+            } else {
+                filename = 'TaiLieu_' + className + '.pdf';
+            }
+        }
+
+        // Configuration for High Quality and A4
+        var opt = {
+            margin:       [15, 15, 15, 15], // mm
+            filename:     filename,
+            image:        { type: 'jpeg', quality: 1 }, // Max quality
+            html2canvas:  { 
+                scale: 3, // High scale for sharp text (was default 1)
+                useCORS: true, 
+                letterRendering: true,
+                scrollY: 0
+            },
+            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
+        };
+
+        // Clone element to modify for print
+        var clone = element.cloneNode(true);
+        
+        // Remove unwanted elements from clone
+        $(clone).find('.azac-content-header .azac-actions').remove();
+        $(clone).find('#azac-attachments-section').show(); 
+        
+        // Add Title manually
+        var title = $('#azac-view-title').text();
+        $(clone).prepend('<h1 style="color:#004E44; margin-bottom:20px; font-size:24px; border-bottom: 2px solid #004E44; padding-bottom:10px; font-family: Arial, sans-serif;">' + title + '</h1>');
+        $(clone).find('#azac-view-title').remove();
+
+        // Fix Clone Width to ensure consistency in PDF
+        clone.style.width = '800px'; 
+        clone.style.padding = '20px';
+        clone.style.background = '#fff';
+        
+        // We don't append clone to body to avoid flicker, html2pdf handles it internally or we can use a hidden container
+        // But html2pdf needs it in DOM sometimes for images. Let's try passing clone directly.
+        
+        // Generate Blob for Preview
+        html2pdf().set(opt).from(clone).toPdf().get('pdf').then(function(pdfObj) {
+            // This part is tricky with html2pdf chain. 
+            // Better to use .output('bloburl')
+        });
+
+        html2pdf().set(opt).from(clone).output('bloburl').then(function(pdfUrl) {
+            // Show Modal
+            $('#azac-pdf-preview-frame').attr('src', pdfUrl);
+            $('#azac-pdf-modal').fadeIn(200);
+            
+            // Reset Button
+            $btn.html(originalText).prop('disabled', false);
+
+            // Handle Download Button in Modal
+            $('#azac-confirm-download').off('click').on('click', function() {
+                var link = document.createElement('a');
+                link.href = pdfUrl;
+                link.download = opt.filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        }).catch(function(err) {
+            console.error(err);
+            alert('Lỗi khi tạo PDF. Vui lòng thử lại.');
+            $btn.html(originalText).prop('disabled', false);
+        });
+    });
+
+    // Modal Close Logic
+    $('.azac-close, .azac-close-modal').on('click', function() {
+        $('#azac-pdf-modal').fadeOut(200);
+        $('#azac-pdf-preview-frame').attr('src', ''); // Clear source
+    });
+
+    // Close on click outside
+    $(window).on('click', function(event) {
+        if (event.target == document.getElementById('azac-pdf-modal')) {
+            $('#azac-pdf-modal').fadeOut(200);
+            $('#azac-pdf-preview-frame').attr('src', '');
+        }
     });
 });
                                 </script>
