@@ -2,6 +2,7 @@
 if (!defined('ABSPATH')) {
     exit;
 }
+
 class AzAC_Core_Sessions
 {
     public static function register()
@@ -12,6 +13,7 @@ class AzAC_Core_Sessions
         add_action('wp_ajax_azac_list_sessions', [__CLASS__, 'ajax_list_sessions']);
         add_action('wp_ajax_azac_get_session_details', [__CLASS__, 'ajax_get_session_details']);
         add_action('wp_ajax_azac_save_session_content', [__CLASS__, 'ajax_save_session_content']);
+        add_action('wp_ajax_azac_upload_pdf_image', [__CLASS__, 'ajax_upload_pdf_image']);
     }
     public static function ensure_sessions_table()
     {
@@ -351,5 +353,55 @@ class AzAC_Core_Sessions
         }
 
         wp_send_json_success(['message' => 'Saved']);
+    }
+
+    public static function ajax_upload_pdf_image()
+    {
+        check_ajax_referer('azac_session_content', 'nonce');
+
+        $data = isset($_POST['image']) ? $_POST['image'] : '';
+        if (empty($data)) {
+            wp_send_json_error(['message' => 'No image data'], 400);
+        }
+
+        // Permission check
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+
+        if (!$is_admin && !$is_teacher) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+
+        // Decode Base64
+        $data = str_replace('data:image/png;base64,', '', $data);
+        $data = str_replace(' ', '+', $data);
+        $decoded = base64_decode($data);
+
+        if (!$decoded) {
+            wp_send_json_error(['message' => 'Decode failed'], 400);
+        }
+
+        // Upload to WP Media
+        $upload_dir = wp_upload_dir();
+        $filename = 'pdf-import-' . time() . '-' . wp_rand(100, 999) . '.png';
+        $file_path = $upload_dir['path'] . '/' . $filename;
+
+        file_put_contents($file_path, $decoded);
+
+        $filetype = wp_check_filetype($filename, null);
+        $attachment = [
+            'post_mime_type' => $filetype['type'],
+            'post_title' => sanitize_file_name($filename),
+            'post_content' => '',
+            'post_status' => 'inherit'
+        ];
+
+        $attach_id = wp_insert_attachment($attachment, $file_path);
+        require_once(ABSPATH . 'wp-admin/includes/image.php');
+        $attach_data = wp_generate_attachment_metadata($attach_id, $file_path);
+        wp_update_attachment_metadata($attach_id, $attach_data);
+
+        wp_send_json_success(['url' => wp_get_attachment_url($attach_id), 'id' => $attach_id]);
     }
 }
