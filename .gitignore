@@ -1,34 +1,22 @@
-# --- CHẶN CORE WORDPRESS (Chỉ chặn folder, không chặn đuôi file chung chung) ---
-wp-admin/
-wp-includes/
-/index.php
-/wp-activate.php
-/wp-blog-header.php
-/wp-comments-post.php
-/wp-config-sample.php
-/wp-cron.php
-/wp-links-opml.php
-/wp-load.php
-/wp-login.php
-/wp-mail.php
-/wp-settings.php
-/wp-signup.php
-/wp-trackback.php
-xmlrpc.php
-license.txt
-readme.html
-local-xdebuginfo.php
-index.php
+# 1. Chặn toàn bộ thư mục gốc
+/*
 
-# --- QUẢN LÝ PLUGINS ---
-wp-content/plugins/*
-!wp-content/plugins/az-academy-core/
+# 2. Mở khóa đường dẫn đến Plugin
+!/wp-content/
+/wp-content/*
+!/wp-content/plugins/
+/wp-content/plugins/*
+!/wp-content/plugins/az-academy-core/
 
-# --- QUẢN LÝ THEMES ---
-wp-content/themes/*
-!wp-content/themes/az-academy/
+# 3. Mở khóa đường dẫn đến Theme (Sửa tại đây)
+!/wp-content/themes/
+/wp-content/themes/*
+!/wp-content/themes/az-academy/
 
-# --- CÁC FILE KHÁC ---
-wp-config.php
-.htaccess
-wp-content/uploads/
+# 4. Các file cấu hình
+!/.gitignore
+!/README.md
+
+# 5. Rác hệ thống
+.DS_Store
+Thumbs.db
