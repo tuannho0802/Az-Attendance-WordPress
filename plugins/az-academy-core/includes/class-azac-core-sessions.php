@@ -271,11 +271,12 @@ class AzAC_Core_Sessions
             $att_id = intval($att_id);
             if ($att_id) {
                 $url = wp_get_attachment_url($att_id);
-                if ($url) {
+                // Ensure URL is valid and absolute
+                if ($url && filter_var($url, FILTER_VALIDATE_URL)) {
                     $post = get_post($att_id);
                     $attachments[] = [
                         'id' => $att_id,
-                        'title' => $post ? $post->post_title : '',
+                        'title' => $post ? $post->post_title : 'Tài liệu',
                         'url' => $url,
                         'mime' => get_post_mime_type($att_id)
                     ];

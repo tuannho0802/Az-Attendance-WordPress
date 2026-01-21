@@ -548,6 +548,9 @@ get_header();
                     <button type="button" id="azac-upload-btn" class="azac-btn azac-btn-outline" style="margin-top:10px;">
                         <span class="dashicons dashicons-upload"></span> Upload Tài liệu
                     </button>
+                    <button type="button" id="azac-import-pdf-btn" class="azac-btn azac-btn-outline" style="margin-top:10px; margin-left:10px;">
+                        <span class="dashicons dashicons-media-document"></span> Import từ PDF
+                    </button>
                     <input type="hidden" id="azac-att-ids" value="[]">
                 </div>
 
@@ -638,11 +641,28 @@ get_header();
             </div>
         </div>
     </div>
+    <!-- Quick View Modal -->
+    <div id="azac-quickview-modal" class="azac-modal">
+        <div class="azac-modal-content" style="max-width: 1000px; height: 95vh;">
+            <div class="azac-modal-header">
+                <h3 id="azac-qv-title">Xem tài liệu</h3>
+                <span class="azac-close azac-close-qv">&times;</span>
+            </div>
+            <div class="azac-modal-body" id="azac-qv-body" style="background: #333; display:flex; align-items:center; justify-content:center;">
+                <!-- Content injected here -->
+            </div>
+        </div>
+    </div>
 </article>
         <?php endwhile; endif; ?>
     </main>
 </div>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+    // Set worker src
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
 <script>
 jQuery(document).ready(function($) {
     var currentSessionId = 0; // 0 = Overview
@@ -728,9 +748,12 @@ jQuery(document).ready(function($) {
                             <div class="azac-att-card">
                                 <span class="azac-att-icon ${iconClass.split(' ').pop()}"><span class="${iconClass}"></span></span>
                                 <div class="azac-att-info">
-                                    <a href="${att.url}" target="_blank" class="azac-att-title">${att.title}</a>
+                                    <a href="#" onclick="openQuickView('${att.url}', '${att.mime}', '${att.title}'); return false;" class="azac-att-title">${att.title}</a>
                                 </div>
-                                <a href="${att.url}" download class="azac-att-actions dashicons dashicons-download"></a>
+                                <div style="display:flex; gap:8px;">
+                                    <span class="dashicons dashicons-visibility" title="Xem nhanh" style="cursor:pointer; color:#15345a;" onclick="openQuickView('${att.url}', '${att.mime}', '${att.title}')"></span>
+                                    <a href="${att.url}" download class="dashicons dashicons-download" title="Tải xuống" style="text-decoration:none; color:#555;"></a>
+                                </div>
                             </div>`;
                         });
                         $('#azac-attachments-list').html(attHtml);
@@ -899,6 +922,107 @@ jQuery(document).ready(function($) {
             $('#edit-att-' + id).remove();
         }
     };
+
+    // Quick View Logic
+    window.openQuickView = function(url, mime, title) {
+        $('#azac-qv-title').text(title);
+        var content = '';
+        if (mime.includes('image')) {
+            content = '<img src="' + url + '" style="max-width:100%; max-height:90vh; box-shadow:0 0 20px rgba(0,0,0,0.5);">';
+        } else if (mime.includes('pdf')) {
+            content = '<iframe src="' + url + '" style="width:100%; height:100%; border:none;"></iframe>';
+        } else {
+            // Fallback for others (e.g. Word) - Google Docs Viewer or just Link
+            content = '<iframe src="https://docs.google.com/viewer?url=' + encodeURIComponent(url) + '&embedded=true" style="width:100%; height:100%; border:none;"></iframe>';
+        }
+        $('#azac-qv-body').html(content);
+        $('#azac-quickview-modal').fadeIn();
+    };
+
+    $('.azac-close-qv').on('click', function() {
+        $('#azac-quickview-modal').fadeOut();
+        $('#azac-qv-body').empty();
+    });
+
+    // Close modal when clicking outside
+    $(window).on('click', function(event) {
+        if ($(event.target).is('#azac-quickview-modal')) {
+            $('#azac-quickview-modal').fadeOut();
+            $('#azac-qv-body').empty();
+        }
+    });
+
+    // Import PDF Logic
+    $('#azac-import-pdf-btn').on('click', function(e) {
+        e.preventDefault();
+        var frame = wp.media({
+            title: 'Chọn file PDF để Import',
+            button: { text: 'Import nội dung' },
+            library: { type: 'application/pdf' },
+            multiple: false
+        });
+        
+        frame.on('select', function() {
+            var attachment = frame.state().get('selection').first().toJSON();
+            importPdfContent(attachment.url);
+        });
+        
+        frame.open();
+    });
+
+    function importPdfContent(url) {
+        // Show loading in editor
+        var loadingMsg = '<p><em>Đang phân tích và import nội dung từ PDF... Vui lòng đợi.</em></p>';
+        if (typeof tinymce !== 'undefined' && tinymce.get('azac_session_editor')) {
+            tinymce.get('azac_session_editor').setContent(loadingMsg);
+        } else {
+            $('#azac_session_editor').val('Đang phân tích PDF...');
+        }
+        
+        // PDF.js Logic
+        var loadingTask = pdfjsLib.getDocument(url);
+        loadingTask.promise.then(function(pdf) {
+            var maxPages = pdf.numPages;
+            var countPromises = []; 
+            for (var j = 1; j <= maxPages; j++) {
+                var page = pdf.getPage(j);
+                countPromises.push(page.then(function(page) {
+                    return page.getTextContent().then(function(text) {
+                        return text.items.map(function (s) { return s.str; }).join(' ');
+                    });
+                }));
+            }
+            
+            Promise.all(countPromises).then(function (texts) {
+                var fullText = texts.join('<br><br>');
+                var isImageBased = false;
+                
+                // Heuristic: If text length is very small relative to pages, it might be image-based
+                // Or if fullText is empty
+                if (fullText.replace(/\s/g, '').length < 100) { 
+                     isImageBased = true;
+                }
+
+                var finalContent = '';
+                if (isImageBased) {
+                     finalContent = `<h3>Nội dung bài giảng (PDF)</h3>
+                     <p>Tài liệu gốc: <a href="${url}" target="_blank">Xem file PDF</a></p>
+                     <iframe src="${url}" width="100%" height="800px" style="border:1px solid #ddd;"></iframe>`;
+                } else {
+                    finalContent = fullText + `<p>---<br><em>Imported from PDF</em></p>`;
+                }
+                
+                if (typeof tinymce !== 'undefined' && tinymce.get('azac_session_editor')) {
+                    tinymce.get('azac_session_editor').setContent(finalContent);
+                } else {
+                    $('#azac_session_editor').val(finalContent);
+                }
+            });
+        }, function (reason) {
+            console.error(reason);
+            alert('Lỗi khi đọc file PDF: ' + reason);
+        });
+    }
 
     // Print PDF Logic (Native Browser Print for Vector Quality)
     $('#azac-print-btn').on('click', function() {
