@@ -95,44 +95,125 @@ a {
   font-weight: 700;
   font-size: 18px;
   color: #0b3d3b;
+  margin: 0 0 8px 0;
 }
 .az-card-actions {
   margin-top: auto;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
 }
-nav.menu,
-.menu {
-  list-style: none;
-  margin: 0;
-  padding: 0;
+.az-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
 }
-.menu li {
-  list-style: none;
+.az-btn-primary {
+  background: #0f6d5e;
+  color: #fff;
+  border: 1px solid #0f6d5e;
 }
-body > .container {
-  flex: 1;
+.az-btn-primary:hover {
+  background: #0b4f44;
+}
+.az-btn-outline {
+  background: transparent;
+  color: #0f6d5e;
+  border: 1px solid #0f6d5e;
+}
+.az-btn-outline:hover {
+  background: #f0fcf9;
 }
 footer {
-  margin-top: auto !important;
-  padding: 16px 0;
+  background: #f8faf9;
+  border-top: 1px solid #e6e8e8;
+  padding: 24px;
+  text-align: center;
+  color: #666;
+  font-size: 14px;
+  margin-top: auto;
 }
-.az-class-card {
-  max-width: 680px;
-  margin: 8px auto 18px;
-  background: #fff;
-  border: 1px solid #e2e2e2;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  padding: 10px;
+
+/* Accordion Curriculum Styles */
+.az-curriculum-accordion {
+    border: 1px solid #e2e2e2;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-top: 20px;
 }
-.az-class-actions {
-  max-width: 680px;
-  margin: 0 auto;
+
+.az-accordion-item {
+    border-bottom: 1px solid #e2e2e2;
+    background: #fff;
 }
-@media (max-width: 640px) {
-  .az-class-table th {
-    width: auto;
-  }
-  .az-class-card {
-    margin: 6px 12px 16px;
-  }
+
+.az-accordion-item:last-child {
+    border-bottom: none;
+}
+
+.az-accordion-header {
+    padding: 15px 20px;
+    cursor: pointer;
+    background: #f8faf9;
+    transition: background 0.2s;
+    user-select: none;
+}
+
+.az-accordion-header:hover {
+    background: #f0f2f2;
+}
+
+.az-accordion-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    color: #0b3d3b;
+}
+
+.az-accordion-icon {
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    width: 20px;
+    height: 20px;
+    font-size: 18px;
+    font-weight: bold;
+    color: #0f6d5e;
+    transition: transform 0.3s ease;
+}
+
+.az-session-index {
+    color: #0f6d5e;
+    font-weight: 700;
+}
+
+.az-accordion-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease-out;
+    background: #fff;
+}
+
+.az-accordion-item.active .az-accordion-content {
+    max-height: 1000px; /* Approximate max height */
+    transition: max-height 0.5s ease-in;
+}
+
+.az-accordion-item.active .az-accordion-icon {
+    transform: rotate(45deg); /* Turn + into x */
+}
+
+.az-accordion-inner {
+    padding: 20px;
+    color: #444;
+    line-height: 1.6;
+    border-top: 1px solid #f0f2f2;
 }

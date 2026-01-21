@@ -28,6 +28,7 @@ require_once AZAC_CORE_DIR . 'includes/class-azac-admin-pages.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-admin-assets.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-admin-stats.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-admin.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-shortcodes.php';
 
 register_activation_hook(__FILE__, ['AzAC_Core_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['AzAC_Core_Deactivator', 'deactivate']);
@@ -41,6 +42,7 @@ add_action('plugins_loaded', function () {
     AzAC_Core_Sessions::register();
     AzAC_Admin_Stats::register();
     AzAC_Core_Mid::register();
+    AzAC_Shortcodes::register();
 });
 add_action('init', function () {
     $ver = get_option('azac_core_version');
