@@ -373,8 +373,16 @@ class AzAC_Core_Sessions
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
-        // Decode Base64
-        $data = str_replace('data:image/png;base64,', '', $data);
+        // Detect type and strip header
+        $ext = '.png';
+        if (strpos($data, 'data:image/jpeg;base64,') === 0) {
+            $data = str_replace('data:image/jpeg;base64,', '', $data);
+            $ext = '.jpg';
+        } elseif (strpos($data, 'data:image/png;base64,') === 0) {
+            $data = str_replace('data:image/png;base64,', '', $data);
+            $ext = '.png';
+        }
+
         $data = str_replace(' ', '+', $data);
         $decoded = base64_decode($data);
 
@@ -384,7 +392,13 @@ class AzAC_Core_Sessions
 
         // Upload to WP Media
         $upload_dir = wp_upload_dir();
-        $filename = 'pdf-import-' . time() . '-' . wp_rand(100, 999) . '.png';
+
+        // Optimized Filename: session-[ID]-[timestamp]-[index]
+        $session_id = isset($_POST['session_id']) ? absint($_POST['session_id']) : 0;
+        $idx = isset($_POST['image_index']) ? absint($_POST['image_index']) : wp_rand(100, 999);
+        $prefix = $session_id ? "session-{$session_id}" : "pdf-import";
+
+        $filename = "{$prefix}-" . time() . "-{$idx}{$ext}";
         $file_path = $upload_dir['path'] . '/' . $filename;
 
         file_put_contents($file_path, $decoded);

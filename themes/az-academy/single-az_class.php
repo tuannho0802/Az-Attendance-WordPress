@@ -978,201 +978,213 @@ jQuery(document).ready(function($) {
     });
 
     function importPdfContent(url) {
-        // UI Loading
+        // UI Setup
         $('#azac-import-loading').show();
+        if($('#azac-loading-progress').length === 0) {
+             $('#azac-import-loading').append('<p id="azac-loading-progress" style="margin-top:10px; font-weight:bold; color:#0f6d5e;"></p>');
+             $('#azac-import-loading').append('<div id="azac-import-thumbnails" style="margin-top:15px; display:flex; gap:10px; overflow-x:auto; padding-bottom:10px; min-height:60px; background:#f5f5f5; border-radius:4px; padding:10px;"></div>');
+        }
+        $('#azac-loading-progress').html('Đang kết nối PDF... <span class="spinner is-active" style="float:none; margin:0;"></span>');
+        $('#azac-import-thumbnails').html('<span style="color:#777; font-style:italic;">Hình ảnh sẽ xuất hiện tại đây...</span>');
         $('#azac-import-pdf-btn').prop('disabled', true);
         
-        var loadingMsg = '<p><em>Đang phân tích PDF...</em></p>';
-        if (typeof tinymce !== 'undefined' && tinymce.get('azac_session_editor')) {
-            tinymce.get('azac_session_editor').setContent(loadingMsg);
-        } else {
-            $('#azac_session_editor').val('Đang phân tích PDF...');
+        // Configure Worker for Performance
+        if(typeof pdfjsLib !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
+             pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
         }
-        
-        // PDF.js Logic
+
         var loadingTask = pdfjsLib.getDocument(url);
         loadingTask.promise.then(async function(pdf) {
             try {
                 var maxPages = pdf.numPages;
                 var finalHtml = '';
-                var mostCommonHeight = 0;
+                var mostCommonHeight = 12; 
                 var totalImagesFound = 0;
 
-                // 1. Analyze first page
+                // --- PHASE 1: Fast Text Extraction (Async) ---
+                $('#azac-loading-progress').html('<strong>Giai đoạn 1:</strong> Đang lấy văn bản toàn bộ ' + maxPages + ' trang...');
+                
+                var allPagesText = [];
+                // Analyze Font Size first
                 try {
-                    var firstPage = await pdf.getPage(1);
-                    var textContent = await firstPage.getTextContent();
+                    var p1 = await pdf.getPage(1);
+                    var t1 = await p1.getTextContent();
                     var heights = {};
-                    textContent.items.forEach(item => {
+                    t1.items.forEach(item => {
                          var h = Math.round(Math.abs(item.transform[3])); 
                          if(h > 0) heights[h] = (heights[h] || 0) + 1;
                     });
                     var maxCount = 0;
                     for(var h in heights) {
-                        if(heights[h] > maxCount) {
-                            maxCount = heights[h];
-                            mostCommonHeight = parseInt(h);
-                        }
+                        if(heights[h] > maxCount) { maxCount = heights[h]; mostCommonHeight = parseInt(h); }
                     }
-                } catch(e) { console.error('Analyze error', e); mostCommonHeight = 12; }
+                } catch(e) {}
 
-                var totalImagesUploaded = 0;
-                var MAX_IMAGES = 5; // Hard limit to prevent flooding
-
-                // 2. Process all pages
                 for (var j = 1; j <= maxPages; j++) {
-                    var page = await pdf.getPage(j);
-                    var imagePromises = [];
-                    
-                    // --- Image Extraction ---
-                    if (totalImagesUploaded < MAX_IMAGES) {
-                        try {
-                            var ops = await page.getOperatorList();
-                            for (var i = 0; i < ops.fnArray.length; i++) {
-                                if (totalImagesUploaded + imagePromises.length >= MAX_IMAGES) break; // Stop collecting
-
-                                if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) {
-                                    var imgName = ops.argsArray[i][0];
-                                    imagePromises.push(new Promise(function(resolve) {
-                                        var tm = setTimeout(function(){ resolve(null); }, 1000); // 1s Timeout (Reduced)
-                                        try {
-                                            page.objs.get(imgName, function(img) {
-                                                clearTimeout(tm);
-                                                if (!img) { resolve(null); return; }
-                                                
-                                                // STRICTER FILTER: > 150px to avoid icons/spam
-                                                if (img.width < 150 || img.height < 150) { resolve(null); return; }
-
-                                                var canvas = document.createElement('canvas');
-                                                canvas.width = img.width;
-                                                canvas.height = img.height;
-                                                var ctx = canvas.getContext('2d');
-
-                                                try {
-                                                    // Draw logic (simplified for stability)
-                                                    if (img.bitmap) {
-                                                        ctx.drawImage(img.bitmap, 0, 0);
-                                                    } else {
-                                                        // Attempt generic draw, ignore complex data types for now to prevent loops/errors
-                                                        // Most real images work with drawImage(img) or have bitmap
-                                                        ctx.drawImage(img, 0, 0); 
-                                                    }
-                                                    resolve(canvas.toDataURL('image/jpeg', 0.7)); // JPEG to save size
-                                                } catch (e) { resolve(null); }
-                                            });
-                                        } catch(e) { clearTimeout(tm); resolve(null); }
-                                    }));
-                                }
-                            }
-                        } catch(e) { console.warn('Image extraction skipped for page ' + j, e); }
-                    }
-
-                    // Upload Images (Sequential to prevent server overload)
-                    var pageUploadedImages = [];
-                    if(imagePromises.length > 0) {
-                         var base64Images = await Promise.all(imagePromises);
-                         for(var imgData of base64Images) {
-                             if (totalImagesUploaded >= MAX_IMAGES) break;
-                             
-                             if(imgData && imgData.length > 5000) { // > ~5KB
-                                 try {
-                                     // Sync Upload (await)
-                                     var uploadRes = await $.ajax({
-                                         url: '<?php echo admin_url('admin-ajax.php'); ?>',
-                                        type: 'POST',
-                                        data: {
-                                            action: 'azac_upload_pdf_image',
-                                            image: imgData,
-                                            nonce: '<?php echo wp_create_nonce("azac_session_content"); ?>'
-                                        }
-                                    });
-                                    if (uploadRes.success) {
-                                        pageUploadedImages.push(uploadRes.data.url);
-                                        totalImagesUploaded++;
-                                        totalImagesFound++;
-                                    }
-                                } catch (err) { console.error('Upload failed', err); }
-                            }
-                        }
-                    }
-
-                    // --- Text Extraction ---
-                    var textContent = await page.getTextContent();
-                    var lines = {};
-                    textContent.items.forEach(function (item) {
-                        var y = Math.round(item.transform[5]);
-                        var foundKey = Object.keys(lines).find(k => Math.abs(k - y) < 5);
-                        var key = foundKey || y;
-                        if (!lines[key]) lines[key] = [];
-                        lines[key].push(item);
-                    });
-
-                    var sortedY = Object.keys(lines).sort((a, b) => b - a);
-                    var pageHtml = '';
-
-                    sortedY.forEach(function (y) {
-                        var items = lines[y];
-                        items.sort((a, b) => a.transform[4] - b.transform[4]);
-
-                        var lineText = '';
-                        var currentSize = 0;
-
-                        items.forEach(function (item) {
-                            if (!item.str.trim()) return;
-                            lineText += item.str + ' ';
-                            currentSize = Math.max(currentSize, Math.round(Math.abs(item.transform[3])));
+                    try {
+                        var page = await pdf.getPage(j);
+                        var textContent = await page.getTextContent();
+                        var lines = {};
+                        textContent.items.forEach(function (item) {
+                            var y = Math.round(item.transform[5]);
+                            var foundKey = Object.keys(lines).find(k => Math.abs(k - y) < 5);
+                            var key = foundKey || y;
+                            if (!lines[key]) lines[key] = [];
+                            lines[key].push(item);
                         });
-
-                        if (!lineText.trim()) return;
-
-                        var tag = 'p';
-                        if (currentSize > mostCommonHeight * 1.8) tag = 'h2';
-                        else if (currentSize > mostCommonHeight * 1.3) tag = 'h3';
-                        else if (currentSize > mostCommonHeight * 1.1) tag = 'strong';
-
-                        if (lineText.trim().match(/^[•\-\*]\s/)) {
-                            tag = 'li';
-                            lineText = lineText.replace(/^[•\-\*]\s/, '');
-                        }
-
-                        if (tag === 'strong') pageHtml += '<p><strong>' + lineText + '</strong></p>';
-                        else if (tag === 'li') pageHtml += '<li>' + lineText + '</li>';
-                        else pageHtml += '<' + tag + '>' + lineText + '</' + tag + '>';
-                    });
-
-                    finalHtml += pageHtml;
-
-                    if (pageUploadedImages.length > 0) {
-                        finalHtml += '<div class="pdf-images-extracted">';
-                        pageUploadedImages.forEach(url => {
-                            finalHtml += '<img src="' + url + '" style="max-width:100%; height:auto; margin: 10px 0;">';
+                        var sortedY = Object.keys(lines).sort((a, b) => b - a);
+                        var pageHtml = '';
+                        sortedY.forEach(function (y) {
+                            var items = lines[y];
+                            items.sort((a, b) => a.transform[4] - b.transform[4]);
+                            var lineText = '';
+                            var currentSize = 0;
+                            items.forEach(function (item) {
+                                if (!item.str.trim()) return;
+                                lineText += item.str + ' ';
+                                currentSize = Math.max(currentSize, Math.round(Math.abs(item.transform[3])));
+                            });
+                            if (!lineText.trim()) return;
+                            var tag = 'p';
+                            if (currentSize > mostCommonHeight * 1.8) tag = 'h2';
+                            else if (currentSize > mostCommonHeight * 1.3) tag = 'h3';
+                            else if (currentSize > mostCommonHeight * 1.1) tag = 'strong';
+                            if (lineText.trim().match(/^[•\-\*]\s/)) { tag = 'li'; lineText = lineText.replace(/^[•\-\*]\s/, ''); }
+                            if (tag === 'strong') pageHtml += '<p><strong>' + lineText + '</strong></p>';
+                            else if (tag === 'li') pageHtml += '<li>' + lineText + '</li>';
+                            else pageHtml += '<' + tag + '>' + lineText + '</' + tag + '>';
                         });
-                        finalHtml += '</div>';
-                    }
-                    
-                    finalHtml += '<hr>';
+                        
+                        // Placeholder for images of this page
+                        pageHtml += `<div id="azac-page-images-${j}" class="pdf-images-extracted" style="min-height:20px; border:1px dashed #eee; margin:10px 0;"></div><hr>`;
+                        finalHtml += pageHtml;
+                        
+                        page.cleanup();
+                    } catch(e) { console.warn('Text skipped page ' + j); }
                 }
                 
                 finalHtml = finalHtml.replace(/((<li>.*?<\/li>)+)/g, '<ul>$1</ul>');
-
-                // Fallback only if absolutely empty
-                if (finalHtml.trim().length < 50 && totalImagesFound === 0) {
-                     finalHtml = `<h3>Nội dung bài giảng (PDF)</h3>
-                     <p>Tài liệu gốc: <a href="${url}" target="_blank">Xem file PDF</a></p>
-                     <iframe src="${url}" width="100%" height="800px" style="border:1px solid #ddd;"></iframe>`;
-                } else {
-                    finalHtml += `<p>---<br><em>Imported from PDF</em></p>`;
-                }
                 
+                // Update Editor IMMEDIATELY with Text
                 if (typeof tinymce !== 'undefined' && tinymce.get('azac_session_editor')) {
                     tinymce.get('azac_session_editor').setContent(finalHtml);
                 } else {
                     $('#azac_session_editor').val(finalHtml);
                 }
                 
+                // --- PHASE 2: Parallel Image Extraction ---
+                $('#azac-loading-progress').html('<strong>Giai đoạn 2:</strong> Đang xử lý hình ảnh song song...');
+                $('#azac-import-thumbnails').empty();
+                
+                // Helper: Process single page images concurrently
+                var processPageImages = async function(pageNum) {
+                    try {
+                        var page = await pdf.getPage(pageNum);
+                        var ops = await page.getOperatorList();
+                        
+                        var imageTasks = [];
+                        
+                        for (var i = 0; i < ops.fnArray.length; i++) {
+                            if (ops.fnArray[i] === pdfjsLib.OPS.paintImageXObject) {
+                                var imgName = ops.argsArray[i][0];
+                                imageTasks.push(imgName);
+                            }
+                        }
+                        
+                        // Batch process images (Max 3 concurrent per page to save CPU)
+                        var BATCH_SIZE = 3;
+                        for (var k = 0; k < imageTasks.length; k += BATCH_SIZE) {
+                            var batch = imageTasks.slice(k, k + BATCH_SIZE);
+                            await Promise.all(batch.map(async (imgName) => {
+                                return new Promise(async (resolve) => {
+                                    // 2s Timeout for each image
+                                    var timeout = setTimeout(() => resolve(null), 2000);
+                                    
+                                    try {
+                                        page.objs.get(imgName, async function(img) {
+                                            clearTimeout(timeout);
+                                            if(!img || img.width <= 0) { resolve(null); return; }
+                                            
+                                            try {
+                                                var canvas = document.createElement('canvas');
+                                                var targetW = img.width > 1200 ? 1200 : img.width;
+                                                var scale = img.width > 1200 ? (1200/img.width) : 1;
+                                                var targetH = img.height * scale;
+                                                
+                                                canvas.width = targetW;
+                                                canvas.height = targetH;
+                                                var ctx = canvas.getContext('2d');
+                                                
+                                                if (img.bitmap) ctx.drawImage(img.bitmap, 0, 0, targetW, targetH);
+                                                else ctx.drawImage(img, 0, 0, targetW, targetH);
+                                                
+                                                var b64 = canvas.toDataURL('image/jpeg', 0.7);
+                                                
+                                                // Upload
+                                                var res = await $.ajax({
+                                                    url: '<?php echo admin_url('admin-ajax.php'); ?>',
+                                                    type: 'POST',
+                                                    data: {
+                                                        action: 'azac_upload_pdf_image',
+                                                        image: b64,
+                                                        session_id: (typeof currentSessionId !== 'undefined') ? currentSessionId : 0,
+                                                        image_index: totalImagesFound + 1,
+                                                        nonce: '<?php echo wp_create_nonce("azac_session_content"); ?>'
+                                                    }
+                                                });
+
+                                                if (res.success) {
+                                                    totalImagesFound++;
+                                                    var imgUrl = res.data.url;
+
+                                                    // Append to Editor content (DOM manipulation)
+                                                    var editor = tinymce.get('azac_session_editor');
+                                                    if (editor) {
+                                                        var doc = editor.getDoc();
+                                                        var container = doc.getElementById('azac-page-images-' + pageNum);
+                                                        if (container) {
+                                                            var newImg = doc.createElement('img');
+                                                            newImg.src = imgUrl;
+                                                            newImg.style.maxWidth = '100%';
+                                                            newImg.style.margin = '10px 0';
+                                                            container.appendChild(newImg);
+                                                        }
+                                                    }
+
+                                                    // Add Thumbnail to UI
+                                                    $('#azac-import-thumbnails').append(`<img src="${imgUrl}" style="height:50px; border:1px solid #ddd; padding:2px; background:#fff;">`);
+                                                    $('#azac-import-thumbnails').scrollLeft(10000); // Auto scroll right
+
+                                                    $('#azac-loading-progress').html(`Đã xử lý <strong>${totalImagesFound}</strong> ảnh...`);
+                                                }
+
+                                                // Cleanup
+                                                canvas.width = 1; canvas = null; b64 = null;
+                                            } catch (e) { console.warn(e); }
+                                            resolve(true);
+                                        });
+                                    } catch (e) { resolve(null); }
+                                });
+                            }));
+                        }
+                        page.cleanup();
+                    } catch (e) { console.error(e); }
+                };
+
+                // Process pages in parallel chunks (e.g. 2 pages at a time)
+                var PAGE_CONCURRENCY = 2;
+                for (var j = 1; j <= maxPages; j += PAGE_CONCURRENCY) {
+                    var pagePromises = [];
+                    for (var p = 0; p < PAGE_CONCURRENCY; p++) {
+                        if (j + p <= maxPages) pagePromises.push(processPageImages(j + p));
+                    }
+                    await Promise.all(pagePromises);
+                }
+
                 $('#azac-import-loading').hide();
                 $('#azac-import-pdf-btn').prop('disabled', false);
                 $('#azac-clean-format-btn').show();
+                alert('Hoàn tất! Đã trích xuất văn bản và ' + totalImagesFound + ' hình ảnh.');
 
             } catch(e) {
                 console.error(e);
@@ -1180,7 +1192,6 @@ jQuery(document).ready(function($) {
                 $('#azac-import-loading').hide();
                 $('#azac-import-pdf-btn').prop('disabled', false);
             }
-
         }, function (reason) {
             console.error(reason);
             alert('Lỗi khi đọc file PDF: ' + reason);
