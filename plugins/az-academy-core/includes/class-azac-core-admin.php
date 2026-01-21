@@ -9,6 +9,205 @@ class AzAC_Core_Admin
         add_action('admin_menu', ['AzAC_Admin_Pages', 'register_admin_pages']);
         add_action('admin_enqueue_scripts', ['AzAC_Admin_Assets', 'enqueue_admin_assets']);
     }
+    public static function get_students_admin_summary($class_id = 0)
+    {
+        global $wpdb;
+        $att = $wpdb->prefix . 'az_attendance';
+        $rows = [];
+        $format_date = function ($d) {
+            $parts = explode('-', sanitize_text_field($d));
+            if (count($parts) === 3) {
+                return $parts[2] . '/' . $parts[1] . '/' . $parts[0];
+            }
+            return sanitize_text_field($d);
+        };
+        if ($class_id) {
+            $students = AzAC_Core_Helper::get_class_students($class_id);
+            $ids = [];
+            foreach ($students as $p) {
+                $uid = intval(get_post_meta($p->ID, 'az_user_id', true));
+                if ($uid) {
+                    $u = get_userdata($uid);
+                    if ($u && in_array('az_student', $u->roles, true)) {
+                        $ids[] = intval($p->ID);
+                    }
+                }
+            }
+            foreach ($ids as $sid) {
+                $agg = $wpdb->get_results($wpdb->prepare("
+                    SELECT session_date,
+                        MAX(CASE WHEN attendance_type='check-in' AND status=1 THEN 1 ELSE 0 END) AS ch_present,
+                        MAX(CASE WHEN attendance_type!='check-in' AND status=1 THEN 1 ELSE 0 END) AS mid_present
+                    FROM {$att}
+                    WHERE class_id=%d AND student_id=%d
+                    GROUP BY session_date
+                ", $class_id, $sid), ARRAY_A);
+                $joined = 0;
+                $issues = [];
+                foreach ($agg as $a) {
+                    $ch = intval($a['ch_present']);
+                    $mid = intval($a['mid_present']);
+                    if ($ch || $mid)
+                        $joined++;
+                    $type = ($ch === 1 && $mid === 1) ? 'ok' : (($ch + $mid) === 0 ? 'absent' : 'half');
+                    $missing = [];
+                    if ($ch === 0)
+                        $missing[] = 'checkin';
+                    if ($mid === 0)
+                        $missing[] = 'mid';
+                    $issues[] = [
+                        'date' => $format_date($a['session_date']),
+                        'type' => $type,
+                        'missing' => $missing,
+                        'ch' => $ch,
+                        'mid' => $mid,
+                    ];
+                }
+                $rows[] = [
+                    'student_id' => $sid,
+                    'name' => get_the_title($sid),
+                    'classes' => [get_the_title($class_id)],
+                    'joined' => $joined,
+                    'issues' => $issues,
+                ];
+            }
+            return $rows;
+        }
+        $users = get_users(['role' => 'az_student']);
+        foreach ($users as $u) {
+            $sid = 0;
+            $posts = get_posts([
+                'post_type' => 'az_student',
+                'numberposts' => 1,
+                'meta_key' => 'az_user_id',
+                'meta_value' => intval($u->ID),
+            ]);
+            if ($posts) {
+                $sid = intval($posts[0]->ID);
+            }
+            if (!$sid)
+                continue;
+            $classes = [];
+            $agg = $wpdb->get_results($wpdb->prepare("
+                SELECT class_id, session_date,
+                    MAX(CASE WHEN attendance_type='check-in' AND status=1 THEN 1 ELSE 0 END) AS ch_present,
+                    MAX(CASE WHEN attendance_type!='check-in' AND status=1 THEN 1 ELSE 0 END) AS mid_present
+                FROM {$att}
+                WHERE student_id=%d
+                GROUP BY class_id, session_date
+            ", $sid), ARRAY_A);
+            $joined = 0;
+            $issues = [];
+            foreach ($agg as $a) {
+                $ch = intval($a['ch_present']);
+                $mid = intval($a['mid_present']);
+                $cid = intval($a['class_id']);
+                if ($cid) {
+                    $classes[$cid] = get_the_title($cid);
+                    if ($ch || $mid)
+                        $joined++;
+                    $type = ($ch === 1 && $mid === 1) ? 'ok' : (($ch + $mid) === 0 ? 'absent' : 'half');
+                    $missing = [];
+                    if ($ch === 0)
+                        $missing[] = 'checkin';
+                    if ($mid === 0)
+                        $missing[] = 'mid';
+                    $issues[] = [
+                        'date' => $format_date($a['session_date']),
+                        'type' => $type,
+                        'missing' => $missing,
+                        'ch' => $ch,
+                        'mid' => $mid,
+                    ];
+                }
+            }
+            $rows[] = [
+                'student_id' => $sid,
+                'name' => $u->display_name ?: $u->user_login,
+                'classes' => array_values($classes),
+                'joined' => $joined,
+                'issues' => $issues,
+            ];
+        }
+        return $rows;
+    }
+    public static function get_teachers_admin_summary()
+    {
+        $users = get_users(['role' => 'az_teacher']);
+        $rows = [];
+        $palette = [
+            "#2ecc71",
+            "#3498db",
+            "#9b59b6",
+            "#e67e22",
+            "#1abc9c",
+            "#e74c3c",
+            "#16a085",
+            "#2980b9",
+            "#8e44ad",
+            "#d35400",
+            "#27ae60",
+            "#f39c12",
+            "#34495e",
+            "#7f8c8d",
+            "#e84393",
+            "#00cec9",
+            "#6c5ce7",
+            "#fdcb6e",
+            "#00b894",
+            "#0984e3",
+            "#d63031",
+            "#ff7675",
+            "#636e72",
+            "#55efc4",
+            "#a29bfe",
+            "#fab1a0",
+            "#74b9ff",
+            "#b2bec3",
+            "#ff6b6b",
+            "#4dabf7",
+            "#f4a261",
+            "#2a9d8f",
+            "#e76f51",
+            "#264653",
+        ];
+        foreach ($users as $u) {
+            $classes = get_posts([
+                'post_type' => 'az_class',
+                'numberposts' => -1,
+                'meta_key' => 'az_teacher_user',
+                'meta_value' => intval($u->ID),
+                'post_status' => ['publish', 'pending'],
+            ]);
+            $cls = [];
+            $user_ids = [];
+            foreach ($classes as $c) {
+                $ids = get_post_meta($c->ID, 'az_students', true);
+                $ids = is_array($ids) ? array_map('absint', $ids) : [];
+                foreach ($ids as $sid) {
+                    $uid = intval(get_post_meta($sid, 'az_user_id', true));
+                    if ($uid)
+                        $user_ids[$uid] = true;
+                }
+                $n = intval($c->ID);
+                $idx = abs(($n * 9301 + 49297) % count($palette));
+                $color = $palette[$idx];
+                $cls[] = [
+                    'id' => intval($c->ID),
+                    'title' => $c->post_title,
+                    'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . intval($c->ID)),
+                    'color' => $color,
+                ];
+            }
+            $total_students = count($user_ids);
+            $rows[] = [
+                'name' => $u->display_name ?: $u->user_login,
+                'classes' => $cls,
+                'students_total' => $total_students,
+            ];
+        }
+        return $rows;
+    }
     public static function register_admin_pages()
     {
         add_menu_page(

@@ -13,7 +13,7 @@ class AzAC_Admin_Pages
             'azac-attendance',
             [__CLASS__, 'render_attendance_list_page'],
             'dashicons-yes',
-            3
+            1
         );
         add_submenu_page(
             'azac-attendance',
@@ -38,6 +38,24 @@ class AzAC_Admin_Pages
             'manage_options',
             'azac-reviews',
             [__CLASS__, 'render_reviews_page']
+        );
+        add_menu_page(
+            'Quản lý Học viên',
+            'Quản lý Học viên',
+            'manage_options',
+            'azac-manage-students',
+            [__CLASS__, 'render_manage_students_page'],
+            'dashicons-groups',
+            1
+        );
+        add_menu_page(
+            'Quản lý Giảng viên',
+            'Quản lý Giảng viên',
+            'manage_options',
+            'azac-manage-teachers',
+            [__CLASS__, 'render_manage_teachers_page'],
+            'dashicons-welcome-learn-more',
+            1
         );
     }
     public static function render_attendance_list_page()
@@ -544,6 +562,105 @@ class AzAC_Admin_Pages
             'classId' => $class_id,
         ]) . ';</script>';
         echo '<script>if(window.AZAC_Reviews&&typeof window.AZAC_Reviews.init==="function"){window.AZAC_Reviews.init();}</script>';
+        echo '</div>';
+    }
+    public static function render_manage_students_page()
+    {
+        if (!current_user_can('manage_options')) {
+            echo '<div class="wrap"><h1>Quản lý Học viên</h1><p>Chỉ Admin có thể truy cập trang này.</p></div>';
+            return;
+        }
+        $classes = get_posts([
+            'post_type' => 'az_class',
+            'numberposts' => -1,
+            'orderby' => 'date',
+            'order' => 'DESC',
+            'post_status' => ['publish', 'pending'],
+        ]);
+        $class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+        echo '<div class="wrap azac-admin-teal"><h1>Quản lý Học viên</h1>';
+        echo '<div class="azac-session-bar">';
+        echo '<label>Lọc theo lớp ';
+        echo '<select id="azacManageStudentsClass">';
+        echo '<option value="">Tất cả</option>';
+        foreach ($classes as $c) {
+            $sel = ($class_id === $c->ID) ? ' selected' : '';
+            echo '<option value="' . esc_attr($c->ID) . '"' . $sel . '>' . esc_html($c->post_title) . '</option>';
+        }
+        echo '</select></label></div>';
+        echo '<div class="azac-issue-legend">';
+        echo '<span class="legend-badge legend-safe"><span class="dashicons dashicons-yes"></span> Đủ 2 lần</span>';
+        echo '<span class="legend-badge legend-half"><span class="dashicons dashicons-warning"></span> Thiếu 1 nửa</span>';
+        echo '<span class="legend-badge legend-absent"><span class="dashicons dashicons-no"></span> Vắng</span>';
+        echo '<span class="legend-type"><span class="dot dot-checkin"></span> Đầu giờ</span>';
+        echo '<span class="legend-type"><span class="dot dot-mid"></span> Giữa giờ</span>';
+        echo '</div>';
+        $rows = method_exists('AzAC_Core_Admin', 'get_students_admin_summary') ? AzAC_Core_Admin::get_students_admin_summary($class_id) : [];
+        echo '<table class="widefat fixed striped"><thead><tr><th>Tên học viên</th><th>Lớp đang học</th><th>Số buổi đã tham gia</th><th>Ghi chú điểm danh</th></tr></thead><tbody>';
+        if ($rows) {
+            foreach ($rows as $r) {
+                $name = $r['name'];
+                $classes_txt = implode(', ', array_map('esc_html', $r['classes']));
+                $joined = intval($r['joined']);
+                $issues = isset($r['issues']) && is_array($r['issues']) ? $r['issues'] : [];
+                $notes_html = '';
+                if ($issues) {
+                    foreach ($issues as $it) {
+                        $date = esc_html($it['date']);
+                        $type = $it['type'];
+                        $ch_ok = intval($it['ch']) === 1;
+                        $mid_ok = intval($it['mid']) === 1;
+                        $badge_cls = ($type === 'absent') ? 'azac-issue-absent' : (($type === 'half') ? 'azac-issue-half' : 'azac-issue-safe');
+                        $icon = ($type === 'absent') ? 'dashicons-no' : (($type === 'half') ? 'dashicons-warning' : 'dashicons-yes');
+                        $ch_text = $ch_ok ? 'Có mặt' : 'Vắng mặt';
+                        $mid_text = $mid_ok ? 'Có mặt' : 'Vắng mặt';
+                        $notes_html .= '<span class="azac-badge azac-issue-badge ' . $badge_cls . '"><span class="dashicons ' . $icon . '"></span> ' . $date . '<span class="azac-tip"><span class="tip-badge ' . ($ch_ok ? 'present' : 'absent') . '">Đầu giờ: ' . $ch_text . '</span><span class="tip-badge ' . ($mid_ok ? 'present' : 'absent') . '">Giữa giờ: ' . $mid_text . '</span></span></span> ';
+                    }
+                } else {
+                    $notes_html = '<span class="azac-badge azac-issue-badge azac-issue-safe"><span class="dashicons dashicons-yes"></span> Đủ 2 lần</span>';
+                }
+                echo '<tr>';
+                echo '<td>' . esc_html($name) . '</td>';
+                echo '<td>' . $classes_txt . '</td>';
+                echo '<td>' . esc_html($joined) . '</td>';
+                echo '<td>' . $notes_html . '</td>';
+                echo '</tr>';
+            }
+        } else {
+            echo '<tr><td colspan="4">Chưa có dữ liệu.</td></tr>';
+        }
+        echo '</tbody></table>';
+        echo '<script>(function(){var s=document.getElementById("azacManageStudentsClass");if(!s)return;s.addEventListener("change",function(){var v=this.value||"";var url=new URL(window.location.href);if(v){url.searchParams.set("class_id",v);}else{url.searchParams.delete("class_id");}window.location.href=url.toString();});})();</script>';
+        echo '</div>';
+    }
+    public static function render_manage_teachers_page()
+    {
+        if (!current_user_can('manage_options')) {
+            echo '<div class="wrap"><h1>Quản lý Giảng viên</h1><p>Chỉ Admin có thể truy cập trang này.</p></div>';
+            return;
+        }
+        $rows = method_exists('AzAC_Core_Admin', 'get_teachers_admin_summary') ? AzAC_Core_Admin::get_teachers_admin_summary() : [];
+        echo '<div class="wrap azac-admin-teal"><h1>Quản lý Giảng viên</h1>';
+        echo '<table class="widefat fixed striped"><thead><tr><th>Tên giảng viên</th><th>Danh sách lớp phụ trách</th><th>Tổng số học viên</th></tr></thead><tbody>';
+        if ($rows) {
+            foreach ($rows as $r) {
+                $name = $r['name'];
+                $classes = $r['classes'];
+                $students_total = intval($r['students_total']);
+                $links = array_map(function ($cl) {
+                    $style = 'background:' . esc_attr($cl['color']) . ';border-color:' . esc_attr($cl['color']) . ';color:#fff';
+                    return '<a href="' . esc_url($cl['link']) . '" class="button" style="margin:2px 4px;' . $style . '">' . esc_html($cl['title']) . '</a>';
+                }, $classes);
+                echo '<tr>';
+                echo '<td>' . esc_html($name) . '</td>';
+                echo '<td>' . implode(' ', $links) . '</td>';
+                echo '<td>' . esc_html($students_total) . '</td>';
+                echo '</tr>';
+            }
+        } else {
+            echo '<tr><td colspan="3">Chưa có dữ liệu giảng viên.</td></tr>';
+        }
+        echo '</tbody></table>';
         echo '</div>';
     }
 }
