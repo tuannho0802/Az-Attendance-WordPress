@@ -15,29 +15,32 @@ class AzAC_Admin_Pages
             'dashicons-yes',
             1
         );
-        add_submenu_page(
-            'azac-attendance',
+        add_menu_page(
             'Lớp học',
             'Lớp học',
             'edit_posts',
             'azac-classes-list',
-            [__CLASS__, 'render_classes_list_page']
+            [__CLASS__, 'render_classes_list_page'],
+            'dashicons-book-alt',
+            1
         );
-        add_submenu_page(
-            'azac-attendance',
+        add_menu_page(
             'Học viên',
             'Học viên',
             'edit_posts',
             'azac-students-list',
-            [__CLASS__, 'render_students_list_page']
+            [__CLASS__, 'render_students_list_page'],
+            'dashicons-id',
+            1
         );
-        add_submenu_page(
-            'azac-attendance',
+        add_menu_page(
             'Reviews',
             'Reviews',
             'manage_options',
             'azac-reviews',
-            [__CLASS__, 'render_reviews_page']
+            [__CLASS__, 'render_reviews_page'],
+            'dashicons-chart-bar',
+            1
         );
         add_menu_page(
             'Quản lý Học viên',
@@ -48,29 +51,13 @@ class AzAC_Admin_Pages
             'dashicons-groups',
             1
         );
-        add_submenu_page(
-            'azac-manage-students',
-            'Lớp học',
-            'Lớp học',
-            'manage_options',
-            'azac-classes-list',
-            [__CLASS__, 'render_classes_list_page']
-        );
-        add_submenu_page(
-            'azac-manage-students',
-            'Học viên',
-            'Học viên',
-            'manage_options',
-            'azac-students-list',
-            [__CLASS__, 'render_students_list_page']
-        );
         add_menu_page(
             'Quản lý Giảng viên',
             'Quản lý Giảng viên',
             'manage_options',
             'azac-manage-teachers',
             [__CLASS__, 'render_manage_teachers_page'],
-            'dashicons-welcome-learn-more',
+            'dashicons-admin-users',
             1
         );
         remove_menu_page('edit.php?post_type=az_class');
