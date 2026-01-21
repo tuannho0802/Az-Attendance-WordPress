@@ -1,103 +1,94 @@
-body.login {
-  background: #f0f2f5 !important;
-}
-body.login #login {
-  padding: 24px !important;
-}
-body.login #login h1 {
-  margin-bottom: 16px !important;
-}
+body.login { background: #f0f2f5; }
+body.login #login { padding: 24px; width: 90%; max-width: 380px; margin: 48px auto; }
+body.login #login h1 { margin-bottom: 16px; }
 body.login #login h1 a {
-  background-image: url("../images/logo.png") !important;
-  background-size: contain !important;
-  background-repeat: no-repeat !important;
-  width: 250px !important;
-  height: 80px !important;
-  display: block !important;
+  background-image: url("../img/logo.png") !important;
+  background-size: contain;
+  background-repeat: no-repeat;
+  width: 240px;
+  height: 72px;
+  display: block;
+  margin: 0 auto;
 }
 body.login #loginform {
-  border-radius: 12px !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05) !important;
-  padding: 20px !important;
-  background: #fff !important;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  background: #fff;
 }
 body.login #loginform .input,
 body.login #loginform input[type="text"],
 body.login #loginform input[type="password"] {
-  border-radius: 8px !important;
-  border: 1px solid #e2e8f0 !important;
-  box-shadow: none !important;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+  padding: 10px 12px;
 }
 body.login #loginform .input:focus,
 body.login #loginform input[type="text"]:focus,
 body.login #loginform input[type="password"]:focus {
-  border-color: #0b3d3b !important;
-  outline: none !important;
-  box-shadow: 0 0 0 3px rgba(11, 61, 59, 0.1) !important;
+  border-color: #0b3d3b;
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(11, 61, 59, 0.1);
 }
-body.login #loginform .button.wp-hide-pw {
-  display: none !important;
+body.login #loginform .wp-pwd { position: relative; }
+body.login #loginform .button.wp-hide-pw { display: none; }
+body.login #loginform #user_pass { padding-right: 44px; }
+body.login #loginform .azac-pass-toggle {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  background: #fff;
+  color: #0b3d3b;
+  cursor: pointer;
+}
+body.login #loginform .azac-pass-toggle.on {
+  background: #0b3d3b;
+  color: #fff;
+  border-color: #0b3d3b;
 }
 body.login #loginform .button-primary,
 body.login #loginform #wp-submit {
-  width: 100% !important;
-  background: #0b3d3b !important;
-  border-color: #0b3d3b !important;
-  color: #fff !important;
-  transition: background 0.2s ease, transform 0.1s ease !important;
+  width: 100%;
+  background: #0b3d3b;
+  border-color: #0b3d3b;
+  color: #fff;
+  transition: background 0.2s ease, transform 0.1s ease;
 }
 body.login #loginform .button-primary:hover,
 body.login #loginform #wp-submit:hover {
-  background: #094e4b !important;
-  border-color: #094e4b !important;
+  background: #094e4b;
+  border-color: #094e4b;
   transform: translateY(-1px);
 }
+body.login #nav,
+body.login #backtoblog { text-align: center; }
 body.login #nav a,
 body.login #backtoblog a {
-  color: #64748b !important;
-  text-decoration: none !important;
+  display: inline-block;
+  color: #64748b;
+  text-decoration: none;
+  font-size: 13px;
+  margin-top: 8px;
 }
 body.login #nav a:hover,
-body.login #backtoblog a:hover {
-  color: #4b5a6b !important;
-}
+body.login #backtoblog a:hover { color: #4b5a6b; }
 body.login #loginform p label {
-  color: #0b3d3b !important;
-  font-weight: 600 !important;
-}
-body.login #loginform #user_pass {
-  padding-right: 44px !important;
-}
-body.login #loginform .azac-pass-toggle {
-  position: absolute !important;
-  right: 10px !important;
-  top: 34px !important;
-  width: 32px !important;
-  height: 32px !important;
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  border: 1px solid #e2e8f0 !important;
-  border-radius: 8px !important;
-  background: #fff !important;
-  color: #0b3d3b !important;
-  cursor: pointer !important;
-}
-body.login #loginform .azac-pass-toggle.on {
-  background: #0b3d3b !important;
-  color: #fff !important;
-  border-color: #0b3d3b !important;
+  color: #0b3d3b;
+  font-weight: 600;
 }
 @media (max-width: 480px) {
-  body.login #login {
-    padding: 12px !important;
-  }
-  body.login #login h1 a {
-    width: 200px !important;
-    height: 64px !important;
-  }
-  body.login #loginform {
-    padding: 16px !important;
-  }
+  body.login #login { padding: 12px; width: 92%; margin: 32px auto; }
+  body.login #login h1 a { width: 200px; height: 64px; }
+  body.login #loginform { padding: 16px; }
+  body.login #loginform .azac-pass-toggle { width: 30px; height: 30px; }
 }
