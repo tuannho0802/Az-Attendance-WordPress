@@ -592,22 +592,22 @@ get_header();
                 
                 <!-- Progress Bar -->
                 <?php
-                    $total_sessions = count($sessions); // Currently created sessions
-                    // Assuming total sessions plan is somewhere? For now use current vs total created or just current count
-                    // Let's use logic: Created Sessions vs Total Sessions (if we had a field for plan).
-                    // Or just "Buổi đã dạy" based on date < now?
-                    // Let's stick to "Số buổi đã tạo" for now as per context.
-                    $taught = 0;
-                    foreach ($sessions as $s) {
-                        if (strtotime($s['date']) <= current_time('timestamp'))
-                            $taught++;
-                    }
-                    $percent = $total_sessions > 0 ? ($taught / $total_sessions) * 100 : 0;
+                $actual_sessions = count($sessions); // Numerator: Actual created sessions
+                $plan_sessions = (int) get_post_meta($post_id, 'az_tong_so_buoi', true); // Denominator: Planned sessions
+        
+                // Safety: If plan is 0 or less, default to actual to avoid division by zero or weirdness
+                if ($plan_sessions <= 0) {
+                    $plan_sessions = $actual_sessions > 0 ? $actual_sessions : 1;
+                }
+
+                $percent = ($actual_sessions / $plan_sessions) * 100;
+                if ($percent > 100)
+                    $percent = 100;
                     ?>
                 <div class="azac-info-row" style="border:none;">
                     <span class="azac-info-label">Tiến độ (
-                        <?php echo $taught; ?>/
-                        <?php echo $total_sessions; ?> buổi)
+                        <?php echo $actual_sessions; ?>/
+                        <?php echo $plan_sessions; ?> buổi)
                     </span>
                     <div class="azac-progress-wrapper">
                         <div class="azac-progress-bar">
