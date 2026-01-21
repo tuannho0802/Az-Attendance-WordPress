@@ -13,7 +13,7 @@ class AzAC_Admin_Pages
             'azac-attendance',
             [__CLASS__, 'render_attendance_list_page'],
             'dashicons-yes',
-            1
+            0
         );
         add_menu_page(
             'Lớp học',
@@ -22,7 +22,7 @@ class AzAC_Admin_Pages
             'azac-classes-list',
             [__CLASS__, 'render_classes_list_page'],
             'dashicons-book-alt',
-            1
+            0
         );
         add_menu_page(
             'Học viên',
@@ -31,7 +31,7 @@ class AzAC_Admin_Pages
             'azac-students-list',
             [__CLASS__, 'render_students_list_page'],
             'dashicons-id',
-            1
+            0
         );
         add_menu_page(
             'Reviews',
@@ -40,7 +40,7 @@ class AzAC_Admin_Pages
             'azac-reviews',
             [__CLASS__, 'render_reviews_page'],
             'dashicons-chart-bar',
-            1
+            0
         );
         add_menu_page(
             'Quản lý Học viên',
@@ -49,7 +49,7 @@ class AzAC_Admin_Pages
             'azac-manage-students',
             [__CLASS__, 'render_manage_students_page'],
             'dashicons-groups',
-            1
+            0
         );
         add_menu_page(
             'Quản lý Giảng viên',
@@ -58,7 +58,7 @@ class AzAC_Admin_Pages
             'azac-manage-teachers',
             [__CLASS__, 'render_manage_teachers_page'],
             'dashicons-admin-users',
-            1
+            0
         );
         remove_menu_page('edit.php?post_type=az_class');
         remove_menu_page('edit.php?post_type=az_student');
