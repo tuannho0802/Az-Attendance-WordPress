@@ -48,6 +48,22 @@ class AzAC_Admin_Pages
             'dashicons-groups',
             1
         );
+        add_submenu_page(
+            'azac-manage-students',
+            'Lớp học',
+            'Lớp học',
+            'manage_options',
+            'azac-classes-list',
+            [__CLASS__, 'render_classes_list_page']
+        );
+        add_submenu_page(
+            'azac-manage-students',
+            'Học viên',
+            'Học viên',
+            'manage_options',
+            'azac-students-list',
+            [__CLASS__, 'render_students_list_page']
+        );
         add_menu_page(
             'Quản lý Giảng viên',
             'Quản lý Giảng viên',
@@ -57,6 +73,8 @@ class AzAC_Admin_Pages
             'dashicons-welcome-learn-more',
             1
         );
+        remove_menu_page('edit.php?post_type=az_class');
+        remove_menu_page('edit.php?post_type=az_student');
     }
     public static function render_attendance_list_page()
     {
@@ -185,9 +203,7 @@ class AzAC_Admin_Pages
                 }
                 echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
             } elseif ($is_teacher) {
-                if ($is_pending) {
-                    echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
-                } else {
+                if (!$is_pending) {
                     echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                     echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
                     echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a>';

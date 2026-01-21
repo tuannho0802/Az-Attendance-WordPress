@@ -451,9 +451,7 @@ class AzAC_Core_Admin
                 echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
                 echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
             } elseif ($is_teacher) {
-                if ($is_pending) {
-                    echo '<span class="azac-badge azac-badge-pending">Lớp chưa mở</span>';
-                } else {
+                if (!$is_pending) {
                     echo '<a class="button" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                     echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a>';
                 }

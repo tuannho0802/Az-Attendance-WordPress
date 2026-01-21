@@ -344,7 +344,7 @@ class AzAC_Core
             'azac-attendance',
             [$this, 'render_attendance_list_page'],
             'dashicons-yes',
-            3
+            1
         );
 
         add_submenu_page(
