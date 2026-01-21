@@ -7,7 +7,7 @@
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
-<header style="background:#0b3d3b;color:#fff">
+<header style="background:#15345a;color:#fff">
     <div class="container" style="display:flex;align-items:center;justify-content:space-between">
         <div><a href="<?php echo esc_url(home_url('/')); ?>" style="color:#fff;text-decoration:none">Az Academy</a></div>
         <?php if (has_nav_menu('primary')) {

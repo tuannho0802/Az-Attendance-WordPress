@@ -10,6 +10,8 @@ class AzAC_Core_Sessions
         add_action('wp_ajax_azac_add_session', [__CLASS__, 'ajax_add_session']);
         add_action('wp_ajax_azac_update_session', [__CLASS__, 'ajax_update_session']);
         add_action('wp_ajax_azac_list_sessions', [__CLASS__, 'ajax_list_sessions']);
+        add_action('wp_ajax_azac_get_session_details', [__CLASS__, 'ajax_get_session_details']);
+        add_action('wp_ajax_azac_save_session_content', [__CLASS__, 'ajax_save_session_content']);
     }
     public static function ensure_sessions_table()
     {
@@ -25,6 +27,8 @@ class AzAC_Core_Sessions
                 session_date date NOT NULL,
                 session_time time NULL,
                 title varchar(191) NULL,
+                session_content longtext NULL,
+                session_attachments text NULL,
                 created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at datetime NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
                 PRIMARY KEY  (id),
@@ -33,19 +37,36 @@ class AzAC_Core_Sessions
                 UNIQUE KEY uniq_class_date (class_id, session_date)
             ) {$charset_collate};";
             dbDelta($sql_sessions);
+        } else {
+            // Upgrade table if exists but missing columns
+            $row = $wpdb->get_results("SHOW COLUMNS FROM {$sess_table} LIKE 'session_content'");
+            if (empty($row)) {
+                $wpdb->query("ALTER TABLE {$sess_table} ADD COLUMN session_content longtext NULL");
+            }
+            $row = $wpdb->get_results("SHOW COLUMNS FROM {$sess_table} LIKE 'session_attachments'");
+            if (empty($row)) {
+                $wpdb->query("ALTER TABLE {$sess_table} ADD COLUMN session_attachments text NULL");
+            }
         }
     }
     public static function get_class_sessions($class_id)
     {
         global $wpdb;
         $sess_table = $wpdb->prefix . 'az_sessions';
-        $rows = $wpdb->get_results($wpdb->prepare("SELECT session_date, session_time FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC", $class_id), ARRAY_A);
+        $rows = $wpdb->get_results($wpdb->prepare("SELECT id, session_date, session_time, title, session_content, session_attachments FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC", $class_id), ARRAY_A);
         $out = [];
         foreach ($rows as $r) {
             $d = isset($r['session_date']) ? sanitize_text_field($r['session_date']) : '';
             $t = isset($r['session_time']) ? sanitize_text_field($r['session_time']) : '';
             if ($d) {
-                $out[] = ['date' => $d, 'time' => $t];
+                $out[] = [
+                    'id' => $r['id'],
+                    'date' => $d,
+                    'time' => $t,
+                    'title' => $r['title'],
+                    'content' => $r['session_content'],
+                    'attachments' => $r['session_attachments']
+                ];
             }
         }
         return $out;
@@ -220,5 +241,114 @@ class AzAC_Core_Sessions
             }
         }
         wp_send_json_success(['sessions' => $out]);
+    }
+
+    public static function ajax_get_session_details()
+    {
+        check_ajax_referer('azac_session_content', 'nonce');
+
+        $session_id = isset($_POST['session_id']) ? absint($_POST['session_id']) : 0;
+        if (!$session_id) {
+            wp_send_json_error(['message' => 'Invalid Session ID'], 400);
+        }
+
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $row = $wpdb->get_row($wpdb->prepare("SELECT * FROM {$sess_table} WHERE id = %d", $session_id));
+
+        if (!$row) {
+            wp_send_json_error(['message' => 'Session not found'], 404);
+        }
+
+        // Attachments
+        $att_ids = json_decode($row->session_attachments, true);
+        if (!is_array($att_ids)) {
+            $att_ids = [];
+        }
+
+        $attachments = [];
+        foreach ($att_ids as $att_id) {
+            $att_id = intval($att_id);
+            if ($att_id) {
+                $url = wp_get_attachment_url($att_id);
+                if ($url) {
+                    $post = get_post($att_id);
+                    $attachments[] = [
+                        'id' => $att_id,
+                        'title' => $post ? $post->post_title : '',
+                        'url' => $url,
+                        'mime' => get_post_mime_type($att_id)
+                    ];
+                }
+            }
+        }
+
+        wp_send_json_success([
+            'content' => wpautop($row->session_content),
+            'raw_content' => $row->session_content,
+            'attachments' => $attachments
+        ]);
+    }
+
+    public static function ajax_save_session_content()
+    {
+        check_ajax_referer('azac_session_content', 'nonce');
+
+        $session_id = isset($_POST['session_id']) ? absint($_POST['session_id']) : 0;
+        $content = isset($_POST['content']) ? wp_kses_post($_POST['content']) : '';
+        $attachments = isset($_POST['attachments']) ? (array) $_POST['attachments'] : [];
+
+        if (!$session_id) {
+            wp_send_json_error(['message' => 'Invalid Session ID'], 400);
+        }
+
+        // Permission check
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $session = $wpdb->get_row($wpdb->prepare("SELECT class_id FROM {$sess_table} WHERE id = %d", $session_id));
+
+        if (!$session) {
+            wp_send_json_error(['message' => 'Session not found'], 404);
+        }
+
+        $class_id = $session->class_id;
+        $user = wp_get_current_user();
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+
+        $can_edit = false;
+        if ($is_admin) {
+            $can_edit = true;
+        } elseif ($is_teacher) {
+            $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
+            if ($teacher_user === intval($user->ID)) {
+                $can_edit = true;
+            }
+        }
+
+        if (!$can_edit) {
+            wp_send_json_error(['message' => 'Unauthorized'], 403);
+        }
+
+        // Sanitize attachments (ensure they are integers)
+        $clean_atts = array_map('absint', $attachments);
+        $json_atts = json_encode($clean_atts);
+
+        $updated = $wpdb->update(
+            $sess_table,
+            [
+                'session_content' => $content,
+                'session_attachments' => $json_atts
+            ],
+            ['id' => $session_id],
+            ['%s', '%s'],
+            ['%d']
+        );
+
+        if ($updated === false) {
+            wp_send_json_error(['message' => 'DB Error'], 500);
+        }
+
+        wp_send_json_success(['message' => 'Saved']);
     }
 }
