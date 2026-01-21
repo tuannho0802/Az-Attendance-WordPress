@@ -182,6 +182,13 @@
   align-items: center;
   justify-content: center;
 }
+.azac-avatar-img {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  object-fit: cover;
+  display: inline-block;
+}
 .azac-badge {
   background: #0064e011;
   color: #0064e0;

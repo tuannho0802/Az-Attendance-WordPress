@@ -38,3 +38,13 @@ function azac_login_footer_script()
     echo '<script>(function(){var p=document.getElementById("user_pass");if(!p)return;var wrap=(p.closest&&p.closest(".wp-pwd"))||p.parentNode;if(wrap){try{wrap.style.position="relative";}catch(e){}}if(wrap&& !wrap.querySelector(".azac-pass-toggle")){var b=document.createElement("button");b.type="button";b.className="azac-pass-toggle";b.setAttribute("aria-label","Show/Hide password");b.innerHTML="&#128065;";var show=false;b.addEventListener("click",function(){show=!show;p.setAttribute("type",show?"text":"password");b.classList.toggle("on",show);});wrap.appendChild(b);}})();</script>';
     echo '<script>(function(){var p=document.getElementById("user_pass");if(!p)return;var wrap=p.parentNode;if(wrap)wrap.style.position="relative";var b=document.createElement("button");b.type="button";b.className="azac-pass-toggle";b.setAttribute("aria-label","Show/Hide password");b.innerHTML="&#128065;";var show=false;b.addEventListener("click",function(){show=!show;p.setAttribute("type",show?"text":"password");b.classList.toggle("on",show);});wrap.appendChild(b);})();</script>';
 }
+
+function azac_theme_favicon()
+{
+    $url = get_template_directory_uri() . '/assets/img/favicon.png';
+    echo '<link rel="icon" type="image/png" sizes="32x32" href="' . esc_url($url) . '"/>';
+    echo '<link rel="shortcut icon" type="image/png" href="' . esc_url($url) . '"/>';
+}
+add_action('wp_head', 'azac_theme_favicon', 99);
+add_action('admin_head', 'azac_theme_favicon', 99);
+add_action('login_head', 'azac_theme_favicon', 99);

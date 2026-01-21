@@ -167,7 +167,7 @@ class AzAC_Admin_Stats
         $pm = $wpdb->postmeta;
         $users = $wpdb->users;
         $items = $wpdb->get_results("
-            SELECT f.student_id, f.rating, f.comment, f.session_date, COALESCE(u.display_name, p.post_title) AS name
+            SELECT f.student_id, f.rating, f.comment, f.session_date, COALESCE(u.display_name, p.post_title) AS name, pm.meta_value AS user_id
             FROM {$feedback_table} f
             LEFT JOIN {$pm} pm ON pm.post_id = f.student_id AND pm.meta_key = 'az_user_id'
             LEFT JOIN {$users} u ON u.ID = pm.meta_value
@@ -178,11 +178,14 @@ class AzAC_Admin_Stats
         ", ARRAY_A);
         $list = [];
         foreach ($items as $it) {
+            $uid = intval($it['user_id']);
+            $avatar = $uid ? get_avatar_url($uid, ['size' => 48]) : '';
             $list[] = [
                 'name' => sanitize_text_field($it['name']),
                 'rating' => max(1, min(5, intval($it['rating']))),
                 'comment' => sanitize_textarea_field($it['comment']),
                 'date' => sanitize_text_field($it['session_date']),
+                'avatar' => esc_url_raw($avatar),
             ];
         }
         $sess_table = $wpdb->prefix . 'az_sessions';

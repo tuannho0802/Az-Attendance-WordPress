@@ -101,7 +101,7 @@
             backgroundColor: "transparent",
             pointRadius: 3,
             tension: 0.25,
-            order: 0,
+            order: 2,
           },
         ],
       },
@@ -230,7 +230,7 @@
             backgroundColor: "transparent",
             pointRadius: 3,
             tension: 0.25,
-            order: 0,
+            order: 2,
           },
         ],
       },
@@ -369,6 +369,14 @@
               .trim()
               .charAt(0)
               .toUpperCase() || "U";
+          var avatarSrc = String(
+            it.avatar ||
+              "https://secure.gravatar.com/avatar/?d=mp&s=48",
+          );
+          var avatarHtml =
+            '<img class="azac-avatar-img" src="' +
+            avatarSrc +
+            '" alt="avatar"/>';
           var idx = 0;
           if (sess && sess.length) {
             var i = sess.indexOf(
@@ -377,9 +385,9 @@
             idx = i >= 0 ? i + 1 : 0;
           }
           return (
-            '<div class="azac-review-item"><div class="azac-review-top"><div class="azac-review-left"><div class="azac-avatar">' +
-            initial +
-            '</div><span class="azac-review-name">' +
+            '<div class="azac-review-item"><div class="azac-review-top"><div class="azac-review-left">' +
+            avatarHtml +
+            '<span class="azac-review-name">' +
             (it.name || "") +
             "</span>" +
             (idx
@@ -391,13 +399,50 @@
             stars +
             '</span></div><div class="azac-review-comment">' +
             (it.comment || "") +
-            '</div><div class="azac-review-date">' +
+            '</div><div class="azac-review-date"><span class="azac-badge azac-badge-date">' +
             (it.date || "") +
+            "</span>" +
             "</div></div>"
           );
         })
         .join("");
       list.innerHTML = html || "<div>Chưa có đánh giá</div>";
+      try {
+        var cid =
+          parseInt(
+            window.azacReviews
+              ? window.azacReviews.classId
+              : 0,
+            10,
+          ) || 0;
+        if (
+          cid &&
+          window.AZACU &&
+          typeof window.AZACU.getClassColor ===
+            "function"
+        ) {
+          var color = String(
+            window.AZACU.getClassColor(cid) ||
+              "#0064e0",
+          );
+          var els = list.querySelectorAll(
+            ".azac-badge-date",
+          );
+          els.forEach(function (b) {
+            b.style.borderColor = color;
+            b.style.color = color;
+            if (
+              color.charAt(0) === "#" &&
+              color.length === 7
+            ) {
+              b.style.backgroundColor =
+                color + "11";
+            } else {
+              b.style.backgroundColor = color;
+            }
+          });
+        }
+      } catch (e) {}
     }
   }
   function load() {

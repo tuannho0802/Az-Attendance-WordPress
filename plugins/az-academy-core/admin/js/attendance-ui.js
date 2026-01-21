@@ -80,13 +80,30 @@
       window.AZAC_Att.fetchExisting("check-in");
       window.AZAC_Att.fetchExisting("mid-session");
     }
-    if (window.AZACU && typeof window.AZACU.updateSessionTitle === "function") {
-      window.AZACU.updateSessionTitle(window.azacData.sessionDate || window.azacData.today);
+    if (
+      window.AZACU &&
+      typeof window.AZACU.updateSessionTitle ===
+        "function" &&
+      window.azacData &&
+      (window.azacData.sessionDate ||
+        window.azacData.today)
+    ) {
+      window.AZACU.updateSessionTitle(
+        window.azacData.sessionDate ||
+          window.azacData.today,
+      );
     }
   });
 })(jQuery);
 // Reviews page helpers
 (function () {
+  if (
+    document.getElementById(
+      "azacReviewsMixedChart",
+    )
+  ) {
+    return;
+  }
   window.AZAC_Reviews = window.AZAC_Reviews || {};
   window.AZAC_Reviews.load = function (stars) {
     if (!(window.azacReviews && window.azacReviews.ajaxUrl)) return;
