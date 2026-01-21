@@ -1,19 +1,17 @@
-# 1. Chặn toàn bộ thư mục gốc
+# 1. Chặn tất cả nhưng cho phép liệt kê thư mục
 /*
+!/plugins/
+!/themes/
 
-# 2. Mở khóa đường dẫn đến Plugin
-!/wp-content/
-/wp-content/*
-!/wp-content/plugins/
-/wp-content/plugins/*
-!/wp-content/plugins/az-academy-core/
+# 2. Chặn mọi thứ bên trong plugins/ trừ az-academy-core
+/plugins/*
+!/plugins/az-academy-core/
 
-# 3. Mở khóa đường dẫn đến Theme (Sửa tại đây)
-!/wp-content/themes/
-/wp-content/themes/*
-!/wp-content/themes/az-academy/
+# 3. Chặn mọi thứ bên trong themes/ trừ az-academy
+/themes/*
+!/themes/az-academy/
 
-# 4. Các file cấu hình
+# 4. Mở khóa file cấu hình
 !/.gitignore
 !/README.md
 
