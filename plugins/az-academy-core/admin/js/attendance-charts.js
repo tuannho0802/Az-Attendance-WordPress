@@ -76,7 +76,10 @@
     );
     if (!window._azCharts) window._azCharts = { checkin: null, mid: null };
     var key = type === "check-in" ? "checkin" : "mid";
-    var colors = type === "check-in" ? ["#2ecc71", "#e74c3c"] : ["#3498db", "#f39c12"];
+    var colors =
+      type === "check-in"
+        ? ["#2ecc71", "#e74c3c"]
+        : ["#3498db", "#f39c12"];
     if (!window._azCharts[key]) {
       window._azCharts[key] = ensureChart(
         type === "check-in" ? "azacChartCheckin" : "azacChartMid",
@@ -116,7 +119,14 @@
           (p1 / Math.max(1, total1)) * 100,
         ),
       );
-      ensureChart("azacChartCheckin", "Đầu giờ", p1, a1, r1, ["#2ecc71", "#e74c3c"]);
+      ensureChart(
+        "azacChartCheckin",
+        "Đầu giờ",
+        p1,
+        a1,
+        r1,
+        ["#2ecc71", "#e74c3c"],
+      );
     }
     if (c2) {
       var p2 =
@@ -135,7 +145,14 @@
           (p2 / Math.max(1, total2)) * 100,
         ),
       );
-      ensureChart("azacChartMid", "Giữa giờ", p2, a2, r2, ["#3498db", "#f39c12"]);
+      ensureChart(
+        "azacChartMid",
+        "Giữa giờ",
+        p2,
+        a2,
+        r2,
+        ["#3498db", "#f39c12"],
+      );
     }
   }
   window.AZAC_Att = window.AZAC_Att || {};

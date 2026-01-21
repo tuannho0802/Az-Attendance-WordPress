@@ -132,15 +132,21 @@
   background: #fff;
 }
 .azac-review-item {
-  padding: 10px 12px;
-  margin-bottom: 10px;
-  border: 1px solid #eaeaea;
-  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 12px;
+  border: 1px solid #e6e9ec;
+  border-radius: 12px;
   background: #fff;
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+  box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  border-left: 3px solid #0064e0;
+  transition: box-shadow .2s ease, transform .2s ease;
 }
 .azac-review-item:last-child {
   margin-bottom: 0;
+}
+.azac-review-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0,0,0,.08);
 }
 .azac-review-top {
   display: flex;
@@ -149,7 +155,7 @@
   gap: 8px;
 }
 .azac-review-name {
-  font-weight: 600;
+  font-weight: 700;
   color: #0b3d3b;
 }
 .azac-review-stars {
@@ -157,16 +163,19 @@
   gap: 2px;
   font-size: 16px;
 }
+.azac-review-stars .dashicons-star-filled {
+  color: #f5b301;
+}
 .azac-review-left {
   display: inline-flex;
   align-items: center;
   gap: 8px;
 }
 .azac-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background: #0f6d5e;
+  background: linear-gradient(145deg,#0b3d3b,#0064e0);
   color: #fff;
   font-weight: 700;
   display: inline-flex;
@@ -174,17 +183,18 @@
   justify-content: center;
 }
 .azac-badge {
-  background: #106d5e1a;
-  color: #0f6d5e;
-  border: 1px solid #0f6d5e;
+  background: #0064e011;
+  color: #0064e0;
+  border: 1px solid #0064e0;
   border-radius: 999px;
   padding: 2px 8px;
   font-size: 12px;
   font-weight: 600;
 }
 .azac-review-comment {
-  color: #333;
-  margin-top: 4px;
+  color: #34495e;
+  margin-top: 6px;
+  line-height: 1.5;
 }
 .azac-review-date {
   color: #777;
@@ -304,4 +314,72 @@
 .azac-switch input[disabled] + .azac-slider {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+.azac-card .button,
+.azac-session-bar .button,
+.azac-reviews-visual .button,
+.azac-reviews-list .button {
+  transition: all 0.3s ease;
+}
+.azac-card .button,
+.azac-session-bar .button,
+.azac-reviews-visual .button,
+.azac-reviews-list .button,
+.azac-tabs .button,
+.azac-tabs .azac-tab-btn {
+  transition: all 0.3s ease;
+}
+.azac-card .button:hover,
+.azac-session-bar .button:hover,
+.azac-reviews-visual .button:hover,
+.azac-reviews-list .button:hover,
+.azac-tabs .button:hover,
+.azac-tabs .azac-tab-btn:hover {
+  filter: brightness(0.95);
+  transform: translateY(-2px);
+}
+.azac-card .button:active,
+.azac-session-bar .button:active,
+.azac-reviews-visual .button:active,
+.azac-reviews-list .button:active,
+.azac-tabs .button:active,
+.azac-tabs .azac-tab-btn:active {
+  transform: scale(0.96);
+}
+.azac-card .button-primary,
+.azac-session-bar .button-primary,
+.azac-reviews-visual .button-primary,
+.azac-reviews-list .button-primary,
+.azac-tabs .button-primary,
+.azac-tabs .azac-tab-btn.button-primary {
+  background-color: #0064e0;
+  border-color: #0064e0;
+  box-shadow: 0 2px 6px rgba(0, 100, 224, 0.2);
+}
+.wp-core-ui .azac-card .button-primary,
+.wp-core-ui .azac-session-bar .button-primary,
+.wp-core-ui .azac-reviews-visual .button-primary,
+.wp-core-ui .azac-reviews-list .button-primary,
+.wp-core-ui .azac-view-btn.button-primary,
+.wp-core-ui .azac-tabs .azac-tab-btn.button-primary {
+  background-color: #0064e0 !important;
+  border-color: #0064e0 !important;
+  box-shadow: 0 2px 6px rgba(0, 100, 224, 0.2) !important;
+}
+.azac-card .button-primary:hover,
+.azac-session-bar .button-primary:hover,
+.azac-reviews-visual .button-primary:hover,
+.azac-reviews-list .button-primary:hover,
+.azac-tabs .button-primary:hover,
+.azac-tabs .azac-tab-btn.button-primary:hover {
+  filter: brightness(0.94);
+}
+.wp-core-ui .azac-card .button-primary:hover,
+.wp-core-ui .azac-session-bar .button-primary:hover,
+.wp-core-ui .azac-reviews-visual .button-primary:hover,
+.wp-core-ui .azac-reviews-list .button-primary:hover,
+.wp-core-ui .azac-view-btn.button-primary:hover,
+.wp-core-ui .azac-tabs .azac-tab-btn.button-primary:hover {
+  filter: brightness(0.94) !important;
 }

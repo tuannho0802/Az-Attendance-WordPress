@@ -42,6 +42,11 @@
         return a + b;
       }, 0) || 1;
     var colors = colorsForStars();
+    var percents = data.map(function (v) {
+      return Math.round(
+        (v / Math.max(1, total)) * 100,
+      );
+    });
     var PercentPlugin = {
       id: "azPercent",
       afterDatasetsDraw: function (chart) {
@@ -84,24 +89,70 @@
             backgroundColor: colors,
             borderColor: colors,
             maxBarThickness: 32,
+            hoverBackgroundColor: colors,
+            order: 1,
+          },
+          {
+            type: "line",
+            label: "Tỷ trọng (%)",
+            data: percents,
+            yAxisID: "y1",
+            borderColor: "#0064e0",
+            backgroundColor: "transparent",
+            pointRadius: 3,
+            tension: 0.25,
+            order: 0,
           },
         ],
       },
       options: {
-        indexAxis: "y",
+        indexAxis: "x",
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+          duration: 800,
+          easing: "easeOutQuart",
+        },
+        transitions: {
+          show: {
+            animation: {
+              duration: 800,
+              easing: "easeOutQuart",
+            },
+            animations: {
+              colors: {
+                type: "color",
+                properties: [
+                  "borderColor",
+                  "backgroundColor",
+                ],
+                from: "transparent",
+              },
+            },
+          },
+        },
         plugins: {
-          legend: { display: false },
+          legend: { display: true },
           tooltip: {
             callbacks: {
               label: function (ctx) {
                 var v = ctx.raw || 0;
+                if (
+                  ctx.dataset.type === "line" ||
+                  ctx.dataset.yAxisID === "y1"
+                ) {
+                  return (
+                    ctx.dataset.label +
+                    ": " +
+                    v +
+                    "%"
+                  );
+                }
                 var pct = Math.round(
                   (v / total) * 100,
                 );
                 return (
-                  ctx.label +
+                  ctx.dataset.label +
                   ": " +
                   v +
                   " (" +
@@ -111,13 +162,23 @@
               },
             },
           },
+          title: {
+            display: true,
+            text: "Tổng lớp – phân bố số sao (Bar + Line)",
+          },
         },
         scales: {
-          x: {
+          y: {
             beginAtZero: true,
             ticks: { precision: 0 },
           },
-          y: { beginAtZero: true },
+          y1: {
+            beginAtZero: true,
+            min: 0,
+            max: 100,
+            position: "right",
+            grid: { drawOnChartArea: false },
+          },
         },
       },
       plugins: [PercentPlugin],
@@ -152,18 +213,54 @@
             label: "Điểm TB",
             data: avgs,
             backgroundColor:
-              "rgba(52,152,219,.35)",
-            borderColor: "#3498db",
+              "rgba(0,100,224,.35)",
+            borderColor: "#0064e0",
+            hoverBackgroundColor:
+              "rgba(0,100,224,.55)",
             maxBarThickness: 40,
             azCounts: counts,
+            order: 1,
+          },
+          {
+            type: "line",
+            label: "Số lượt đánh giá",
+            data: counts,
+            yAxisID: "y1",
+            borderColor: "#e67e22",
+            backgroundColor: "transparent",
+            pointRadius: 3,
+            tension: 0.25,
+            order: 0,
           },
         ],
       },
       options: {
         responsive: true,
+        animation: {
+          duration: 800,
+          easing: "easeOutQuart",
+        },
+        transitions: {
+          show: {
+            animation: {
+              duration: 800,
+              easing: "easeOutQuart",
+            },
+            animations: {
+              colors: {
+                type: "color",
+                properties: [
+                  "borderColor",
+                  "backgroundColor",
+                ],
+                from: "transparent",
+              },
+            },
+          },
+        },
         maintainAspectRatio: false,
         plugins: {
-          legend: { display: false },
+          legend: { display: true },
           tooltip: {
             callbacks: {
               label: function (ctx) {
@@ -174,16 +271,33 @@
                 var avg = Number(
                   ctx.raw || 0,
                 ).toFixed(2);
+                if (
+                  ctx.dataset.type === "line" ||
+                  ctx.dataset.yAxisID === "y1"
+                ) {
+                  return (
+                    "Ngày: " +
+                    ctx.label +
+                    " - " +
+                    ctx.dataset.label +
+                    ": " +
+                    cnt
+                  );
+                }
                 return (
                   "Ngày: " +
                   ctx.label +
-                  " - Điểm TB: " +
-                  avg +
-                  " - Số lượt đánh giá: " +
-                  cnt
+                  " - " +
+                  ctx.dataset.label +
+                  ": " +
+                  avg
                 );
               },
             },
+          },
+          title: {
+            display: true,
+            text: "Theo buổi – điểm TB (Bar) + lượt đánh giá (Line)",
           },
         },
         scales: {
@@ -193,6 +307,11 @@
             ticks: { stepSize: 1 },
           },
           x: {},
+          y1: {
+            beginAtZero: true,
+            position: "right",
+            grid: { drawOnChartArea: false },
+          },
         },
       },
     };
@@ -210,6 +329,9 @@
         CHART = null;
       }
       CHART = new Chart(el, cfg);
+      try {
+        CHART.update("show");
+      } catch (e) {}
     });
   }
   function render(data) {
