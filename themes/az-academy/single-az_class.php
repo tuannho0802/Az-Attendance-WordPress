@@ -898,24 +898,19 @@ jQuery(document).ready(function($) {
         }
     };
 
-    // Load HTML2PDF
-    $.getScript('https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js');
-
-    // Print PDF Logic with Preview
+    // Print PDF Logic (Native Browser Print for Vector Quality)
     $('#azac-print-btn').on('click', function() {
         var $btn = $(this);
         var originalText = $btn.html();
-        $btn.html('<span class="dashicons dashicons-update is-spin"></span> Đang tạo PDF...').prop('disabled', true);
+        $btn.html('<span class="dashicons dashicons-update is-spin"></span> Đang xử lý...').prop('disabled', true);
 
-        var element = document.getElementById('azac-pdf-content');
-        
-        // Generate Dynamic Filename
+        // Generate Dynamic Filename and Title
         function formatName(str) {
             if (!str) return '';
             return str.normalize("NFD")
                       .replace(/[\u0300-\u036f]/g, "")
                       .replace(/đ/g, "d").replace(/Đ/g, "D")
-                      .replace(/[^a-zA-Z0-9\s]/g, "") // Keep alphanumeric and spaces
+                      .replace(/[^a-zA-Z0-9\s]/g, "") 
                       .split(/\s+/)
                       .map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1).toLowerCase(); })
                       .join("");
@@ -924,101 +919,112 @@ jQuery(document).ready(function($) {
         var className = formatName($('#azac-class-name').text());
         var teacherName = formatName($('#azac-teacher-name').text());
         var activeTab = $('.azac-tab.active');
-        var mode = activeTab.data('target'); // 'overview' or 'session'
-        var filename = 'Document.pdf';
+        var mode = activeTab.data('target'); 
+        var filename = 'Document';
+        var pdfTitle = $('#azac-view-title').text(); // Default title
 
         if (mode === 'overview') {
-            filename = className + '_' + teacherName + '.pdf';
+            filename = className;
+            if (teacherName) filename += '_' + teacherName;
         } else {
-            var dateRaw = activeTab.data('date'); // YYYY-MM-DD
+            var dateRaw = activeTab.data('date'); 
+            var sessionName = activeTab.text().trim(); // e.g. "Buổi 1: 20/01"
+            pdfTitle = 'Nội dung: ' + sessionName + ' - ' + $('#azac-class-name').text(); // Update PDF Title
+
+            var prefix = 'TaiLieu';
             if(dateRaw) {
                 var parts = dateRaw.split('-');
                 var yy = parts[0].slice(-2);
-                var dateFormatted = parts[2] + '_' + parts[1] + '_' + yy; // dd_mm_yy
-                // Format: TaiLieu_26_12_25_LopFacebookAds
-                filename = 'TaiLieu_' + dateFormatted + '_' + className + '.pdf';
-            } else {
-                filename = 'TaiLieu_' + className + '.pdf';
+                var dateFormatted = parts[2] + '_' + parts[1] + '_' + yy; 
+                prefix += '_' + dateFormatted;
             }
-        }
-
-        // Configuration for High Quality and A4
-        var opt = {
-            margin:       [15, 15, 15, 15], // mm
-            filename:     filename,
-            image:        { type: 'jpeg', quality: 1 }, // Max quality
-            html2canvas:  { 
-                scale: 3, // High scale for sharp text (was default 1)
-                useCORS: true, 
-                letterRendering: true,
-                scrollY: 0
-            },
-            jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait', compress: true }
-        };
-
-        // Clone element to modify for print
-        var clone = element.cloneNode(true);
-        
-        // Remove unwanted elements from clone
-        $(clone).find('.azac-content-header .azac-actions').remove();
-        $(clone).find('#azac-attachments-section').show(); 
-        
-        // Add Title manually
-        var title = $('#azac-view-title').text();
-        $(clone).prepend('<h1 style="color:#004E44; margin-bottom:20px; font-size:24px; border-bottom: 2px solid #004E44; padding-bottom:10px; font-family: Arial, sans-serif;">' + title + '</h1>');
-        $(clone).find('#azac-view-title').remove();
-
-        // Fix Clone Width to ensure consistency in PDF
-        clone.style.width = '800px'; 
-        clone.style.padding = '20px';
-        clone.style.background = '#fff';
-        
-        // We don't append clone to body to avoid flicker, html2pdf handles it internally or we can use a hidden container
-        // But html2pdf needs it in DOM sometimes for images. Let's try passing clone directly.
-        
-        // Generate Blob for Preview
-        html2pdf().set(opt).from(clone).toPdf().get('pdf').then(function(pdfObj) {
-            // This part is tricky with html2pdf chain. 
-            // Better to use .output('bloburl')
-        });
-
-        html2pdf().set(opt).from(clone).output('bloburl').then(function(pdfUrl) {
-            // Show Modal
-            $('#azac-pdf-preview-frame').attr('src', pdfUrl);
-            $('#azac-pdf-modal').fadeIn(200);
             
-            // Reset Button
-            $btn.html(originalText).prop('disabled', false);
+            filename = prefix + '_' + className;
+            if (teacherName) filename += '_' + teacherName;
+        }
 
-            // Handle Download Button in Modal
-            $('#azac-confirm-download').off('click').on('click', function() {
-                var link = document.createElement('a');
-                link.href = pdfUrl;
-                link.download = opt.filename;
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            });
-        }).catch(function(err) {
-            console.error(err);
-            alert('Lỗi khi tạo PDF. Vui lòng thử lại.');
-            $btn.html(originalText).prop('disabled', false);
-        });
-    });
+        // Create Hidden Iframe
+        var $iframe = $('<iframe id="azac-print-frame" name="azac-print-frame"></iframe>');
+        $iframe.css({ position: 'fixed', top: '-10000px', left: '-10000px', width: '1px', height: '1px', opacity: '0' });
+        $('body').append($iframe);
 
-    // Modal Close Logic
-    $('.azac-close, .azac-close-modal').on('click', function() {
-        $('#azac-pdf-modal').fadeOut(200);
-        $('#azac-pdf-preview-frame').attr('src', ''); // Clear source
-    });
+        var frameDoc = $iframe[0].contentWindow.document;
+        var contentHtml = $('#azac-main-content').html();
 
-    // Close on click outside
-    $(window).on('click', function(event) {
-        if (event.target == document.getElementById('azac-pdf-modal')) {
-            $('#azac-pdf-modal').fadeOut(200);
-            $('#azac-pdf-preview-frame').attr('src', '');
+        // Write Content
+        frameDoc.open();
+        frameDoc.write('<!DOCTYPE html>');
+        frameDoc.write('<html><head>');
+        frameDoc.write('<title>' + filename + '</title>'); // Sets default filename
+        frameDoc.write('<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">');
+        frameDoc.write('<style>');
+        frameDoc.write('@page { size: A4; margin: 2cm 2cm 2cm 2.5cm; }'); // Standard margins
+        frameDoc.write('body { font-family: "Roboto", Arial, sans-serif; font-size: 11pt; line-height: 1.5; color: #000; margin: 0; padding: 0; -webkit-print-color-adjust: exact; }');
+        frameDoc.write('h1 { font-size: 16pt; font-weight: 700; color: #004E44; border-bottom: 2px solid #004E44; padding-bottom: 10px; margin-bottom: 20px; }');
+        frameDoc.write('img { max-width: 100% !important; height: auto !important; display: block; margin: 15px auto; }');
+        frameDoc.write('table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }');
+        frameDoc.write('th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }');
+        frameDoc.write('p { margin-bottom: 10px; }');
+        frameDoc.write('a { color: #000; text-decoration: none; }');
+        frameDoc.write('</style>');
+        frameDoc.write('</head><body>');
+        frameDoc.write('<h1>' + pdfTitle + '</h1>');
+        frameDoc.write(contentHtml);
+        frameDoc.write('</body></html>');
+        frameDoc.close();
+
+        // Wait for images to load then print
+        var images = frameDoc.images;
+        var loaded = 0;
+        var total = images.length;
+
+        function doPrint() {
+            try {
+                $iframe[0].contentWindow.focus();
+                $iframe[0].contentWindow.print();
+            } catch (e) {
+                console.error(e);
+                alert('Không thể mở hộp thoại in. Vui lòng thử lại.');
+            }
+            
+            // Cleanup after print dialog closes (or timeout)
+            // Note: print() is blocking in some browsers, non-blocking in others.
+            // We'll leave the iframe for a bit then remove it.
+            setTimeout(function() {
+                $iframe.remove();
+                $btn.html(originalText).prop('disabled', false);
+            }, 2000);
+        }
+
+        if (total === 0) {
+            setTimeout(doPrint, 500); // Small delay for fonts
+        } else {
+            var isPrinted = false;
+            var checkPrint = function() {
+                if (!isPrinted) {
+                    isPrinted = true;
+                    doPrint();
+                }
+            };
+
+            for (var i = 0; i < total; i++) {
+                if (images[i].complete) {
+                    loaded++;
+                } else {
+                    images[i].onload = function() { loaded++; if (loaded === total) checkPrint(); };
+                    images[i].onerror = function() { loaded++; if (loaded === total) checkPrint(); };
+                }
+            }
+            if (loaded === total) {
+                setTimeout(checkPrint, 500);
+            }
+            
+            // Fallback safety
+            setTimeout(checkPrint, 5000);
         }
     });
+
+    // Remove old modal logic if present (cleaned up via overwrite)
 });
                                 </script>
 
