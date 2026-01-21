@@ -474,7 +474,7 @@ body.post-type-az_class
   .wp-list-table
   tbody
   tr:nth-child(odd),
-body.post-type-az_student
+  body.post-type-az_student
   .wp-list-table
   tbody
   tr:nth-child(odd) {
@@ -484,7 +484,7 @@ body.post-type-az_class
   .wp-list-table
   tbody
   tr:hover,
-body.post-type-az_student
+  body.post-type-az_student
   .wp-list-table
   tbody
   tr:hover {
@@ -494,7 +494,7 @@ body.post-type-az_class
   .wp-list-table
   .column-title
   .row-title,
-body.post-type-az_student
+  body.post-type-az_student
   .wp-list-table
   .column-title
   .row-title {
@@ -513,15 +513,15 @@ body.post-type-az_class
   .tablenav
   .actions
   select,
-body.post-type-az_class
+  body.post-type-az_class
   .tablenav
   .actions
   input,
-body.post-type-az_student
+  body.post-type-az_student
   .tablenav
   .actions
   select,
-body.post-type-az_student
+  body.post-type-az_student
   .tablenav
   .actions
   input {
@@ -537,4 +537,76 @@ body.post-type-az_class .search-box .button,
 body.post-type-az_student .search-box .button {
   background: var(--az-primary);
   border-color: var(--az-primary);
+}
+
+/* Student Table Styling */
+.azac-students-table thead th {
+    background-color: #15345a !important;
+    color: #fff !important;
+    font-weight: 600;
+}
+.azac-students-table tbody tr:hover {
+    background-color: #f0f6fc;
+}
+.azac-students-table td {
+    vertical-align: middle;
+}
+
+/* Search Box & Available Students List */
+.azac-search-box,
+.azac-available-container {
+    background: #fff;
+    padding: 15px;
+    border: 1px solid #c3c4c7;
+    margin-bottom: 15px;
+    border-radius: 4px;
+}
+.azac-search-box {
+    background: #f0f0f1;
+}
+.azac-search-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+}
+.azac-search-results {
+    margin-top: 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    background: #fff;
+    display: none;
+}
+
+.azac-available-box {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    padding: 10px;
+    background: #fff;
+    margin-bottom: 10px;
+}
+.azac-available-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.azac-available-item {
+    padding: 5px 0;
+    border-bottom: 1px solid #f0f0f1;
+}
+.azac-available-item:last-child {
+    border-bottom: none;
+}
+.azac-available-item label {
+    display: block;
+    cursor: pointer;
+}
+.azac-select-all-wrap {
+    margin-bottom: 8px;
+}
+.azac-select-all-wrap label {
+    font-weight: 600;
+    cursor: pointer;
 }

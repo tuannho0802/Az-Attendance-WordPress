@@ -318,35 +318,172 @@ class AzAC_Core_CPT
         $selected = is_array($selected) ? array_map('absint', $selected) : [];
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
-        $students = get_posts([
-            'post_type' => 'az_student',
-            'numberposts' => -1,
-            'orderby' => 'title',
-            'order' => 'ASC',
-        ]);
+
+        // Prepare student data for the table
+        $student_data = [];
+        if (!empty($selected)) {
+            $args = [
+                'post_type' => 'az_student',
+                'post__in' => $selected,
+                'numberposts' => -1,
+                'orderby' => 'post__in'
+            ];
+            $posts = get_posts($args);
+            foreach ($posts as $p) {
+                $uid = get_post_meta($p->ID, 'az_user_id', true);
+                $email = '';
+                $phone = '';
+                $biz = '';
+                if ($uid) {
+                    $u = get_userdata($uid);
+                    if ($u) {
+                        $email = $u->user_email;
+                        $phone = get_user_meta($uid, 'billing_phone', true) ?: get_user_meta($uid, 'phone', true);
+                        $biz = get_user_meta($uid, 'az_business_field', true);
+                    }
+                }
+                $student_data[] = [
+                    'id' => $p->ID,
+                    'name' => $p->post_title,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'biz' => $biz
+                ];
+            }
+        }
+
         if ($is_admin) {
-            echo '<div style="margin-bottom:12px;"><input type="text" id="azac_new_student_name" class="regular-text" placeholder="Họ và Tên học viên" /> ';
-            echo '<input type="email" id="azac_new_student_email" class="regular-text" placeholder="Email (tùy chọn)" /> ';
-            echo '<button type="button" class="button" id="azac_add_student_btn" data-class="' . esc_attr($post->ID) . '">Thêm học viên</button></div>';
-            echo '<div id="azac_students_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
-            foreach ($students as $s) {
-                $checked = in_array($s->ID, $selected, true) ? 'checked' : '';
-                echo '<label><input type="checkbox" name="az_students[]" value="' . esc_attr($s->ID) . '" ' . $checked . ' /> ' . esc_html($s->post_title) . '</label>';
+            // Search UI
+            echo '<div class="azac-search-box">';
+            echo '<h4 style="margin:0 0 10px 0;">Tìm kiếm & Thêm học viên</h4>';
+            echo '<div class="azac-search-inputs">';
+            echo '<input type="text" id="azac_search_name" class="regular-text" style="width:100%" placeholder="Họ tên" />';
+            echo '<input type="text" id="azac_search_email" class="regular-text" style="width:100%" placeholder="Email" />';
+            echo '<input type="text" id="azac_search_phone" class="regular-text" style="width:100%" placeholder="Số điện thoại" />';
+            echo '<input type="text" id="azac_search_biz" class="regular-text" style="width:100%" placeholder="Lĩnh vực kinh doanh" />';
+            echo '</div>';
+            echo '<div style="text-align:right;">';
+            echo '<button type="button" class="button button-primary" id="azac_search_btn">Tìm kiếm</button>';
+            echo '</div>';
+            echo '<div id="azac_search_results" class="azac-search-results"></div>';
+            echo '</div>';
+
+            // Available Students List (New)
+            echo '<div class="azac-available-container">';
+            echo '<h4 style="margin:0 0 10px 0;">Chọn từ danh sách (Học viên chưa vào lớp)</h4>';
+
+            // Get students not in $selected
+            $args_available = [
+                'post_type' => 'az_student',
+                'posts_per_page' => 100, // Limit to 100
+                'post__not_in' => !empty($selected) ? $selected : [0],
+                'orderby' => 'title',
+                'order' => 'ASC'
+            ];
+            $available_posts = get_posts($args_available);
+
+            if ($available_posts) {
+                echo '<div class="azac-select-all-wrap"><label><input type="checkbox" id="azac_select_all_available"> Chọn tất cả</label></div>';
+                echo '<div class="azac-available-box">';
+                echo '<ul class="azac-available-list">';
+                foreach ($available_posts as $ap) {
+                    $uid = get_post_meta($ap->ID, 'az_user_id', true);
+                    $email = '';
+                    $phone = '';
+                    $biz = '';
+                    if ($uid) {
+                        $u = get_userdata($uid);
+                        if ($u) {
+                            // Filter: Only allow 'az_student' role
+                            if (!in_array('az_student', (array) $u->roles)) {
+                                continue;
+                            }
+                            $email = $u->user_email;
+                            $phone = get_user_meta($uid, 'billing_phone', true) ?: get_user_meta($uid, 'phone', true);
+                            $biz = get_user_meta($uid, 'az_business_field', true);
+                        } else {
+                            continue;
+                        }
+                    } else {
+                        continue;
+                    }
+                    // JSON data for JS to grab when adding
+                    $s_data = htmlspecialchars(json_encode([
+                        'id' => $ap->ID,
+                        'name' => $ap->post_title,
+                        'email' => $email,
+                        'phone' => $phone,
+                        'biz' => $biz
+                    ]), ENT_QUOTES, 'UTF-8');
+
+                    echo '<li class="azac-available-item">';
+                    echo '<label><input type="checkbox" class="azac-available-cb" value="' . $ap->ID . '" data-info="' . $s_data . '"> ';
+                    echo '<strong>' . esc_html($ap->post_title) . '</strong>';
+                    if ($email)
+                        echo ' - ' . esc_html($email);
+                    echo '</label>';
+                    echo '</li>';
+                }
+                echo '</ul>';
+                echo '</div>';
+                echo '<div style="margin-top:10px;">';
+                echo '<button type="button" class="button button-secondary" id="azac_add_selected_btn">Thêm đã chọn</button>';
+                echo '</div>';
+
+                // JS for Select All
+                echo '<script>
+                jQuery(function($){
+                    $("#azac_select_all_available").on("change", function(){
+                        $(".azac-available-cb").prop("checked", $(this).prop("checked"));
+                    });
+                });
+                </script>';
+            } else {
+                echo '<p>Không có học viên nào khả dụng hoặc tất cả đã ở trong lớp.</p>';
             }
             echo '</div>';
+
             $nonce = wp_create_nonce('azac_add_student');
+            $search_nonce = wp_create_nonce('azac_search_students');
             echo '<script>window.azacClassEditData=' . wp_json_encode([
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => $nonce,
+                'searchNonce' => $search_nonce,
             ]) . ';</script>';
-        } else {
-            echo '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';
-            foreach ($students as $s) {
-                $checked = in_array($s->ID, $selected, true) ? '✓ ' : '';
-                echo '<div>' . esc_html($checked . $s->post_title) . '</div>';
-            }
-            echo '</div>';
         }
+
+        // List Table
+        echo '<table class="wp-list-table widefat fixed striped table-view-list azac-students-table">';
+        echo '<thead><tr>';
+        echo '<th class="manage-column column-name">Họ tên</th>';
+        echo '<th class="manage-column">Email</th>';
+        echo '<th class="manage-column">Số điện thoại</th>';
+        echo '<th class="manage-column">Lĩnh vực KD</th>';
+        if ($is_admin)
+            echo '<th class="manage-column column-action" style="width:60px;">Xóa</th>';
+        echo '</tr></thead>';
+        echo '<tbody id="azac_students_tbody">';
+
+        if (empty($student_data)) {
+            echo '<tr class="no-items"><td colspan="5">Chưa có học viên nào.</td></tr>';
+        } else {
+            foreach ($student_data as $s) {
+                echo '<tr data-id="' . esc_attr($s['id']) . '">';
+                echo '<td>' . esc_html($s['name']) . '<input type="hidden" name="az_students[]" value="' . esc_attr($s['id']) . '"></td>';
+                echo '<td>' . esc_html($s['email']) . '</td>';
+                echo '<td>' . esc_html($s['phone']) . '</td>';
+                echo '<td>' . esc_html($s['biz']) . '</td>';
+                if ($is_admin) {
+                    echo '<td><button type="button" class="button-link azac-remove-student-btn" style="color:#b32d2e;">Xóa</button></td>';
+                }
+                echo '</tr>';
+            }
+        }
+
+        echo '</tbody></table>';
+
+        // Count hidden input
+        echo '<input type="hidden" id="azac_student_count_check" value="' . count($student_data) . '">';
     }
     public static function save_class_meta($post_id, $post)
     {

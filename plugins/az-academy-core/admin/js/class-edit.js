@@ -1,84 +1,306 @@
-;(function($){
-    $(function(){
-        function recalcStudentCount(){
-            var count = $('input[name="az_students[]"]:checked').length;
-            $('#az_so_hoc_vien').val(count);
-        }
+(function ($) {
+  $(function () {
+    // Helper: Recalculate student count and update hidden field
+    function recalcStudentCount() {
+      var rows = $(
+        "#azac_students_tbody tr[data-id]",
+      );
+      var count = rows.length;
+      $("#az_so_hoc_vien").val(count);
+
+      // Handle empty state
+      if (count === 0) {
         if (
-          window.AZAC_CLASS_EDIT &&
-          AZAC_CLASS_EDIT.isTeacher
+          $("#azac_students_tbody .no-items")
+            .length === 0
         ) {
-          function hideSubmit() {
-            var nodes =
-              document.querySelectorAll(
-                "button, a"
-              );
-            nodes.forEach(function (el) {
-              var txt = (el.textContent || "")
-                .trim()
-                .toLowerCase();
-              var aria = (
-                el.getAttribute("aria-label") ||
-                ""
-              ).toLowerCase();
-              if (
-                txt === "submit for review" ||
-                txt === "gửi xét duyệt" ||
-                aria.indexOf(
-                  "submit for review"
-                ) !== -1 ||
-                aria.indexOf(
-                  "gửi xét duyệt"
-                ) !== -1
-              ) {
-                el.style.display = "none";
-              }
-            });
-          }
-          hideSubmit();
-          var obs = new MutationObserver(
-            function () {
-              hideSubmit();
-            }
+          $("#azac_students_tbody").html(
+            '<tr class="no-items"><td colspan="5">Chưa có học viên nào.</td></tr>',
           );
-          obs.observe(document.body, {
-            childList: true,
-            subtree: true,
-          });
         }
-        $('#azac_add_student_btn').on('click', function(){
-            var name = $('#azac_new_student_name').val().trim();
-            var email = $('#azac_new_student_email').val().trim();
-            var classId = $(this).data('class');
-            if(!name){ alert('Nhập họ tên học viên'); return; }
-            var payload = {
-                action: 'azac_add_student',
-                nonce: window.azacClassEditData.nonce,
-                name: name,
-                email: email,
-                class_id: classId
-            };
-            var btn = $(this);
-            btn.prop('disabled', true);
-            $.post(window.azacClassEditData.ajaxUrl, payload, function(res){
-                btn.prop('disabled', false);
-                if(res && res.success){
-                    var id = res.data.id, title = res.data.title;
-                    var label = $('<label/>');
-                    var input = $('<input/>', {type:'checkbox', name:'az_students[]', value:id, checked:true});
-                    label.append(input).append(' '+title);
-                    $('#azac_students_grid').prepend(label);
-                    $('#azac_new_student_name').val('');
-                    $('#azac_new_student_email').val('');
-                    recalcStudentCount();
-                } else {
-                    alert('Lỗi tạo học viên');
-                }
-            });
+      } else {
+        $(
+          "#azac_students_tbody .no-items",
+        ).remove();
+      }
+    }
+
+    // Helper: Add student to table
+    function addStudentToTable(s) {
+      // Check for duplicates
+      if (
+        $(
+          '#azac_students_tbody tr[data-id="' +
+            s.id +
+            '"]',
+        ).length > 0
+      ) {
+        return;
+      }
+
+      var tr = $(
+        '<tr data-id="' + s.id + '"></tr>',
+      );
+      var nameCell =
+        "<td>" +
+        s.name +
+        '<input type="hidden" name="az_students[]" value="' +
+        s.id +
+        '"></td>';
+      var emailCell =
+        "<td>" + (s.email || "") + "</td>";
+      var phoneCell =
+        "<td>" + (s.phone || "") + "</td>";
+      var bizCell =
+        "<td>" + (s.biz || "") + "</td>";
+      var actionCell =
+        '<td><button type="button" class="button-link azac-remove-student-btn" style="color:#b32d2e;">Xóa</button></td>';
+
+      tr.append(
+        nameCell +
+          emailCell +
+          phoneCell +
+          bizCell +
+          actionCell,
+      );
+      $("#azac_students_tbody").append(tr);
+      recalcStudentCount();
+    }
+
+    // --- Event Handlers ---
+
+    // 1. Search Button Click
+    $("#azac_search_btn").on(
+      "click",
+      function (e) {
+        e.preventDefault();
+        var btn = $(this);
+        var name = $("#azac_search_name")
+          .val()
+          .trim();
+        var email = $("#azac_search_email")
+          .val()
+          .trim();
+        var phone = $("#azac_search_phone")
+          .val()
+          .trim();
+        var biz = $("#azac_search_biz")
+          .val()
+          .trim();
+
+        if (!window.azacClassEditData) return;
+
+        btn
+          .prop("disabled", true)
+          .text("Đang tìm...");
+
+        $.post(
+          window.azacClassEditData.ajaxUrl,
+          {
+            action: "azac_search_students",
+            nonce:
+              window.azacClassEditData
+                .searchNonce,
+            name: name,
+            email: email,
+            phone: phone,
+            biz: biz,
+          },
+          function (res) {
+            btn
+              .prop("disabled", false)
+              .text("Tìm kiếm");
+            var resDiv = $(
+              "#azac_search_results",
+            );
+            resDiv.empty().show();
+
+            if (
+              res.success &&
+              res.data.results &&
+              res.data.results.length > 0
+            ) {
+              var ul = $(
+                '<ul style="margin:0; padding:0;"></ul>',
+              );
+              res.data.results.forEach(
+                function (s) {
+                  var li = $(
+                    '<li style="padding:8px; border-bottom:1px solid #eee; display:flex; justify-content:space-between; align-items:center;"></li>',
+                  );
+                  var info =
+                    "<strong>" +
+                    s.name +
+                    "</strong>";
+                  if (s.email)
+                    info += " - " + s.email;
+                  if (s.phone)
+                    info += " - " + s.phone;
+
+                  var leftDiv = $(
+                    "<div>" + info + "</div>",
+                  );
+
+                  var addBtn = $(
+                    '<button type="button" class="button button-small">Thêm</button>',
+                  );
+
+                  // Check if already in table
+                  if (
+                    $(
+                      '#azac_students_tbody tr[data-id="' +
+                        s.id +
+                        '"]',
+                    ).length > 0
+                  ) {
+                    addBtn
+                      .prop("disabled", true)
+                      .text("Đã có");
+                  } else {
+                    addBtn.on(
+                      "click",
+                      function () {
+                        addStudentToTable(s);
+                        $(this)
+                          .prop(
+                            "disabled",
+                            true,
+                          )
+                          .text("Đã thêm");
+                      },
+                    );
+                  }
+
+                  li.append(leftDiv).append(
+                    addBtn,
+                  );
+                  ul.append(li);
+                },
+              );
+              resDiv.append(ul);
+            } else {
+              resDiv.html(
+                '<p style="padding:10px; margin:0;">Không tìm thấy học viên nào phù hợp.</p>',
+              );
+            }
+          },
+        ).fail(function () {
+          btn
+            .prop("disabled", false)
+            .text("Tìm kiếm");
+          alert("Lỗi kết nối server.");
         });
-        $(document).on('change', 'input[name="az_students[]"]', function(){
-            recalcStudentCount();
+      },
+    );
+
+    // 2. Add Selected from "Available List"
+    $("#azac_select_all_available").on(
+      "change",
+      function () {
+        $(".azac-available-cb").prop(
+          "checked",
+          $(this).prop("checked"),
+        );
+      },
+    );
+
+    $("#azac_add_selected_btn").on(
+      "click",
+      function (e) {
+        e.preventDefault();
+        var checked = $(
+          ".azac-available-cb:checked",
+        );
+        if (checked.length === 0) {
+          alert(
+            "Vui lòng chọn ít nhất một học viên từ danh sách.",
+          );
+          return;
+        }
+        checked.each(function () {
+          var cb = $(this);
+          var info = cb.data("info");
+          if (info) {
+            addStudentToTable(info);
+            // Remove the item from the available list so it can't be added again
+            cb.closest("li").remove();
+          }
         });
-        recalcStudentCount();
-    });
+      },
+    );
+
+    // 3. Remove Student (Delegate to document for dynamic elements)
+    $(document).on(
+      "click",
+      ".azac-remove-student-btn",
+      function (e) {
+        e.preventDefault();
+        if (
+          confirm(
+            "Bạn có chắc chắn muốn xóa học viên này khỏi lớp?",
+          )
+        ) {
+          $(this).closest("tr").remove();
+          recalcStudentCount();
+        }
+      },
+    );
+
+    // 4. Hide "Submit for Review" for Teachers (RBAC)
+    if (
+      window.AZAC_CLASS_EDIT &&
+      AZAC_CLASS_EDIT.isTeacher
+    ) {
+      function hideSubmit() {
+        var nodes = document.querySelectorAll(
+          "button, a, input[type='submit']",
+        );
+        nodes.forEach(function (el) {
+          var txt = (
+            el.textContent ||
+            el.value ||
+            ""
+          )
+            .trim()
+            .toLowerCase();
+          var aria = (
+            el.getAttribute("aria-label") || ""
+          ).toLowerCase();
+          var name = (
+            el.getAttribute("name") || ""
+          ).toLowerCase();
+
+          if (
+            txt === "submit for review" ||
+            txt === "gửi xét duyệt" ||
+            name === "publish" ||
+            aria.indexOf(
+              "submit for review",
+            ) !== -1 ||
+            aria.indexOf("gửi xét duyệt") !== -1
+          ) {
+            // Only hide if it's the publishing action, not "Update" if allowed
+            // Actually teacher shouldn't publish.
+            el.style.display = "none";
+          }
+        });
+
+        // Specifically hide the major publishing actions div if needed
+        $("#publishing-action").hide();
+      }
+      hideSubmit();
+      var obs = new MutationObserver(
+        function () {
+          hideSubmit();
+        },
+      );
+      obs.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
+
+    // Initial calculation
+    recalcStudentCount();
+  });
 })(jQuery);
