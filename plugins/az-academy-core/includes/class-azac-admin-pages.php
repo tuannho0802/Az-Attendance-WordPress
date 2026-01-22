@@ -270,6 +270,18 @@ class AzAC_Admin_Pages
             'order' => 'ASC',
             's' => $search,
         ]);
+
+        // Filter: Only allow students linked to users with 'az_student' role (or no user)
+        $students = array_filter($students, function ($s) {
+            $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
+            if (!$uid)
+                return true; // Keep unconnected students
+            $u = get_userdata($uid);
+            if (!$u)
+                return true; // Keep if user not found
+            return in_array('az_student', $u->roles, true);
+        });
+
         if (in_array('az_teacher', $user->roles, true)) {
             $classes = get_posts([
                 'post_type' => 'az_class',
