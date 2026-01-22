@@ -42,15 +42,18 @@ class AzAC_Admin_Pages
             'dashicons-chart-bar',
             0
         );
-        add_menu_page(
-            'Quản lý Học viên',
-            'Quản lý Học viên',
-            'read', // Allow teachers (validated inside)
-            'azac-manage-students',
-            [__CLASS__, 'render_manage_students_page'],
-            'dashicons-groups',
-            0
-        );
+        $user = wp_get_current_user();
+        if (!in_array('az_student', (array) $user->roles)) {
+            add_menu_page(
+                'Quản lý Học viên',
+                'Quản lý Học viên',
+                'read', // Allow teachers (validated inside)
+                'azac-manage-students',
+                [__CLASS__, 'render_manage_students_page'],
+                'dashicons-groups',
+                0
+            );
+        }
         add_menu_page(
             'Quản lý Giảng viên',
             'Quản lý Giảng viên',

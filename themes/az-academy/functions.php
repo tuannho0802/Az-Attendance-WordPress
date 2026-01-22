@@ -48,3 +48,73 @@ function azac_theme_favicon()
 add_action('wp_head', 'azac_theme_favicon', 99);
 add_action('admin_head', 'azac_theme_favicon', 99);
 add_action('login_head', 'azac_theme_favicon', 99);
+
+/**
+ * 1. Custom URL Rewrite Rules for Auth Pages
+ */
+function azac_custom_rewrite_rules()
+{
+    add_rewrite_rule('^login/?$', 'index.php?az_auth_page=login', 'top');
+    add_rewrite_rule('^register/?$', 'index.php?az_auth_page=register', 'top');
+}
+add_action('init', 'azac_custom_rewrite_rules');
+
+function azac_query_vars($vars)
+{
+    $vars[] = 'az_auth_page';
+    return $vars;
+}
+add_filter('query_vars', 'azac_query_vars');
+
+/**
+ * 2. Template Loader
+ */
+function azac_template_loader($template)
+{
+    $auth_page = get_query_var('az_auth_page');
+    if ($auth_page == 'login') {
+        $new_template = get_template_directory() . '/page-login.php';
+        if (file_exists($new_template))
+            return $new_template;
+    }
+    if ($auth_page == 'register') {
+        $new_template = get_template_directory() . '/page-register.php';
+        if (file_exists($new_template))
+            return $new_template;
+    }
+    return $template;
+}
+add_filter('template_include', 'azac_template_loader');
+
+/**
+ * 3. Redirect wp-login.php & Change URLs
+ */
+function azac_redirect_wp_login()
+{
+    global $pagenow;
+    if ($pagenow == 'wp-login.php' && $_SERVER['REQUEST_METHOD'] == 'GET') {
+        if (isset($_GET['action']) && $_GET['action'] == 'logout')
+            return;
+        wp_redirect(home_url('/login'));
+        exit;
+    }
+}
+add_action('init', 'azac_redirect_wp_login');
+
+add_filter('login_url', function ($url) {
+    return home_url('/login'); });
+add_filter('register_url', function ($url) {
+    return home_url('/register'); });
+
+/**
+ * 4. Flush Rules (Run once then comment out)
+ */
+function azac_flush_rules_once()
+{
+    if (!get_option('azac_rewrite_flushed')) {
+        flush_rewrite_rules();
+        update_option('azac_rewrite_flushed', true);
+    }
+}
+add_action('init', 'azac_flush_rules_once');
+

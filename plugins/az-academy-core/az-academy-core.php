@@ -31,6 +31,7 @@ require_once AZAC_CORE_DIR . 'includes/class-azac-core-admin.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-shortcodes.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-admin-guides.php';
 
+
 register_activation_hook(__FILE__, ['AzAC_Core_Activator', 'activate']);
 register_deactivation_hook(__FILE__, ['AzAC_Core_Deactivator', 'deactivate']);
 
