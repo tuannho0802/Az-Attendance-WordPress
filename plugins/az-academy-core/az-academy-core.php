@@ -23,6 +23,7 @@ require_once AZAC_CORE_DIR . 'includes/class-azac-core-classes.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-attendance.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-sessions.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core.php';
+require_once AZAC_CORE_DIR . 'includes/class-azac-user-manager.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-mid.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-admin-pages.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-admin-assets.php';
@@ -42,6 +43,7 @@ add_action('plugins_loaded', function () {
     AzAC_Core_Classes::register();
     AzAC_Core_Attendance::register();
     AzAC_Core_Sessions::register();
+    AzAC_User_Manager::register();
     AzAC_Admin_Stats::register();
     AzAC_Core_Mid::register();
     AzAC_Shortcodes::register();
