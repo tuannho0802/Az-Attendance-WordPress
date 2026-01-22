@@ -16,8 +16,9 @@ class AzAC_User_Manager
         // Avatar Upload Support
         add_action('user_edit_form_tag', [__CLASS__, 'add_enctype_to_user_profile']);
         add_filter('get_avatar', [__CLASS__, 'custom_avatar_filter'], 10, 6);
+        add_filter('get_avatar_url', [__CLASS__, 'custom_avatar_url_filter'], 10, 3);
     }
-
+    
     /**
      * Add enctype to user profile form to support file upload
      */
@@ -174,6 +175,41 @@ class AzAC_User_Manager
                 update_user_meta($user_id, 'az_custom_avatar', $attachment_id);
             }
         }
+    }
+
+    /**
+     * Filter get_avatar_url to use custom image
+     */
+    public static function custom_avatar_url_filter($url, $id_or_email, $args)
+    {
+        $user_id = 0;
+
+        if (is_numeric($id_or_email)) {
+            $user_id = (int) $id_or_email;
+        } elseif (is_string($id_or_email) && is_email($id_or_email)) {
+            $user = get_user_by('email', $id_or_email);
+            if ($user)
+                $user_id = $user->ID;
+        } elseif (is_object($id_or_email) && !empty($id_or_email->user_id)) {
+            $user_id = (int) $id_or_email->user_id;
+        } elseif ($id_or_email instanceof WP_User) {
+            $user_id = $id_or_email->ID;
+        }
+
+        if ($user_id > 0) {
+            $custom_avatar_id = get_user_meta($user_id, 'az_custom_avatar', true);
+            if ($custom_avatar_id) {
+                $custom_url = wp_get_attachment_image_url($custom_avatar_id, 'thumbnail');
+                if (!$custom_url) {
+                    $custom_url = wp_get_attachment_url($custom_avatar_id);
+                }
+                if ($custom_url) {
+                    return $custom_url;
+                }
+            }
+        }
+
+        return $url;
     }
 
     /**
