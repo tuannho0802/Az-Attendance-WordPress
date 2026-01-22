@@ -63,7 +63,7 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Chấm công Giảng viên',
             'Chấm công Giảng viên',
-            'read', // Allow read, check role inside
+            'edit_published_posts', // Only teachers and admins
             'azac-teacher-attendance',
             [__CLASS__, 'render_teacher_attendance_page'],
             'dashicons-calendar-alt',

@@ -229,6 +229,11 @@ class AzAC_Core_Admin
                 }
             }
 
+            // If filtering by month, skip teachers with no sessions in that month
+            if ($month_filter && $total_sessions === 0) {
+                continue;
+            }
+
             $missing = $total_sessions - $checked_sessions;
             $total_students = count($user_ids);
             
