@@ -45,7 +45,7 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Quản lý Học viên',
             'Quản lý Học viên',
-            'manage_options',
+            'edit_published_posts', // Allow teachers
             'azac-manage-students',
             [__CLASS__, 'render_manage_students_page'],
             'dashicons-groups',
@@ -607,8 +607,9 @@ class AzAC_Admin_Pages
     }
     public static function render_manage_students_page()
     {
-        if (!current_user_can('manage_options')) {
-            echo '<div class="wrap"><h1>Quản lý Học viên</h1><p>Chỉ Admin có thể truy cập trang này.</p></div>';
+        $user = wp_get_current_user();
+        if (!in_array('administrator', $user->roles, true) && !in_array('az_teacher', $user->roles, true)) {
+            echo '<div class="wrap"><h1>Quản lý Học viên</h1><p>Unauthorized.</p></div>';
             return;
         }
         $classes = get_posts([
@@ -618,7 +619,23 @@ class AzAC_Admin_Pages
             'order' => 'DESC',
             'post_status' => ['publish', 'pending'],
         ]);
+
+        if (in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
+            $classes = array_filter($classes, function ($c) use ($user) {
+                $teacher_user = intval(get_post_meta($c->ID, 'az_teacher_user', true));
+                return $teacher_user === intval($user->ID);
+            });
+        }
+
         $class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+
+        if ($class_id && in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
+            $owner = intval(get_post_meta($class_id, 'az_teacher_user', true));
+            if ($owner !== $user->ID) {
+                $class_id = 0;
+            }
+        }
+
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý Học viên</h1>';
         echo '<div class="azac-session-bar">';
         echo '<label>Lọc theo lớp ';

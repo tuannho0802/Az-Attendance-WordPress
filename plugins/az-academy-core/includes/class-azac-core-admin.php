@@ -74,6 +74,33 @@ class AzAC_Core_Admin
             return $rows;
         }
         $users = get_users(['role' => 'az_student']);
+        $current_user = wp_get_current_user();
+        if (in_array('az_teacher', $current_user->roles, true) && !in_array('administrator', $current_user->roles, true)) {
+            $teacher_classes = get_posts([
+                'post_type' => 'az_class',
+                'numberposts' => -1,
+                'meta_key' => 'az_teacher_user',
+                'meta_value' => $current_user->ID,
+                'fields' => 'ids'
+            ]);
+            $student_post_ids = [];
+            foreach ($teacher_classes as $cid) {
+                $s_ids = get_post_meta($cid, 'az_students', true);
+                if (is_array($s_ids)) {
+                    $student_post_ids = array_merge($student_post_ids, $s_ids);
+                }
+            }
+            $student_post_ids = array_unique($student_post_ids);
+            $allowed_user_ids = [];
+            foreach ($student_post_ids as $spid) {
+                $uid = get_post_meta($spid, 'az_user_id', true);
+                if ($uid)
+                    $allowed_user_ids[] = intval($uid);
+            }
+            $users = array_filter($users, function ($u) use ($allowed_user_ids) {
+                return in_array($u->ID, $allowed_user_ids);
+            });
+        }
         foreach ($users as $u) {
             $sid = 0;
             $posts = get_posts([
