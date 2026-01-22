@@ -18,7 +18,7 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Lớp học',
             'Lớp học',
-            'edit_posts',
+            'read',
             'azac-classes-list',
             [__CLASS__, 'render_classes_list_page'],
             'dashicons-book-alt',
