@@ -509,8 +509,12 @@
   function load() {
     var c = document.getElementById("azacReviewsClass");
     var f = document.getElementById("azacReviewsFilter");
+    var s = document.getElementById(
+      "azacReviewsSearch",
+    );
     var cid = parseInt(c ? c.value : (window.azacReviews ? window.azacReviews.classId : 0), 10) || 0;
     var stars = f ? f.value : "";
+    var search = s ? s.value : "";
     var fd = new FormData();
     fd.append("action", "azac_get_reviews");
     fd.append("nonce", window.azacReviews.nonce);
@@ -518,6 +522,7 @@
     fd.append("paged", CURRENT_PAGE);
     fd.append("per_page", PAGE_SIZE);
     if (stars) fd.append("stars", stars);
+    if (search) fd.append("search", search);
     fetch(window.azacReviews.ajaxUrl, { method: "POST", body: fd })
       .then(function (r) {
         return r.json();

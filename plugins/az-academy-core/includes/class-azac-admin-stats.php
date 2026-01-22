@@ -147,17 +147,36 @@ class AzAC_Admin_Stats
         }
         global $wpdb;
         $feedback_table = $wpdb->prefix . 'az_feedback';
+        $pm = $wpdb->postmeta;
+        $users = $wpdb->users;
+        $posts = $wpdb->posts;
+
         $stars_raw = isset($_POST['stars']) ? sanitize_text_field($_POST['stars']) : '';
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+
         $stars_arr = array_filter(array_map('absint', explode(',', $stars_raw)));
-        $where = $wpdb->prepare("class_id=%d", $class_id);
+        $where = $wpdb->prepare("f.class_id=%d", $class_id);
+
         if ($stars_arr) {
             $stars_arr = array_values(array_intersect($stars_arr, [1,2,3,4,5]));
             if ($stars_arr) {
                 $in = implode(',', array_map('intval', $stars_arr));
-                $where .= " AND rating IN ({$in})";
+                $where .= " AND f.rating IN ({$in})";
             }
         }
-        $counts_rows = $wpdb->get_results("SELECT rating, COUNT(*) as c FROM {$feedback_table} WHERE {$where} GROUP BY rating", ARRAY_A);
+
+        $join_sql = "";
+        $items_join = "LEFT JOIN {$pm} pm ON pm.post_id = f.student_id AND pm.meta_key = 'az_user_id'
+                       LEFT JOIN {$users} u ON u.ID = pm.meta_value
+                       LEFT JOIN {$posts} p ON p.ID = f.student_id";
+
+        if ($search) {
+            $join_sql = $items_join;
+            $like = '%' . $wpdb->esc_like($search) . '%';
+            $where .= $wpdb->prepare(" AND (u.display_name LIKE %s OR p.post_title LIKE %s OR f.comment LIKE %s)", $like, $like, $like);
+        }
+
+        $counts_rows = $wpdb->get_results("SELECT f.rating, COUNT(*) as c FROM {$feedback_table} f {$join_sql} WHERE {$where} GROUP BY f.rating", ARRAY_A);
         $counts = [1=>0,2=>0,3=>0,4=>0,5=>0];
         $total = 0;
         foreach ($counts_rows as $r) {
@@ -166,18 +185,14 @@ class AzAC_Admin_Stats
             $counts[$rt] += $c;
             $total += $c;
         }
-        $avg = floatval($wpdb->get_var("SELECT AVG(rating) FROM {$feedback_table} WHERE {$where}"));
-        $pm = $wpdb->postmeta;
-        $users = $wpdb->users;
+        $avg = floatval($wpdb->get_var("SELECT AVG(f.rating) FROM {$feedback_table} f {$join_sql} WHERE {$where}"));
 
         $offset = ($paged - 1) * $per_page;
 
         $items = $wpdb->get_results($wpdb->prepare("
             SELECT f.student_id, f.rating, f.comment, f.session_date, COALESCE(u.display_name, p.post_title) AS name, pm.meta_value AS user_id
             FROM {$feedback_table} f
-            LEFT JOIN {$pm} pm ON pm.post_id = f.student_id AND pm.meta_key = 'az_user_id'
-            LEFT JOIN {$users} u ON u.ID = pm.meta_value
-            LEFT JOIN {$wpdb->posts} p ON p.ID = f.student_id
+            {$items_join}
             WHERE {$where}
             ORDER BY f.session_date DESC
             LIMIT %d OFFSET %d

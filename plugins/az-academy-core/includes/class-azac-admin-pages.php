@@ -45,7 +45,7 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Quản lý Học viên',
             'Quản lý Học viên',
-            'edit_published_posts', // Allow teachers
+            'read', // Allow teachers (validated inside)
             'azac-manage-students',
             [__CLASS__, 'render_manage_students_page'],
             'dashicons-groups',
@@ -97,6 +97,8 @@ class AzAC_Admin_Pages
             echo '<label>Lọc lớp ';
             echo '<select id="azac-filter-class"><option value="">Tất cả</option></select>';
             echo '</label>';
+            echo '<label><input type="text" id="azac-filter-search" placeholder="Tìm kiếm lớp..." style="margin-left:5px"></label>';
+            echo '<label style="margin-left:10px"><input type="checkbox" id="azac-filter-today" value="1"> Hôm nay</label>';
             echo '</div>';
             echo '<div id="azac-sessions-grid" class="azac-grid">';
             echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
@@ -123,11 +125,26 @@ class AzAC_Admin_Pages
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
+
+        // Search Logic
+        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+
+        // Search Form
+        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
+        echo '<input type="hidden" name="page" value="azac-classes-list">';
+        echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm kiếm lớp..." class="regular-text" style="width:auto">';
+        echo '<button type="submit" class="button button-secondary">Tìm kiếm</button>';
+        if ($search) {
+            echo '<a href="' . admin_url('admin.php?page=azac-classes-list') . '" class="button">Xóa lọc</a>';
+        }
+        echo '</form>';
+
         $args = [
             'post_type' => 'az_class',
             'numberposts' => -1,
             'orderby' => 'date',
             'order' => 'DESC',
+            's' => $search, // WP_Query supports 's'
         ];
         if ($is_admin || $is_teacher) {
             $args['post_status'] = ['publish', 'pending'];
@@ -232,11 +249,26 @@ class AzAC_Admin_Pages
     {
         echo '<div class="wrap"><h1>Học viên</h1>';
         $user = wp_get_current_user();
+
+        // Search Logic
+        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+
+        // Search Form
+        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
+        echo '<input type="hidden" name="page" value="azac-students-list">';
+        echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm kiếm học viên..." class="regular-text" style="width:auto">';
+        echo '<button type="submit" class="button button-secondary">Tìm kiếm</button>';
+        if ($search) {
+            echo '<a href="' . admin_url('admin.php?page=azac-students-list') . '" class="button">Xóa lọc</a>';
+        }
+        echo '</form>';
+
         $students = get_posts([
             'post_type' => 'az_student',
             'numberposts' => -1,
             'orderby' => 'title',
             'order' => 'ASC',
+            's' => $search,
         ]);
         if (in_array('az_teacher', $user->roles, true)) {
             $classes = get_posts([
@@ -579,6 +611,7 @@ class AzAC_Admin_Pages
         echo '<label>Lọc theo sao ';
         echo '<select id="azacReviewsFilter"><option value="">Tất cả</option><option value="1,2">1-2 sao</option><option value="3">3 sao</option><option value="4,5">4-5 sao</option></select>';
         echo '</label>';
+        echo '<label><input type="text" id="azacReviewsSearch" placeholder="Tìm kiếm đánh giá..." style="margin-left:5px"></label>';
         echo '</div>';
         echo '<div class="azac-reviews-grid">';
         echo '<div class="azac-reviews-visual">';
@@ -628,6 +661,7 @@ class AzAC_Admin_Pages
         }
 
         $class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
 
         if ($class_id && in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
             $owner = intval(get_post_meta($class_id, 'az_teacher_user', true));
@@ -637,15 +671,24 @@ class AzAC_Admin_Pages
         }
 
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý Học viên</h1>';
-        echo '<div class="azac-session-bar">';
-        echo '<label>Lọc theo lớp ';
-        echo '<select id="azacManageStudentsClass">';
+
+        // Filter Form
+        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
+        echo '<input type="hidden" name="page" value="azac-manage-students">';
+        echo '<label>Lọc theo lớp: <select name="class_id">';
         echo '<option value="">Tất cả</option>';
         foreach ($classes as $c) {
             $sel = ($class_id === $c->ID) ? ' selected' : '';
             echo '<option value="' . esc_attr($c->ID) . '"' . $sel . '>' . esc_html($c->post_title) . '</option>';
         }
-        echo '</select></label></div>';
+        echo '</select></label>';
+        echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm kiếm học viên..." class="regular-text" style="width:auto">';
+        echo '<button class="button button-secondary">Lọc</button>';
+        if ($class_id || $search) {
+            echo '<a href="' . admin_url('admin.php?page=azac-manage-students') . '" class="button">Xóa lọc</a>';
+        }
+        echo '</form>';
+
         echo '<div class="azac-issue-legend">';
         echo '<span class="legend-badge legend-safe"><span class="dashicons dashicons-yes"></span> Đủ 2 lần</span>';
         echo '<span class="legend-badge legend-half"><span class="dashicons dashicons-warning"></span> Thiếu 1 nửa</span>';
@@ -654,6 +697,12 @@ class AzAC_Admin_Pages
         echo '<span class="legend-type"><span class="dot dot-mid"></span> Giữa giờ</span>';
         echo '</div>';
         $rows = method_exists('AzAC_Core_Admin', 'get_students_admin_summary') ? AzAC_Core_Admin::get_students_admin_summary($class_id) : [];
+
+        if ($search) {
+            $rows = array_filter($rows, function ($r) use ($search) {
+                return mb_stripos($r['name'], $search) !== false;
+            });
+        }
 
         $per_page = 20;
         $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
@@ -777,25 +826,34 @@ class AzAC_Admin_Pages
 
         // --- List View Logic ---
         $month = isset($_GET['month']) ? sanitize_text_field($_GET['month']) : '';
+        $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
+
+        echo '<div class="wrap azac-admin-teal"><h1>Quản lý Giảng viên</h1>';
+
+        // Filter Form
+        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
+        echo '<input type="hidden" name="page" value="azac-manage-teachers">';
+        echo '<label><strong>Lọc theo tháng:</strong> <input type="month" name="month" value="' . esc_attr($month) . '" class="regular-text" style="width:auto"></label>';
+        echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm kiếm giảng viên..." class="regular-text" style="width:auto">';
+        echo '<button class="button button-secondary">Lọc</button>';
+        if ($month || $search) {
+            echo '<a href="' . admin_url('admin.php?page=azac-manage-teachers') . '" class="button">Xóa lọc</a>';
+        }
+        echo '</form>';
+
         $rows = method_exists('AzAC_Core_Admin', 'get_teachers_admin_summary') ? AzAC_Core_Admin::get_teachers_admin_summary($month) : [];
+
+        if ($search) {
+            $rows = array_filter($rows, function ($r) use ($search) {
+                return mb_stripos($r['name'], $search) !== false;
+            });
+        }
 
         $per_page = 20;
         $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
         $total_items = count($rows);
         $total_pages = ceil($total_items / $per_page);
         $paged_rows = array_slice($rows, ($current_page - 1) * $per_page, $per_page);
-
-        echo '<div class="wrap azac-admin-teal"><h1>Quản lý Giảng viên</h1>';
-
-        // Month Filter Form
-        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
-        echo '<input type="hidden" name="page" value="azac-manage-teachers">';
-        echo '<label><strong>Lọc theo tháng:</strong> <input type="month" name="month" value="' . esc_attr($month) . '" class="regular-text" style="width:auto"></label>';
-        echo '<button class="button button-secondary">Lọc</button>';
-        if ($month) {
-            echo '<a href="' . admin_url('admin.php?page=azac-manage-teachers') . '" class="button">Xóa lọc</a>';
-        }
-        echo '</form>';
 
         echo '<table class="widefat fixed striped"><thead><tr>
             <th>Tên giảng viên</th>

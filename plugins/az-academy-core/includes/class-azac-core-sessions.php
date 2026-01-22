@@ -191,6 +191,8 @@ class AzAC_Core_Sessions
         $per_page = isset($_POST['per_page']) ? max(1, absint($_POST['per_page'])) : 20;
         $filter_class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
         $sort = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : 'date_desc';
+        $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
+        $filter_today = isset($_POST['filter_today']) ? intval($_POST['filter_today']) : 0;
 
         $allowed_class_ids = [];
         $args = [
@@ -199,6 +201,10 @@ class AzAC_Core_Sessions
             'fields' => 'ids',
             'post_status' => $is_admin ? ['publish', 'pending'] : ['publish'],
         ];
+
+        if (!empty($search) && mb_strlen($search) >= 2) {
+            $args['s'] = $search;
+        }
 
         if ($is_teacher && !$is_admin) {
                 $args['meta_key'] = 'az_teacher_user';
@@ -259,8 +265,14 @@ class AzAC_Core_Sessions
             $order_sql = "ORDER BY session_date ASC, session_time ASC";
         }
 
+        $where_sql = "";
+        if ($filter_today) {
+            $today = current_time('Y-m-d');
+            $where_sql = $wpdb->prepare(" AND session_date = %s", $today);
+        }
+
         $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$sess_table} WHERE class_id IN ($ids_placeholder) {$order_sql} LIMIT %d OFFSET %d",
+            "SELECT * FROM {$sess_table} WHERE class_id IN ($ids_placeholder) {$where_sql} {$order_sql} LIMIT %d OFFSET %d",
             array_merge($allowed_class_ids, [$per_page, $offset])
         ));
 

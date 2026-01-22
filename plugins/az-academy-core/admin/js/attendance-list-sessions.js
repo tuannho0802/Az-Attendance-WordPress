@@ -170,11 +170,23 @@
     );
 
     $(
-      "#azac-filter-group, #azac-filter-sort, #azac-filter-class",
+      "#azac-filter-group, #azac-filter-sort, #azac-filter-class, #azac-filter-today",
     ).on("change", function () {
       CURRENT_PAGE = 1;
       loadSessions();
     });
+
+    var searchTimeout;
+    $("#azac-filter-search").on(
+      "keyup",
+      function () {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(function () {
+          CURRENT_PAGE = 1;
+          loadSessions();
+        }, 500);
+      },
+    );
 
     function loadSessions() {
       if (
@@ -193,6 +205,13 @@
         "date_desc";
       var classId =
         $("#azac-filter-class").val() || "";
+      var search =
+        $("#azac-filter-search").val() || "";
+      var filterToday = $(
+        "#azac-filter-today",
+      ).is(":checked")
+        ? 1
+        : 0;
 
       var perPage =
         group === "class" ? -1 : PAGE_SIZE;
@@ -204,6 +223,8 @@
         per_page: perPage,
         filter_class_id: classId,
         sort: sort,
+        search: search,
+        filter_today: filterToday,
       };
 
       var $grid = $("#azac-sessions-grid").html(
