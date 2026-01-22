@@ -138,6 +138,10 @@ class AzAC_Admin_Assets
             if (!wp_script_is('azac-reviews-js', 'enqueued')) {
                 wp_enqueue_script('azac-reviews-js', AZAC_CORE_URL . 'admin/js/reviews.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
             }
+        } elseif ($page === 'azac-teacher-attendance') {
+            wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
         }
     }
 }

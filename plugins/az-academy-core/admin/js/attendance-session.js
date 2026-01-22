@@ -98,5 +98,69 @@
         }
       });
     });
+
+    $(document).on("change", ".azac-teacher-checkin-cb", function () {
+      var $cb = $(this);
+      var classId = $cb.data("class");
+      var date = $cb.data("date");
+      var isCheckin = $cb.is(":checked") ? 1 : 0;
+      
+      var payload = {
+        action: "azac_teacher_checkin",
+        nonce: window.azacData ? window.azacData.sessionNonce : '',
+        class_id: classId,
+        date: date,
+        is_checkin: isCheckin
+      };
+      
+      $cb.prop("disabled", true);
+      $.post(window.azacData.ajaxUrl, payload, function(res) {
+          $cb.prop("disabled", false);
+          if(res.success) {
+              var $badge = $cb.closest("tr").find(".azac-badge");
+              if (isCheckin) {
+                  $badge.removeClass("azac-badge-pending").addClass("azac-badge-publish").text("Đã dạy");
+              } else {
+                  $badge.removeClass("azac-badge-publish").addClass("azac-badge-pending").text("Chưa dạy");
+              }
+          } else {
+              alert(res.data.message || "Lỗi");
+              $cb.prop("checked", !isCheckin);
+          }
+      }).fail(function() {
+          $cb.prop("disabled", false);
+          alert("Lỗi kết nối");
+          $cb.prop("checked", !isCheckin);
+      });
+    });
+
+    if ($(".azac-datepicker").length) {
+        var $dp = $(".azac-datepicker");
+        if (window.azacData && window.azacData.classId) {
+             $.post(window.azacData.ajaxUrl, {
+                 action: 'azac_get_class_session_dates',
+                 class_id: window.azacData.classId,
+                 nonce: window.azacData.sessionNonce
+             }, function(res) {
+                 if(res.success && res.data.dates) {
+                     var dates = res.data.dates;
+                     $dp.datepicker({
+                        dateFormat: "yy-mm-dd",
+                        beforeShowDay: function (date) {
+                            var string = $.datepicker.formatDate("yy-mm-dd", date);
+                            if (dates.includes(string)) {
+                                return [true, "azac-date-highlight", "Đã có buổi học"];
+                            }
+                            return [true, ""];
+                        },
+                    });
+                 } else {
+                     $dp.datepicker({ dateFormat: "yy-mm-dd" });
+                 }
+             });
+        } else {
+             $dp.datepicker({ dateFormat: "yy-mm-dd" });
+        }
+    }
   });
 })(jQuery);

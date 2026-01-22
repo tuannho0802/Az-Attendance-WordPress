@@ -390,3 +390,15 @@
 .wp-core-ui .azac-tabs .azac-tab-btn.button-primary:hover {
   filter: brightness(0.94) !important;
 }
+
+/* Status Badges */
+.azac-badge-publish {
+  background: #0064e011;
+  color: #0064e0;
+  border-color: #0064e0;
+}
+.azac-badge-pending {
+  background: #fff8e1;
+  color: #f39c12;
+  border-color: #f39c12;
+}

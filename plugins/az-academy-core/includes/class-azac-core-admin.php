@@ -131,7 +131,7 @@ class AzAC_Core_Admin
         }
         return $rows;
     }
-    public static function get_teachers_admin_summary()
+    public static function get_teachers_admin_summary($month_filter = '')
     {
         $users = get_users(['role' => 'az_teacher']);
         $rows = [];
@@ -171,6 +171,10 @@ class AzAC_Core_Admin
             "#e76f51",
             "#264653",
         ];
+
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+
         foreach ($users as $u) {
             $classes = get_posts([
                 'post_type' => 'az_class',
@@ -181,6 +185,8 @@ class AzAC_Core_Admin
             ]);
             $cls = [];
             $user_ids = [];
+            $class_ids = [];
+
             foreach ($classes as $c) {
                 $ids = get_post_meta($c->ID, 'az_students', true);
                 $ids = is_array($ids) ? array_map('absint', $ids) : [];
@@ -198,12 +204,44 @@ class AzAC_Core_Admin
                     'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . intval($c->ID)),
                     'color' => $color,
                 ];
+                $class_ids[] = $c->ID;
             }
+
+            $total_sessions = 0;
+            $checked_sessions = 0;
+
+            if (!empty($class_ids)) {
+                $ids_placeholder = implode(',', array_fill(0, count($class_ids), '%d'));
+                $sql = "SELECT teacher_checkin FROM {$sess_table} WHERE class_id IN ($ids_placeholder)";
+                $params = $class_ids;
+
+                if ($month_filter) {
+                    $sql .= " AND DATE_FORMAT(session_date, '%Y-%m') = %s";
+                    $params[] = $month_filter;
+                }
+
+                $sessions = $wpdb->get_results($wpdb->prepare($sql, $params));
+                $total_sessions = count($sessions);
+                foreach ($sessions as $s) {
+                    if (intval($s->teacher_checkin) === 1) {
+                        $checked_sessions++;
+                    }
+                }
+            }
+
+            $missing = $total_sessions - $checked_sessions;
             $total_students = count($user_ids);
+            
             $rows[] = [
+                'id' => $u->ID,
                 'name' => $u->display_name ?: $u->user_login,
                 'classes' => $cls,
                 'students_total' => $total_students,
+                'stats' => [
+                    'total' => $total_sessions,
+                    'checked' => $checked_sessions,
+                    'missing' => $missing
+                ]
             ];
         }
         return $rows;
