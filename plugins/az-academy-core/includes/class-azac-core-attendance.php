@@ -134,9 +134,18 @@ class AzAC_Core_Attendance
             wp_send_json_error(['message' => 'Invalid'], 400);
         }
         $user = wp_get_current_user();
-        $is_admin_or_teacher = in_array('administrator', $user->roles, true) || in_array('az_teacher', $user->roles, true);
-        if (!$is_admin_or_teacher) {
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+
+        if (!$is_admin && !$is_teacher) {
             wp_send_json_error(['message' => 'Capability'], 403);
+        }
+
+        if ($is_teacher && !$is_admin) {
+            $today = current_time('Y-m-d');
+            if ($session_date !== $today) {
+                wp_send_json_error(['message' => 'Bạn chỉ được điểm danh cho ngày hôm nay.'], 403);
+            }
         }
         global $wpdb;
         $table = $wpdb->prefix . 'az_attendance';

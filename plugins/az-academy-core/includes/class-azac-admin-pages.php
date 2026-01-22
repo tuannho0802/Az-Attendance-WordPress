@@ -385,6 +385,7 @@ class AzAC_Admin_Pages
         $user = wp_get_current_user();
         $is_student = in_array('az_student', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
+        $is_admin = in_array('administrator', $user->roles, true);
         $assigned_teacher = intval(get_post_meta($class_id, 'az_teacher_user', true));
         $can_access = current_user_can('edit_post', $class_id) || $is_student || ($is_teacher && $assigned_teacher === intval($user->ID));
         if (!$can_access) {
@@ -462,10 +463,12 @@ class AzAC_Admin_Pages
         }
         echo '</select> ';
         if (!$is_student) {
-            echo '<input type="date" id="azac_session_date" value="' . esc_attr($selected_date) . '" /> ';
-            echo '<input type="time" id="azac_session_time" value="" /> ';
-            echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button> ';
-            echo '<button class="button" id="azac_update_session_btn">Cập nhật buổi</button>';
+            if ($is_admin) {
+                echo '<input type="date" id="azac_session_date" value="' . esc_attr($selected_date) . '" /> ';
+                echo '<input type="time" id="azac_session_time" value="" /> ';
+                echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button> ';
+                echo '<button class="button" id="azac_update_session_btn">Cập nhật buổi</button>';
+            }
             echo ' <button class="button button-success" id="azac_start_mid_btn">Hiện mã QR Review</button>';
         }
         echo '</div>';
@@ -474,6 +477,7 @@ class AzAC_Admin_Pages
         echo '<button class="button button-primary azac-tab-btn" data-target="#azac-checkin">Điểm danh đầu giờ</button> ';
         echo '<button class="button azac-tab-btn" data-target="#azac-mid">Điểm danh giữa giờ</button> ';
         echo '</div>';
+        $can_edit = $is_admin || ($is_teacher && $selected_date === $today);
         echo '<div id="azac-checkin" class="azac-tab active">';
         echo '<table class="widefat fixed striped"><thead><tr><th>STT</th><th>Họ và Tên</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>';
         $i = 1;
@@ -481,13 +485,17 @@ class AzAC_Admin_Pages
             echo '<tr>';
             echo '<td>' . esc_html($i++) . '</td>';
             echo '<td>' . esc_html($s->post_title) . '</td>';
-            echo '<td><label class="azac-switch' . ($is_student ? ' azac-disabled' : '') . '"' . ($is_student ? ' title="Đã bị vô hiệu hóa"' : '') . '><input type="checkbox" class="azac-status" data-student="' . esc_attr($s->ID) . '"' . ($is_student ? ' disabled' : '') . ' /><span class="azac-slider"></span></label></td>';
-            echo '<td><input type="text" class="regular-text azac-note" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
+            $disable_attr = $can_edit ? '' : ' disabled';
+            $disable_cls = $can_edit ? '' : ' azac-disabled';
+            $readonly = $can_edit ? '' : ' readonly';
+            echo '<td><label class="azac-switch' . $disable_cls . '"><input type="checkbox" class="azac-status" data-student="' . esc_attr($s->ID) . '"' . $disable_attr . ' /><span class="azac-slider"></span></label></td>';
+            echo '<td><input type="text" class="regular-text azac-note" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . $readonly . ' /></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
         if (!$is_student) {
-            echo '<p><button class="button button-primary" id="azac-submit-checkin" data-type="check-in">Xác nhận điểm danh đầu giờ</button></p>';
+            $btn_style = $can_edit ? '' : ' style="display:none"';
+            echo '<p><button class="button button-primary" id="azac-submit-checkin" data-type="check-in"' . $btn_style . '>Xác nhận điểm danh đầu giờ</button></p>';
         }
         echo '</div>';
         echo '</div>';
@@ -498,16 +506,17 @@ class AzAC_Admin_Pages
             echo '<tr>';
             echo '<td>' . esc_html($i++) . '</td>';
             echo '<td>' . esc_html($s->post_title) . '</td>';
-            $disable_mid = ($is_student) ? ' disabled' : '';
-            $disable_cls = ($is_student) ? ' azac-disabled' : '';
-            $disable_tip = ($is_student) ? ' title="Chỉ Admin/Giảng viên có thể chỉnh sửa"' : '';
-            echo '<td><label class="azac-switch' . $disable_cls . '"' . $disable_tip . '><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . $disable_mid . ' /><span class="azac-slider"></span></label></td>';
-            echo '<td><input type="text" class="regular-text azac-note-mid" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
+            $disable_attr = $can_edit ? '' : ' disabled';
+            $disable_cls = $can_edit ? '' : ' azac-disabled';
+            $readonly = $can_edit ? '' : ' readonly';
+            echo '<td><label class="azac-switch' . $disable_cls . '"><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . $disable_attr . ' /><span class="azac-slider"></span></label></td>';
+            echo '<td><input type="text" class="regular-text azac-note-mid" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . $readonly . ' /></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
         if (!$is_student) {
-            echo '<p><button class="button button-primary" id="azac-submit-mid" data-type="mid-session">Xác nhận điểm danh giữa giờ</button></p>';
+            $btn_style = $can_edit ? '' : ' style="display:none"';
+            echo '<p><button class="button button-primary" id="azac-submit-mid" data-type="mid-session"' . $btn_style . '>Xác nhận điểm danh giữa giờ</button></p>';
         }
         echo '</div>';
         echo '<div id="azac-mid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">';
@@ -521,6 +530,7 @@ class AzAC_Admin_Pages
         echo '</div>';
         echo '<script>window.azacData=' . wp_json_encode([
             'classId' => $class_id,
+            'isAdmin' => $is_admin,
             'nonce' => $nonce,
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'today' => $today,
@@ -857,7 +867,8 @@ class AzAC_Admin_Pages
 
             $offset = ($paged - 1) * $per_page;
 
-            $sql = "SELECT SQL_CALC_FOUND_ROWS s.*, p.post_title as class_name, pm.meta_value as teacher_id 
+            $sql = "SELECT SQL_CALC_FOUND_ROWS s.*, p.post_title as class_name, pm.meta_value as teacher_id,
+                    (SELECT COUNT(*) + 1 FROM {$sess_table} s2 WHERE s2.class_id = s.class_id AND (s2.session_date < s.session_date OR (s2.session_date = s.session_date AND s2.session_time < s.session_time))) as session_number 
                     FROM {$sess_table} s 
                     JOIN {$posts_table} p ON s.class_id = p.ID 
                     LEFT JOIN {$postmeta_table} pm ON (p.ID = pm.post_id AND pm.meta_key = 'az_teacher_user')
@@ -911,7 +922,7 @@ class AzAC_Admin_Pages
                     echo '<td>' . date_i18n('d/m/Y', strtotime($r->session_date)) . '</td>';
                     echo '<td>' . esc_html($r->class_name) . '</td>';
                     echo '<td><strong>' . esc_html($teacher_name) . '</strong></td>';
-                    echo '<td>' . esc_html($r->title ?: 'Buổi học') . '</td>';
+                    echo '<td>Buổi ' . intval($r->session_number) . '</td>';
                     echo '<td>' . esc_html($r->session_time) . '</td>';
                     echo '<td>' . $status_html . '</td>';
                     echo '<td>' . $checkin_time . '</td>';
@@ -932,7 +943,7 @@ class AzAC_Admin_Pages
 
         // --- Teacher View (Original Logic) ---
         echo '<div class="wrap"><h1>Chấm công Giảng viên</h1>';
-        echo '<p>Danh sách các buổi học <strong>hôm nay (' . date('d/m/Y') . ')</strong> của lớp bạn phụ trách.</p>';
+        echo '<p>Danh sách các buổi học của lớp bạn phụ trách.</p>';
 
         $args = [
             'post_type' => 'az_class',
@@ -951,10 +962,10 @@ class AzAC_Admin_Pages
         foreach ($classes as $c) {
             global $wpdb;
             $sess_table = $wpdb->prefix . 'az_sessions';
+            // Show all sessions ordered by date ASC
             $sessions = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$sess_table} WHERE class_id=%d AND session_date=%s",
-                $c->ID,
-                $today
+                "SELECT * FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC, session_time ASC",
+                $c->ID
             ));
 
             if (empty($sessions))
@@ -967,18 +978,27 @@ class AzAC_Admin_Pages
             echo '<table class="widefat">';
             echo '<thead><tr><th>Buổi</th><th>Thời gian</th><th>Trạng thái</th><th>Hành động</th></tr></thead>';
             echo '<tbody>';
+
+            $s_index = 0;
             foreach ($sessions as $s) {
+                $s_index++;
                 $is_checked = intval($s->teacher_checkin) === 1;
                 $checked_attr = $is_checked ? 'checked' : '';
-                // Only allow checkin on exact date (redundant check but good for UI)
-                $disabled_attr = ($s->session_date !== $today) ? 'disabled' : '';
+                // Only allow checkin on exact date
+                $is_today = ($s->session_date === $today);
+                $disabled_attr = !$is_today ? 'disabled' : '';
+                $row_style = $is_today ? 'style="background-color:#f0f6fc"' : ''; // Highlight today
 
-                echo '<tr>';
-                echo '<td>' . esc_html($s->title ?: 'Buổi học') . '</td>';
+                // Format date for display
+                $date_display = date_i18n('d/m/Y', strtotime($s->session_date));
+
+                echo '<tr ' . $row_style . '>';
+                // Buổi # instead of title
+                echo '<td><strong>Buổi ' . $s_index . '</strong><br><small>' . $date_display . '</small></td>';
                 echo '<td>' . esc_html($s->session_time) . '</td>';
                 echo '<td>' . ($is_checked ? '<span class="azac-badge azac-badge-publish">Đã dạy</span>' : '<span class="azac-badge azac-badge-pending">Chưa dạy</span>') . '</td>';
                 echo '<td>';
-                echo '<label class="azac-switch">';
+                echo '<label class="azac-switch ' . ($is_today ? '' : 'azac-disabled') . '">';
                 echo '<input type="checkbox" class="azac-teacher-checkin-cb" data-class="' . esc_attr($c->ID) . '" data-date="' . esc_attr($s->session_date) . '" ' . $checked_attr . ' ' . $disabled_attr . '>';
                 echo '<span class="azac-slider round"></span>';
                 echo '</label>';
@@ -991,7 +1011,7 @@ class AzAC_Admin_Pages
         }
 
         if (!$has_sessions) {
-            echo '<p>Không có buổi học nào cần dạy hôm nay.</p>';
+            echo '<p>Chưa có lịch học nào được phân công.</p>';
         }
 
         echo '</div>'; // grid
