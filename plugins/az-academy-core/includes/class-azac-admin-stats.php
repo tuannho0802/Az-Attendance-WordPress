@@ -45,10 +45,26 @@ class AzAC_Admin_Stats
     {
         check_ajax_referer('azac_student_stats', 'nonce');
         $user = wp_get_current_user();
-        if (!$user || !in_array('az_student', $user->roles, true)) {
-            wp_send_json_error(['message' => 'Capability'], 403);
+        
+        $is_student = in_array('az_student', $user->roles, true);
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_teacher = in_array('az_teacher', $user->roles, true);
+
+        if (!$user) {
+            wp_send_json_error(['message' => 'Unauthorized'], 401);
         }
-        $student_post_id = AzAC_Core_Helper::get_current_student_post_id();
+
+        $student_post_id = 0;
+        $req_student_id = isset($_POST['student_id']) ? absint($_POST['student_id']) : 0;
+
+        if ($req_student_id && ($is_admin || $is_teacher)) {
+            $student_post_id = $req_student_id;
+        } elseif ($is_student) {
+            $student_post_id = AzAC_Core_Helper::get_current_student_post_id();
+        } else {
+            wp_send_json_error(['message' => 'Capability or Missing ID'], 403);
+        }
+
         if (!$student_post_id) {
             wp_send_json_success(['classes' => []]);
         }

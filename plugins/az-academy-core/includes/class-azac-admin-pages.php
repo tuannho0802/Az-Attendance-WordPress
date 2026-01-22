@@ -27,7 +27,7 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Học viên',
             'Học viên',
-            'edit_posts',
+            'read',
             'azac-students-list',
             [__CLASS__, 'render_students_list_page'],
             'dashicons-id',
@@ -250,8 +250,15 @@ class AzAC_Admin_Pages
     }
     public static function render_students_list_page()
     {
-        echo '<div class="wrap"><h1>Học viên</h1>';
         $user = wp_get_current_user();
+
+        // Strict Permission: Block Student Role
+        if (in_array('az_student', $user->roles, true)) {
+            wp_redirect(admin_url());
+            exit;
+        }
+
+        echo '<div class="wrap azac-admin-teal"><h1>Học viên</h1>';
 
         // Search Logic
         $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
@@ -259,50 +266,98 @@ class AzAC_Admin_Pages
         // Search Form
         echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
         echo '<input type="hidden" name="page" value="azac-students-list">';
-        echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm kiếm học viên..." class="regular-text" style="width:auto">';
+        echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm tên hoặc SĐT..." class="regular-text" style="width:auto">';
         echo '<button type="submit" class="button button-secondary">Tìm kiếm</button>';
         if ($search) {
             echo '<a href="' . admin_url('admin.php?page=azac-students-list') . '" class="button">Xóa lọc</a>';
         }
         echo '</form>';
 
-        $students = get_posts([
+        // Fetch Students
+        // If Teacher, get allowed student IDs first
+        $allowed_student_ids = null;
+        if (in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
+            $allowed_student_ids = [];
+            $classes = get_posts([
+                'post_type' => 'az_class',
+                'numberposts' => -1,
+                'meta_key' => 'az_teacher_user',
+                'meta_value' => $user->ID,
+                'post_status' => ['publish', 'pending']
+            ]);
+            foreach ($classes as $c) {
+                $s_list = get_post_meta($c->ID, 'az_students', true);
+                if (is_array($s_list)) {
+                    $allowed_student_ids = array_merge($allowed_student_ids, array_map('absint', $s_list));
+                }
+            }
+            $allowed_student_ids = array_unique($allowed_student_ids);
+            if (empty($allowed_student_ids)) {
+                echo '<p>Bạn chưa có học viên nào.</p></div>';
+                return;
+            }
+        }
+
+        // Query Students
+        $args = [
             'post_type' => 'az_student',
             'numberposts' => -1,
             'orderby' => 'title',
             'order' => 'ASC',
-            's' => $search,
-        ]);
+        ];
+
+        if ($allowed_student_ids !== null) {
+            $args['post__in'] = $allowed_student_ids;
+        }
+
+        if ($search) {
+            $args_title = $args;
+            $args_title['s'] = $search;
+            $by_title = get_posts($args_title);
+
+            $user_query = new WP_User_Query([
+                'meta_key' => 'az_phone',
+                'meta_value' => $search,
+                'meta_compare' => 'LIKE'
+            ]);
+            $phone_users = $user_query->get_results();
+            $phone_user_ids = wp_list_pluck($phone_users, 'ID');
+
+            $by_phone = [];
+            if (!empty($phone_user_ids)) {
+                $args_phone = $args;
+                $args_phone['meta_query'] = [
+                    [
+                        'key' => 'az_user_id',
+                        'value' => $phone_user_ids,
+                        'compare' => 'IN'
+                    ]
+                ];
+                $by_phone = get_posts($args_phone);
+            }
+
+            $merged = [];
+            foreach ($by_title as $p)
+                $merged[$p->ID] = $p;
+            foreach ($by_phone as $p)
+                $merged[$p->ID] = $p;
+            $students = array_values($merged);
+        } else {
+            $students = get_posts($args);
+        }
 
         // Filter: Only allow students linked to users with 'az_student' role (or no user)
         $students = array_filter($students, function ($s) {
             $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
             if (!$uid)
-                return true; // Keep unconnected students
+                return true;
             $u = get_userdata($uid);
             if (!$u)
-                return true; // Keep if user not found
+                return true;
             return in_array('az_student', $u->roles, true);
         });
 
-        if (in_array('az_teacher', $user->roles, true)) {
-            $classes = get_posts([
-                'post_type' => 'az_class',
-                'numberposts' => -1,
-                'meta_key' => 'az_teacher_user',
-                'meta_value' => intval($user->ID),
-            ]);
-            $ids = [];
-            foreach ($classes as $c) {
-                $list = get_post_meta($c->ID, 'az_students', true);
-                $list = is_array($list) ? array_map('absint', $list) : [];
-                $ids = array_merge($ids, $list);
-            }
-            $ids = array_values(array_unique($ids));
-            $students = array_filter($students, function ($s) use ($ids) {
-                return in_array($s->ID, $ids, true);
-            });
-        }
+        // Pagination
         $students = array_values($students);
         $per_page = 20;
         $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
@@ -310,29 +365,176 @@ class AzAC_Admin_Pages
         $total_pages = ceil($total_items / $per_page);
         $paged_students = array_slice($students, ($current_page - 1) * $per_page, $per_page);
 
+        // Render Grid
         echo '<div class="azac-grid">';
         foreach ($paged_students as $s) {
             $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
-            $name = $s->post_title;
-            $email = '';
-            if ($uid) {
-                $u = get_userdata($uid);
-                if ($u)
-                    $email = $u->user_email ?: '';
-            }
-            echo '<div class="azac-card">';
-            echo '<div class="azac-card-title">' . esc_html($name) . '</div>';
-            echo '<div class="azac-card-body">';
-            echo '<div>Tài khoản: ' . esc_html($email ?: 'Chưa liên kết') . '</div>';
+            $u = $uid ? get_userdata($uid) : false;
+            $avatar_url = $uid ? get_avatar_url($uid, ['size' => 200]) : get_avatar_url(0, ['size' => 200]);
+            $phone = $uid ? get_user_meta($uid, 'az_phone', true) : '';
+            $business_field = $uid ? get_user_meta($uid, 'az_business_field', true) : '';
+            $registered_date = $s->post_date;
+
+            echo '<div class="azac-card azac-student-card">';
+            echo '<img src="' . esc_url($avatar_url) . '" class="azac-avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block;">';
+            echo '<div class="azac-card-title" style="text-align:center">' . esc_html($u ? $u->display_name : $s->post_title) . '</div>';
+            echo '<div class="azac-card-body" style="text-align:center">';
+            echo '<div>' . ($phone ? esc_html($phone) : 'Chưa có SĐT') . '</div>';
             echo '</div>';
+            echo '<div class="azac-card-actions azac-actions--single" style="justify-content:center;gap:10px;">';
+
+            $modal_data = htmlspecialchars(json_encode([
+                'id' => $s->ID,
+                'name' => $u ? $u->display_name : $s->post_title,
+                'avatar' => $avatar_url,
+                'email' => $u ? $u->user_email : '',
+                'phone' => $phone,
+                'business' => $business_field,
+                'date' => date_i18n(get_option('date_format'), strtotime($registered_date))
+            ]), ENT_QUOTES, 'UTF-8');
+
+            echo '<button type="button" class="button azac-view-student-btn" data-student="' . $modal_data . '">Xem chi tiết</button>';
+
             if (in_array('administrator', $user->roles, true)) {
-                $link_edit = admin_url('post.php?post=' . $s->ID . '&action=edit');
-                echo '<div class="azac-card-actions azac-actions--single"><a class="button button-primary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a></div>';
+                $link_edit = $uid ? admin_url('user-edit.php?user_id=' . $uid) : admin_url('post.php?post=' . $s->ID . '&action=edit');
+                echo '<a href="' . esc_url($link_edit) . '" class="button button-primary">Chỉnh sửa</a>';
             }
+            echo '</div>';
             echo '</div>';
         }
         echo '</div>';
+        
         AzAC_Core_Helper::render_pagination($current_page, $total_pages);
+
+        $stats_nonce = wp_create_nonce('azac_student_stats');
+
+        ?>
+        <div id="azac-student-modal" class="azac-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+            <div class="azac-modal-content" style="background:#fff;padding:20px;border-radius:8px;width:90%;max-width:600px;position:relative;max-height:90vh;overflow-y:auto;">
+                <span class="azac-close" style="position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;">&times;</span>
+                <div class="azac-modal-body">
+                    <div style="text-align:center;margin-bottom:20px;">
+                        <img id="modal-avatar" src="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin-bottom:10px;">
+                        <h2 id="modal-name" style="margin:0 0 5px;"></h2>
+                        <div style="font-size:13px;color:#666;">
+                            <span id="modal-email"></span> • <span id="modal-phone"></span>
+                        </div>
+                        <div style="font-size:13px;color:#666;margin-top:4px;">
+                            Lĩnh vực: <span id="modal-business"></span> • Đăng ký: <span id="modal-date"></span>
+                        </div>
+                    </div>
+                    
+                    <div style="border-top:1px solid #eee;padding-top:15px;">
+                        <h3 style="margin-top:0;margin-bottom:15px;font-size:16px;color:#0f6d5e;">Quá trình học tập</h3>
+                        <div id="modal-classes-container">
+                            <p style="text-align:center;color:#666;">Đang tải dữ liệu...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <script>
+            var azacStatsNonce = '<?php echo esc_js($stats_nonce); ?>';
+            var azacAjaxUrl = '<?php echo admin_url('admin-ajax.php'); ?>';
+
+            jQuery(document).ready(function ($) {
+                $('.azac-view-student-btn').on('click', function () {
+                    var data = $(this).data('student');
+                    $('#modal-avatar').attr('src', data.avatar);
+                    $('#modal-name').text(data.name);
+                    $('#modal-email').text(data.email);
+                    $('#modal-phone').text(data.phone);
+                    $('#modal-business').text(data.business);
+                    $('#modal-date').text(data.date);
+
+                    $('#modal-classes-container').html('<p style="text-align:center;color:#666;">Đang tải dữ liệu...</p>');
+                    $('#azac-student-modal').css('display', 'flex');
+
+                    // Fetch Stats
+                    $.ajax({
+                        url: azacAjaxUrl,
+                        method: 'POST',
+                        data: {
+                            action: 'azac_student_stats',
+                            nonce: azacStatsNonce,
+                            student_id: data.id
+                        },
+                        success: function (res) {
+                            if (res.success) {
+                                var html = '';
+                                if (res.data.classes.length === 0) {
+                                    html = '<p>Học viên chưa tham gia lớp nào.</p>';
+                                } else {
+                                    html += '<div class="azac-modal-list" style="display:flex;flex-direction:column;gap:15px;">';
+                                    res.data.classes.forEach(function (c) {
+                                        var present = c.checkin.present;
+                                        var absent = c.checkin.absent;
+                                        var total = present + absent;
+                                        var percent = total > 0 ? Math.round(present / total * 100) : 0;
+                                        var color = percent >= 80 ? '#2ecc71' : (percent >= 50 ? '#f39c12' : '#e74c3c');
+
+                                        html += '<div class="azac-class-item" style="border:1px solid #eee;border-radius:8px;padding:10px;">';
+                                        html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+                                        html += '<strong style="font-size:14px;">' + c.title + '</strong>';
+                                        html += '<span style="font-size:12px;background:' + color + ';color:#fff;padding:2px 8px;border-radius:10px;">' + percent + '% chuyên cần</span>';
+                                        html += '</div>';
+
+                                        // Progress bar
+                                        html += '<div style="height:6px;background:#eee;border-radius:3px;margin-bottom:10px;overflow:hidden;">';
+                                        html += '<div style="height:100%;width:' + percent + '%;background:' + color + '"></div>';
+                                        html += '</div>';
+
+                                        // Stats details
+                                        html += '<div style="font-size:12px;color:#666;display:flex;gap:15px;margin-bottom:10px;">';
+                                        html += '<span>Có mặt: <b>' + present + '</b></span>';
+                                        html += '<span>Vắng: <b>' + absent + '</b></span>';
+                                        html += '</div>';
+
+                                        // Sessions toggle
+                                        html += '<button type="button" class="button button-small azac-toggle-sessions" style="width:100%">Xem chi tiết buổi học</button>';
+
+                                        html += '<div class="azac-sessions-list" style="display:none;margin-top:10px;border-top:1px dashed #eee;padding-top:10px;">';
+                                        if (c.sessions && c.sessions.length > 0) {
+                                            html += '<table style="width:100%;font-size:12px;text-align:left;"><thead><tr><th>Ngày</th><th>Đầu giờ</th><th>Giữa giờ</th></tr></thead><tbody>';
+                                            c.sessions.forEach(function (s) {
+                                                var d = s.date.split('-').reverse().join('/');
+                                                var st1 = s.checkin === 1 ? '<span style="color:#2ecc71">✔</span>' : (s.checkin === 0 ? '<span style="color:#e74c3c">✘</span>' : '<span style="color:#ccc">-</span>');
+                                                var st2 = s.mid === 1 ? '<span style="color:#3498db">✔</span>' : (s.mid === 0 ? '<span style="color:#e74c3c">✘</span>' : '<span style="color:#ccc">-</span>');
+                                                html += '<tr><td style="padding:4px 0;">' + d + '</td><td>' + st1 + '</td><td>' + st2 + '</td></tr>';
+                                            });
+                                            html += '</tbody></table>';
+                                        } else {
+                                            html += '<p style="margin:0;font-style:italic;">Chưa có dữ liệu buổi học.</p>';
+                                        }
+                                        html += '</div>';
+
+                                        html += '</div>';
+                                    });
+                                    html += '</div>';
+                                }
+                                $('#modal-classes-container').html(html);
+                            } else {
+                                $('#modal-classes-container').html('<p style="color:red;">Lỗi tải dữ liệu.</p>');
+                            }
+                        },
+                        error: function () {
+                            $('#modal-classes-container').html('<p style="color:red;">Lỗi kết nối.</p>');
+                        }
+                    });
+                });
+
+                $(document).on('click', '.azac-toggle-sessions', function () {
+                    $(this).next('.azac-sessions-list').slideToggle();
+                });
+
+                $('.azac-close, #azac-student-modal').on('click', function (e) {
+                    if (e.target === this) {
+                        $('#azac-student-modal').hide();
+                    }
+                });
+            });
+        </script>
+        <?php
         echo '</div>';
     }
     public static function render_class_dashboard_page()
