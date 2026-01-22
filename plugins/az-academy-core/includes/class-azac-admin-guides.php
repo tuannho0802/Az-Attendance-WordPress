@@ -28,7 +28,7 @@ class AzAC_Admin_Guides
                 'manage_options',
                 'az-admin-guide',
                 function () {
-                    self::render_page('az_guide_admin_private', 'Hướng dẫn Admin');
+                    self::render_page_from_slug('huong-dan-admin', 'Hướng dẫn Admin');
                 },
                 'dashicons-shield',
                 1
@@ -43,7 +43,7 @@ class AzAC_Admin_Guides
                 'read', // Capability required
                 'az-student-guide',
                 function () {
-                    self::render_page('az_guide_student', 'Hướng dẫn Học viên');
+                    self::render_page_from_slug('huong-dan-hoc-vien', 'Hướng dẫn Học viên');
                 },
                 'dashicons-book',
                 1
@@ -58,7 +58,7 @@ class AzAC_Admin_Guides
                 'read',
                 'az-teacher-guide',
                 function () {
-                    self::render_page('az_guide_teacher', 'Hướng dẫn Giảng viên');
+                    self::render_page_from_slug('huong-dan-giang-vien', 'Hướng dẫn Giảng viên');
                 },
                 'dashicons-welcome-learn-more',
                 1
@@ -73,7 +73,7 @@ class AzAC_Admin_Guides
                 'manage_options',
                 'az-admin-docs',
                 function () {
-                    self::render_page('az_guide_admin', 'Tài liệu Kỹ thuật');
+                    self::render_page_from_slug('huong-dan-ky-thuat', 'Tài liệu Kỹ thuật');
                 },
                 'dashicons-media-code',
                 1
@@ -81,95 +81,91 @@ class AzAC_Admin_Guides
         }
     }
 
-    public static function render_page($option_key, $title)
+    /**
+     * Render guide content from a WordPress Page based on slug
+     */
+    public static function render_page_from_slug($slug, $title)
     {
-        // Handle Save (Admin Only)
-        if (current_user_can('manage_options') && isset($_POST['az_guide_content']) && isset($_POST['az_guide_nonce'])) {
-            if (wp_verify_nonce($_POST['az_guide_nonce'], 'save_guide_' . $option_key)) {
-                $content = wp_kses_post($_POST['az_guide_content']);
-                update_option($option_key, $content);
-                echo '<div class="notice notice-success is-dismissible"><p>Đã cập nhật hướng dẫn thành công!</p></div>';
-            }
-        }
-
-        $content = get_option($option_key, '');
+        $page = get_page_by_path($slug);
+        $is_admin = current_user_can('manage_options');
 
         ?>
         <div class="wrap az-guide-page">
             <h1 class="wp-heading-inline" style="color: #0f6d5e; font-weight: 700; margin-bottom: 20px;">
                 <?php echo esc_html($title); ?>
             </h1>
+        <?php if ($is_admin && $page): ?>
+            <a href="<?php echo get_edit_post_link($page->ID); ?>" class="page-title-action" target="_blank">
+                <span class="dashicons dashicons-edit" style="margin-top: 4px;"></span> Chỉnh sửa nội dung trang này
+            </a>
+        <?php endif; ?>
             <hr class="wp-header-end">
-
+        
             <div class="az-guide-content-wrapper"
                 style="background: #fff; padding: 20px; border: 1px solid #ccd0d4; border-radius: 4px; box-shadow: 0 1px 1px rgba(0,0,0,.04); max-width: 1200px; margin-top: 10px;">
-                <?php if (current_user_can('manage_options')): ?>
-                    <!-- Admin View: Editor -->
-                    <form method="post">
-                        <?php wp_nonce_field('save_guide_' . $option_key, 'az_guide_nonce'); ?>
-                        <?php
-                        wp_editor($content, 'az_guide_content', [
-                            'textarea_name' => 'az_guide_content',
-                            'media_buttons' => true,
-                            'textarea_rows' => 20,
-                            'teeny' => false,
-                            'quicktags' => true
-                        ]);
-                        ?>
-                        <p class="submit">
-                            <input type="submit" name="submit" id="submit" class="button button-primary" value="Cập nhật hướng dẫn">
-                        </p>
-                    </form>
-                <?php else: ?>
-                    <!-- User View: Read Only -->
-                    <div class="az-guide-body" style="line-height: 1.6; font-size: 15px; color: #333;">
-                        <?php
-                        if (!empty($content)) {
-                            echo wp_kses_post($content); // wp_kses_post allows safe HTML
-                        } else {
-                            echo '<p><em>Chưa có nội dung hướng dẫn.</em></p>';
-                        }
-                        ?>
+                <?php if ($page): ?>
+                    <div class="az-guide-body">
+                        <?php echo apply_filters('the_content', $page->post_content); ?>
                     </div>
+                <?php else: ?>
+                    <div class="notice notice-warning inline" style="margin: 0;">
+                        <p>
+                            Trang hướng dẫn chưa được tạo. Vui lòng tạo Page với slug <code><?php echo esc_html($slug); ?></code> để
+                        hiển thị nội dung tại đây.
+                    </p>
+                            <?php if ($is_admin): ?>
+                                <p>
+                                    <a href="<?php echo admin_url('post-new.php?post_type=page'); ?>" class="button button-primary">Tạo
+                                        trang mới</a>
+                                </p>
+                            <?php endif; ?>
+                            </div>
                 <?php endif; ?>
             </div>
         </div>
         <style>
+            /* Ensure admin styles don't break content */
+            .az-guide-body {
+                font-size: 15px;
+                line-height: 1.6;
+                color: #333;
+            }
+        
+            .az-guide-body img {
+                max-width: 100%;
+                height: auto;
+            }
+        
             .az-guide-body h2 {
-                font-size: 1.5em;
-                margin-top: 1.5em;
                 color: #0b3d3b;
                 border-bottom: 1px solid #eee;
                 padding-bottom: 10px;
+                margin-top: 1.5em;
             }
-
-            .az-guide-body h3 {
-                font-size: 1.3em;
-                margin-top: 1.2em;
-                color: #0f6d5e;
-            }
-
+        
             .az-guide-body ul,
             .az-guide-body ol {
                 margin-left: 20px;
             }
-
-            .az-guide-body img {
-                max-width: 100%;
-                height: auto;
-                border: 1px solid #ddd;
-                padding: 5px;
-                border-radius: 4px;
+        
+            .az-guide-body a {
+                color: #0f6d5e;
+                text-decoration: none;
             }
-
-            .az-guide-body blockquote {
-                border-left: 4px solid #0f6d5e;
-                margin: 0;
-                padding-left: 15px;
-                color: #666;
-                font-style: italic;
-                background: #f9f9f9;
-                padding: 10px;
+        
+            .az-guide-body a:hover {
+                text-decoration: underline;
+            }
+        
+            /* Reset some WP Admin styles inside the content */
+            .az-guide-body h1,
+            .az-guide-body h2,
+            .az-guide-body h3,
+            .az-guide-body h4,
+            .az-guide-body h5,
+            .az-guide-body h6 {
+                font-weight: 600;
+                margin-bottom: 0.5em;
             }
         </style>
         <?php

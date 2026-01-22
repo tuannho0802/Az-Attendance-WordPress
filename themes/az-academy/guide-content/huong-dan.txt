@@ -1,0 +1,4 @@
+Copy các file HTML này
+Mở Page WP và tạo 1 custom HTML sau đó dán các HTML file này vào
+Các HTML file trong đây chỉ là template cho các page hướng dẫn
+Hoàn toàn có thể tùy chỉnh hoặc tự chỉnh sửa
