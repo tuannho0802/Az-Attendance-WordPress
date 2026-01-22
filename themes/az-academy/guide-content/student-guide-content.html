@@ -1,44 +1,69 @@
 <style>
   /* Styling for Student Guide */
   .az-guide-container {
-    font-family:
-      -apple-system, BlinkMacSystemFont,
-      "Segoe UI", Roboto, Oxygen-Sans, Ubuntu,
-      Cantarell, "Helvetica Neue", sans-serif;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
     color: #333;
     line-height: 1.6;
+    max-width: 1000px;
+    margin: 0 auto;
   }
 
   .az-guide-container h3 {
     color: #15345a; /* Az Brand Dark Blue */
     border-bottom: 2px solid #e9eded;
     padding-bottom: 10px;
-    margin-top: 30px;
-    font-weight: 600;
-    font-size: 1.4em;
+    margin-top: 40px;
+    font-weight: 700;
+    font-size: 1.5em;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
   .az-guide-container h3:first-of-type {
     margin-top: 0;
   }
+  
+  .az-guide-container h3 .step-badge {
+    background: #15345a;
+    color: #fff;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+  }
 
   .az-guide-img-placeholder {
     background: #f0f4f8;
     border: 2px dashed #ccd0d4;
-    color: #888;
+    color: #555;
     text-align: center;
-    padding: 40px 20px;
-    margin: 20px 0;
-    border-radius: 4px;
+    padding: 30px 20px;
+    margin: 25px 0;
+    border-radius: 8px;
     font-style: italic;
+    background-color: #fff;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+  }
+  
+  .az-guide-img-label {
+    display: block;
+    font-weight: bold;
+    color: #0f6d5e;
+    margin-bottom: 10px;
+    font-size: 1.1em;
   }
 
   .az-alert {
     background-color: #fff8e5;
     border-left: 4px solid #f39c12;
-    padding: 15px;
+    padding: 15px 20px;
     margin: 20px 0;
-    border-radius: 0 4px 4px 0;
+    border-radius: 4px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
   }
 
   .az-alert-info {
@@ -49,246 +74,166 @@
   .az-alert strong {
     display: block;
     margin-bottom: 5px;
-    color: #444;
+    color: #2c3e50;
+    font-size: 1.05em;
+  }
+  
+  .az-feature-list {
+      list-style: none;
+      padding: 0;
+      margin: 15px 0;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+  }
+  
+  .az-feature-item {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      border: 1px solid #eee;
+  }
+  
+  .az-feature-item strong {
+      color: #0f6d5e;
+      display: block;
+      margin-bottom: 5px;
   }
 
   .az-btn-sim {
     display: inline-block;
     background-color: #0f6d5e;
     color: #fff;
-    padding: 4px 10px;
+    padding: 6px 12px;
     border-radius: 4px;
     font-size: 0.9em;
     font-weight: 500;
     vertical-align: middle;
     text-decoration: none;
   }
-
-  .az-btn-sim.secondary {
-    background-color: #f0f0f1;
-    color: #2271b1;
-    border: 1px solid #2271b1;
+  
+  .az-badge-sim {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 0.85em;
+      font-weight: 600;
   }
+  .az-badge-sim.success { background: #d1fae5; color: #065f46; }
+  .az-badge-sim.warning { background: #fef3c7; color: #92400e; }
 
-  .az-guide-step {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 15px;
-  }
-
-  .az-step-num {
-    background: #15345a;
-    color: #fff;
-    width: 24px;
-    height: 24px;
-    border-radius: 50%;
-    text-align: center;
-    line-height: 24px;
-    font-weight: bold;
-    flex-shrink: 0;
-    font-size: 14px;
-  }
 </style>
 
 <div class="az-guide-container">
   <div class="az-alert az-alert-info">
-    <strong
-      >Chào mừng bạn đến với Az Academy!</strong
-    >
-    Tài liệu này sẽ hướng dẫn bạn cách sử dụng
-    hệ thống lớp học trực tuyến, theo dõi tiến
-    độ và truy cập tài liệu học tập một cách
-    hiệu quả nhất.
+    <strong>👋 Chào mừng Học viên đến với Az Academy!</strong>
+    Đây là hướng dẫn chi tiết cách sử dụng hệ thống để truy cập lớp học, xem bài giảng và theo dõi điểm danh. Hệ thống được thiết kế tối giản giúp bạn tập trung hoàn toàn vào việc học.
   </div>
 
-  <!-- 1. TỔNG QUAN GIAO DIỆN -->
-  <h3>1. Tổng quan giao diện lớp học</h3>
+  <!-- PHẦN 1: DANH SÁCH LỚP HỌC -->
+  <h3><span class="step-badge">1</span> Danh sách Lớp học của bạn</h3>
   <p>
-    Khi truy cập vào một lớp học (ví dụ:
-    <em>Lớp Facebook Ads Pro</em>), bạn sẽ thấy
-    giao diện được chia thành các khu vực chính:
+    Tại menu <strong>"Lớp học"</strong>, bạn sẽ thấy toàn bộ danh sách các lớp mà bạn đang tham gia. Mỗi lớp học được hiển thị dưới dạng một thẻ (Card) với các thông tin quan trọng.
   </p>
 
   <div class="az-guide-img-placeholder">
-    [CHÈN ẢNH TỔNG QUAN: Ảnh chụp toàn màn hình
-    trang Single Class View. Ghi chú: (1) Thông
-    tin lớp & Tiến độ, (2) Danh sách buổi học,
-    (3) Footer thông tin]
+    <span class="az-guide-img-label">[HÌNH 1] Giao diện Danh sách lớp học</span>
+    (Ảnh chụp màn hình danh sách các lớp với thanh tiến độ và nút "Xem lớp")
   </div>
 
-  <ul>
-    <li>
-      <strong>Thông tin giảng viên:</strong>
-      Hiển thị tên giảng viên phụ trách lớp.
+  <ul class="az-feature-list">
+    <li class="az-feature-item">
+        <strong>📚 Thông tin lớp</strong>
+        Hiển thị Tên lớp, Giảng viên phụ trách, Tổng số buổi học và Sĩ số lớp.
     </li>
-    <li>
-      <strong
-        >Thanh tiến độ (Progress Bar):</strong
-      >
-      Cho biết bạn đã hoàn thành bao nhiêu phần
-      trăm lộ trình của khóa học.
+    <li class="az-feature-item">
+        <strong>📊 Thanh Tiến độ (Progress)</strong>
+        Thanh màu đỏ/tím thể hiện số buổi đã học trên tổng số buổi (Ví dụ: 3/5 buổi). Giúp bạn biết khóa học đang ở giai đoạn nào.
     </li>
-    <li>
-      <strong>Danh sách buổi học:</strong> Nơi
-      chứa toàn bộ nội dung, video và tài liệu
-      của từng buổi.
+    <li class="az-feature-item">
+        <strong>🚀 Truy cập nhanh</strong>
+        Nhấn nút <span class="az-btn-sim">Xem lớp</span> để vào giao diện học tập chi tiết.
     </li>
   </ul>
 
-  <!-- 2. THEO DÕI TIẾN ĐỘ -->
-  <h3>2. Cách theo dõi tiến độ học tập</h3>
+  <!-- PHẦN 2: GIAO DIỆN HỌC TẬP -->
+  <h3><span class="step-badge">2</span> Giao diện Học tập & Bài giảng</h3>
   <p>
-    Hệ thống tự động tính toán tiến độ của bạn
-    dựa trên số buổi học đã được phát hành so
-    với tổng số buổi dự kiến của khóa học.
+    Khi nhấn vào một lớp cụ thể, bạn sẽ được đưa đến trang <strong>Chi tiết lớp học</strong>. Đây là nơi bạn dành nhiều thời gian nhất để xem bài giảng và tài liệu.
   </p>
 
   <div class="az-guide-img-placeholder">
-    [CHÈN ẢNH TIẾN ĐỘ: Ảnh chụp cận cảnh khu vực
-    Progress Bar màu xanh teal, hiển thị số %
-    (ví dụ: 40%)]
+    <span class="az-guide-img-label">[HÌNH 4] Giao diện Chi tiết bài học</span>
+    (Ảnh chụp trang nội dung lớp học với các Tab bài giảng và cột thông tin bên phải)
   </div>
 
   <div class="az-alert">
-    <strong>Lưu ý:</strong> Thanh tiến độ sẽ tự
-    động tăng lên khi giảng viên mở khóa các
-    buổi học mới. Bạn không cần phải thao tác
-    "đánh dấu hoàn thành" thủ công.
+    <strong>💡 Các khu vực chính:</strong>
+    <ul>
+        <li><strong>Tab nội dung:</strong> Chọn các tab như <em>"Tổng quan"</em>, <em>"Buổi 1"</em>, <em>"Buổi 2"</em>... để xem nội dung tương ứng.</li>
+        <li><strong>Nội dung bài học:</strong> Bao gồm Video, Slide bài giảng, Text hướng dẫn và nút <strong>Xuất PDF</strong> (nếu có).</li>
+        <li><strong>Sidebar thông tin:</strong> Cột bên phải tóm tắt lại Giảng viên, Sĩ số và Tiến độ học tập của riêng lớp này.</li>
+    </ul>
   </div>
 
-  <!-- 3. HỌC TẬP THEO LỘ TRÌNH -->
-  <h3>
-    3. Truy cập nội dung buổi học (Accordion)
-  </h3>
+  <!-- PHẦN 3: QUẢN LÝ ĐIỂM DANH -->
+  <h3><span class="step-badge">3</span> Theo dõi Điểm danh</h3>
   <p>
-    Danh sách buổi học được thiết kế dạng
-    <strong>Accordion</strong> (Xếp chồng) để
-    giúp bạn dễ dàng tập trung vào nội dung hiện
-    tại.
+    Az Academy cung cấp hệ thống điểm danh minh bạch. Bạn có thể xem lại lịch sử đi học của mình tại menu <strong>"Quản lý điểm danh"</strong>.
   </p>
 
-  <div class="az-guide-step">
-    <div class="az-step-num">1</div>
-    <div>
-      Tìm buổi học bạn muốn xem trong danh sách.
-    </div>
-  </div>
-  <div class="az-guide-step">
-    <div class="az-step-num">2</div>
-    <div>
-      Nhấn vào
-      <strong>Tiêu đề buổi học</strong> (Ví dụ:
-      <em
-        >Buổi 1: Tổng quan Digital Marketing</em
-      >).
-    </div>
-  </div>
-  <div class="az-guide-step">
-    <div class="az-step-num">3</div>
-    <div>
-      Nội dung chi tiết sẽ trượt xuống (expand).
-      Tại đây bạn sẽ thấy bài giảng, video và
-      các tài liệu đính kèm.
-    </div>
-  </div>
+  <h4>3.1. Tổng quan các buổi học (Tab Buổi học)</h4>
+  <p>Màn hình này liệt kê trạng thái điểm danh của các lớp theo từng buổi học gần nhất.</p>
 
   <div class="az-guide-img-placeholder">
-    [CHÈN ẢNH ACCORDION: Ảnh chụp danh sách buổi
-    học, với một buổi đang mở hiển thị nội dung
-    bên trong, và các buổi khác đang đóng]
+    <span class="az-guide-img-label">[HÌNH 2] Tab Buổi học - Tổng quan</span>
+    (Ảnh chụp các thẻ điểm danh với biểu đồ tròn Vắng/Có mặt)
   </div>
 
-  <!-- 4. QUẢN LÝ TÀI LIỆU & QUICK VIEW -->
-  <h3>4. Xem và tải tài liệu (Quick View)</h3>
-  <p>
-    Az Academy hỗ trợ tính năng
-    <strong>Xem nhanh (Quick View)</strong> giúp
-    bạn xem tài liệu ngay trên trình duyệt mà
-    không cần tải về máy.
-  </p>
+  <p>Mỗi thẻ đại diện cho một buổi học của một lớp, hiển thị biểu đồ tỷ lệ: <span class="az-badge-sim success">Có mặt</span> và <span class="az-badge-sim warning">Vắng</span>.</p>
 
-  <p>
-    Tại khu vực
-    <strong>Tài liệu đính kèm</strong> của mỗi
-    buổi học:
-  </p>
-  <ul>
-    <li>
-      Nhấn vào tên file (ví dụ:
-      <code>Slide_Bai_1.pdf</code>) hoặc nút
-      <span class="az-btn-sim">Xem nhanh</span>.
+  <h4>3.2. Biểu đồ Thống kê (Tab Thống kê điểm danh)</h4>
+  <p>Chuyển sang tab <strong>"Thống kê điểm danh"</strong> để có cái nhìn tổng quát về sự chuyên cần của bạn trong suốt khóa học.</p>
+
+  <div class="az-guide-img-placeholder">
+    <span class="az-guide-img-label">[HÌNH 5] Giao diện Thống kê điểm danh</span>
+    (Ảnh chụp các biểu đồ Doughnut lớn và biểu đồ cột lịch sử điểm danh)
+  </div>
+
+  <ul class="az-feature-list">
+    <li class="az-feature-item">
+        <strong>Biểu đồ tròn (Doughnut)</strong>
+        Tổng hợp tỷ lệ % Có mặt và Vắng mặt trên toàn bộ khóa học.
     </li>
-    <li>
-      Một cửa sổ (Modal) sẽ hiện lên hiển thị
-      nội dung file.
-    </li>
-    <li>
-      Hỗ trợ các định dạng:
-      <strong
-        >PDF, Hình ảnh (JPG/PNG),
-        Word/Excel/PowerPoint</strong
-      >
-      (qua Google Docs Viewer).
+    <li class="az-feature-item">
+        <strong>Biểu đồ cột (Bar Chart)</strong>
+        Lịch sử điểm danh chi tiết theo từng ngày (Đầu giờ / Giữa giờ).
     </li>
   </ul>
 
+  <!-- PHẦN 4: CHI TIẾT ĐIỂM DANH LỚP -->
+  <h3><span class="step-badge">4</span> Chi tiết Điểm danh từng lớp</h3>
+  <p>
+    Khi bạn muốn xem chi tiết mình đã vắng hay đi học vào ngày nào, hãy nhấn vào nút <strong>"Xem điểm danh"</strong> (hoặc tên lớp) từ màn hình Quản lý điểm danh.
+  </p>
+
   <div class="az-guide-img-placeholder">
-    [CHÈN ẢNH TÀI LIỆU: Ảnh chụp Modal Popup
-    đang hiển thị file PDF ngay trên màn hình
-    lớp học]
+    <span class="az-guide-img-label">[HÌNH 3] Chi tiết điểm danh lớp</span>
+    (Ảnh chụp bảng danh sách điểm danh chi tiết của lớp học)
   </div>
+
+  <p>Tại đây, bạn sẽ thấy:</p>
+  <ul>
+      <li><strong>Biểu đồ lớp:</strong> Tỷ lệ chuyên cần của cả lớp trong buổi học đó.</li>
+      <li><strong>Danh sách chi tiết:</strong> Trạng thái điểm danh của bạn (và các bạn cùng lớp) trong buổi học cụ thể (Đầu giờ / Giữa giờ).</li>
+      <li><strong>Ghi chú:</strong> Các ghi chú từ giảng viên hoặc trợ giảng về buổi học đó (nếu có).</li>
+  </ul>
 
   <div class="az-alert az-alert-info">
-    <strong>Mẹo:</strong> Bạn có thể nhấn nút
-    <span
-      class="az-close"
-      style="
-        font-weight: bold;
-        font-size: 1.2em;
-      "
-      >&times;</span
-    >
-    ở góc trên bên phải Modal hoặc nhấn phím
-    <code>Esc</code> để đóng cửa sổ xem nhanh.
+    <strong>Lưu ý quan trọng:</strong> Nếu bạn thấy thông tin điểm danh chưa chính xác, vui lòng liên hệ ngay với Giảng viên hoặc bộ phận Giáo vụ để được hỗ trợ điều chỉnh kịp thời.
   </div>
-
-  <!-- 5. LANDING PAGE -->
-  <h3>
-    5. Xem lộ trình từ trang giới thiệu (Landing
-    Page)
-  </h3>
-  <p>
-    Trước khi đăng ký khóa học, bạn có thể xem
-    trước lộ trình chi tiết ngay trên trang giới
-    thiệu (Landing Page).
-  </p>
-
-  <p>
-    Khu vực
-    <strong>"Giới thiệu khóa học"</strong> sẽ
-    hiển thị:
-  </p>
-  <ul>
-    <li>Tổng quan nội dung khóa học.</li>
-    <li>
-      Danh sách các buổi học (Tiêu đề & Tóm
-      tắt).
-    </li>
-    <li>
-      Thông tin giảng viên và tổng số buổi.
-    </li>
-  </ul>
-
-  <div class="az-guide-img-placeholder">
-    [CHÈN ẢNH LANDING PAGE: Ảnh chụp giao diện
-    Shortcode [az_curriculum] trên một trang
-    Landing Page mẫu, hiển thị đẹp mắt]
-  </div>
-
-  <p>
-    <em
-      >Chúc các bạn có những trải nghiệm học tập
-      tuyệt vời tại Az Academy!</em
-    >
+  
+  <p style="text-align: center; margin-top: 40px; font-style: italic; color: #666;">
+    Chúc bạn có những trải nghiệm học tập hiệu quả tại Az Academy!
   </p>
 </div>
