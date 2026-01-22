@@ -171,78 +171,140 @@ class AzAC_Core_Sessions
         if (!$is_admin && !$is_teacher && !$is_student) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
-        $classes = [];
-        if ($is_admin || $is_teacher) {
-            $args = [
-                'post_type' => 'az_class',
-                'numberposts' => -1,
-                'orderby' => 'date',
-                'order' => 'DESC',
-                'post_status' => $is_admin ? ['publish', 'pending'] : ['publish'],
-            ];
-            if ($is_teacher && !$is_admin) {
+
+        $paged = isset($_POST['paged']) ? max(1, absint($_POST['paged'])) : 1;
+        $per_page = isset($_POST['per_page']) ? max(1, absint($_POST['per_page'])) : 20;
+        $filter_class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $sort = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : 'date_desc';
+
+        $allowed_class_ids = [];
+        $args = [
+            'post_type' => 'az_class',
+            'numberposts' => -1,
+            'fields' => 'ids',
+            'post_status' => $is_admin ? ['publish', 'pending'] : ['publish'],
+        ];
+
+        if ($is_teacher && !$is_admin) {
                 $args['meta_key'] = 'az_teacher_user';
                 $args['meta_value'] = intval($user->ID);
             }
-            $classes = get_posts($args);
-        } else {
+
+        $all_classes_ids = get_posts($args);
+        $available_classes = [];
+
+        if ($is_student) {
             $student_post_id = AzAC_Core_Helper::get_current_student_post_id();
-            $classes = get_posts([
-                'post_type' => 'az_class',
-                'numberposts' => -1,
-                'orderby' => 'date',
-                'order' => 'DESC',
-                'post_status' => ['publish'],
-            ]);
-            $classes = array_filter($classes, function ($c) use ($student_post_id) {
-                $ids = get_post_meta($c->ID, 'az_students', true);
+            foreach ($all_classes_ids as $cid) {
+                $ids = get_post_meta($cid, 'az_students', true);
                 $ids = is_array($ids) ? array_map('absint', $ids) : [];
-                return in_array($student_post_id, $ids, true);
-            });
-        }
-        $out = [];
-        foreach ($classes as $c) {
-            $sessions = self::get_class_sessions($c->ID);
-            foreach ($sessions as $s) {
-                $att_table = $wpdb->prefix . 'az_attendance';
-                $att_rows = $wpdb->get_results($wpdb->prepare("SELECT attendance_type, status, COUNT(*) as c FROM {$att_table} WHERE class_id=%d AND session_date=%s GROUP BY attendance_type, status", $c->ID, $s['date']), ARRAY_A);
-                $checkin_present = 0;
-                $checkin_absent = 0;
-                $mid_present = 0;
-                $mid_absent = 0;
-                foreach ($att_rows as $ar) {
-                    if ($ar['attendance_type'] === 'check-in') {
-                        if (intval($ar['status']) === 1)
-                            $checkin_present += intval($ar['c']);
-                        else
-                            $checkin_absent += intval($ar['c']);
-                    } else {
-                        if (intval($ar['status']) === 1)
-                            $mid_present += intval($ar['c']);
-                        else
-                            $mid_absent += intval($ar['c']);
-                    }
+                if (in_array($student_post_id, $ids, true)) {
+                    $allowed_class_ids[] = $cid;
+                    $available_classes[] = [
+                        'id' => $cid,
+                        'title' => get_the_title($cid)
+                    ];
                 }
-                $ids = get_post_meta($c->ID, 'az_students', true);
-                $ids = is_array($ids) ? array_map('absint', $ids) : [];
-                $total_students = count($ids);
-                $rate_checkin = ($checkin_present + $checkin_absent) > 0 ? round(($checkin_present / ($checkin_present + $checkin_absent)) * 100) : 0;
-                $rate_mid = ($mid_present + $mid_absent) > 0 ? round(($mid_present / ($mid_present + $mid_absent)) * 100) : 0;
-                $rate_overall = round(($rate_checkin + $rate_mid) / 2);
-                $out[] = [
-                    'class_id' => $c->ID,
-                    'class_title' => $c->post_title,
-                    'date' => $s['date'],
-                    'time' => $s['time'],
-                    'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $c->ID . '&session_date=' . urlencode($s['date'])),
-                    'checkin' => ['present' => $checkin_present, 'absent' => $checkin_absent],
-                    'mid' => ['present' => $mid_present, 'absent' => $mid_absent],
-                    'total' => $total_students,
-                    'rate' => ['checkin' => $rate_checkin, 'mid' => $rate_mid, 'overall' => $rate_overall],
+            }
+        } else {
+            $allowed_class_ids = $all_classes_ids;
+            foreach ($allowed_class_ids as $cid) {
+                $available_classes[] = [
+                    'id' => $cid,
+                    'title' => get_the_title($cid)
                 ];
             }
         }
-        wp_send_json_success(['sessions' => $out]);
+
+        if ($filter_class_id) {
+            if (in_array($filter_class_id, $allowed_class_ids)) {
+                $allowed_class_ids = [$filter_class_id];
+            } else {
+                $allowed_class_ids = [];
+            }
+        }
+
+        if (empty($allowed_class_ids)) {
+            wp_send_json_success(['sessions' => [], 'total_items' => 0, 'total_pages' => 0, 'current_page' => $paged]);
+        }
+
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $ids_placeholder = implode(',', array_fill(0, count($allowed_class_ids), '%d'));
+
+        $total_items = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$sess_table} WHERE class_id IN ($ids_placeholder)",
+            $allowed_class_ids
+        ));
+
+        $total_pages = ceil($total_items / $per_page);
+        $offset = ($paged - 1) * $per_page;
+
+        $order_sql = "ORDER BY session_date DESC, session_time DESC";
+        if ($sort === 'date_asc') {
+            $order_sql = "ORDER BY session_date ASC, session_time ASC";
+        }
+
+        $rows = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$sess_table} WHERE class_id IN ($ids_placeholder) {$order_sql} LIMIT %d OFFSET %d",
+            array_merge($allowed_class_ids, [$per_page, $offset])
+        ));
+
+        $out = [];
+        foreach ($rows as $s) {
+            $c_id = intval($s->class_id);
+            $c_title = get_the_title($c_id);
+            $s_date = $s->session_date;
+
+            $att_table = $wpdb->prefix . 'az_attendance';
+            $att_rows = $wpdb->get_results($wpdb->prepare("SELECT attendance_type, status, COUNT(*) as c FROM {$att_table} WHERE class_id=%d AND session_date=%s GROUP BY attendance_type, status", $c_id, $s_date), ARRAY_A);
+
+            $checkin_present = 0;
+            $checkin_absent = 0;
+            $mid_present = 0;
+            $mid_absent = 0;
+
+            foreach ($att_rows as $ar) {
+                if ($ar['attendance_type'] === 'check-in') {
+                    if (intval($ar['status']) === 1)
+                        $checkin_present += intval($ar['c']);
+                    else
+                        $checkin_absent += intval($ar['c']);
+                } else {
+                    if (intval($ar['status']) === 1)
+                        $mid_present += intval($ar['c']);
+                    else
+                        $mid_absent += intval($ar['c']);
+                }
+            }
+
+            $ids = get_post_meta($c_id, 'az_students', true);
+            $ids = is_array($ids) ? array_map('absint', $ids) : [];
+            $total_students = count($ids);
+
+            $rate_checkin = ($checkin_present + $checkin_absent) > 0 ? round(($checkin_present / ($checkin_present + $checkin_absent)) * 100) : 0;
+            $rate_mid = ($mid_present + $mid_absent) > 0 ? round(($mid_present / ($mid_present + $mid_absent)) * 100) : 0;
+            $rate_overall = round(($rate_checkin + $rate_mid) / 2);
+
+            $out[] = [
+                'class_id' => $c_id,
+                'class_title' => $c_title,
+                'date' => $s_date,
+                'time' => $s->session_time,
+                'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $c_id . '&session_date=' . urlencode($s_date)),
+                'checkin' => ['present' => $checkin_present, 'absent' => $checkin_absent],
+                'mid' => ['present' => $mid_present, 'absent' => $mid_absent],
+                'total' => $total_students,
+                'rate' => ['checkin' => $rate_checkin, 'mid' => $rate_mid, 'overall' => $rate_overall],
+            ];
+        }
+
+        wp_send_json_success([
+            'sessions' => $out,
+            'available_classes' => $available_classes,
+            'total_items' => intval($total_items),
+            'total_pages' => intval($total_pages),
+            'current_page' => intval($paged)
+        ]);
     }
 
     public static function ajax_get_session_details()

@@ -62,4 +62,31 @@ class AzAC_Core_Helper
         }
         return add_query_arg(['class_id' => $class_id], site_url('/'));
     }
+
+    public static function render_pagination($current_page, $total_pages)
+    {
+        if ($total_pages <= 1) {
+            return;
+        }
+        echo '<div class="tablenav bottom"><div class="tablenav-pages">';
+        echo '<span class="pagination-links">';
+        
+        $base_url = remove_query_arg('paged');
+        
+        if ($current_page > 1) {
+            echo '<a class="prev-page button" href="' . esc_url(add_query_arg('paged', $current_page - 1, $base_url)) . '"><span class="screen-reader-text">Trang trước</span><span aria-hidden="true">‹</span></a>';
+        } else {
+            echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>';
+        }
+
+        echo '<span class="paging-input"><span class="tablenav-paging-text"> ' . $current_page . ' của <span class="total-pages">' . $total_pages . '</span></span></span>';
+
+        if ($current_page < $total_pages) {
+            echo '<a class="next-page button" href="' . esc_url(add_query_arg('paged', $current_page + 1, $base_url)) . '"><span class="screen-reader-text">Trang sau</span><span aria-hidden="true">›</span></a>';
+        } else {
+            echo '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>';
+        }
+        
+        echo '</span></div></div>';
+    }
 }

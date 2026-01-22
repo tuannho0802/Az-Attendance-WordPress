@@ -137,6 +137,14 @@ class AzAC_Admin_Pages
                 return in_array($student_post_id, $ids, true);
             });
         }
+
+        $classes = array_values($classes);
+        $per_page = 20;
+        $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+        $total_items = count($classes);
+        $total_pages = ceil($total_items / $per_page);
+        $paged_classes = array_slice($classes, ($current_page - 1) * $per_page, $per_page);
+
         $is_admin = in_array('administrator', $user->roles, true);
         if ($is_admin) {
             echo '<div class="azac-inline-create">';
@@ -152,7 +160,7 @@ class AzAC_Admin_Pages
             echo '</div>';
         }
         echo '<div class="azac-grid">';
-        foreach ($classes as $c) {
+        foreach ($paged_classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
             $tsb = intval(get_post_meta($c->ID, 'az_tong_so_buoi', true));
             $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
@@ -202,6 +210,7 @@ class AzAC_Admin_Pages
             echo '</div>';
         }
         echo '</div>';
+        AzAC_Core_Helper::render_pagination($current_page, $total_pages);
         echo '<script>';
         echo 'document.addEventListener("DOMContentLoaded",function(){';
         echo 'var bars=document.querySelectorAll(".azac-progress-bar");';
@@ -238,8 +247,15 @@ class AzAC_Admin_Pages
                 return in_array($s->ID, $ids, true);
             });
         }
+        $students = array_values($students);
+        $per_page = 20;
+        $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+        $total_items = count($students);
+        $total_pages = ceil($total_items / $per_page);
+        $paged_students = array_slice($students, ($current_page - 1) * $per_page, $per_page);
+
         echo '<div class="azac-grid">';
-        foreach ($students as $s) {
+        foreach ($paged_students as $s) {
             $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
             $name = $s->post_title;
             $email = '';
@@ -259,7 +275,9 @@ class AzAC_Admin_Pages
             }
             echo '</div>';
         }
-        echo '</div></div>';
+        echo '</div>';
+        AzAC_Core_Helper::render_pagination($current_page, $total_pages);
+        echo '</div>';
     }
     public static function render_class_dashboard_page()
     {
@@ -557,6 +575,7 @@ class AzAC_Admin_Pages
         echo '</div>';
         echo '<div class="azac-reviews-list">';
         echo '<div id="azacReviewsList" class="azac-reviews-scroll"></div>';
+        echo '<div id="azacReviewsPagination" class="tablenav bottom" style="margin-top:10px;justify-content:center;display:flex"></div>';
         echo '</div>';
         echo '</div>';
         echo '<script>window.azacReviews=' . wp_json_encode([
@@ -599,9 +618,16 @@ class AzAC_Admin_Pages
         echo '<span class="legend-type"><span class="dot dot-mid"></span> Giữa giờ</span>';
         echo '</div>';
         $rows = method_exists('AzAC_Core_Admin', 'get_students_admin_summary') ? AzAC_Core_Admin::get_students_admin_summary($class_id) : [];
+
+        $per_page = 20;
+        $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+        $total_items = count($rows);
+        $total_pages = ceil($total_items / $per_page);
+        $paged_rows = array_slice($rows, ($current_page - 1) * $per_page, $per_page);
+
         echo '<table class="widefat fixed striped"><thead><tr><th>Tên học viên</th><th>Lớp đang học</th><th>Số buổi đã tham gia</th><th>Ghi chú điểm danh</th></tr></thead><tbody>';
-        if ($rows) {
-            foreach ($rows as $r) {
+        if ($paged_rows) {
+            foreach ($paged_rows as $r) {
                 $name = $r['name'];
                 $classes_txt = implode(', ', array_map('esc_html', $r['classes']));
                 $joined = intval($r['joined']);
@@ -633,6 +659,7 @@ class AzAC_Admin_Pages
             echo '<tr><td colspan="4">Chưa có dữ liệu.</td></tr>';
         }
         echo '</tbody></table>';
+        AzAC_Core_Helper::render_pagination($current_page, $total_pages);
         echo '<script>(function(){var s=document.getElementById("azacManageStudentsClass");if(!s)return;s.addEventListener("change",function(){var v=this.value||"";var url=new URL(window.location.href);if(v){url.searchParams.set("class_id",v);}else{url.searchParams.delete("class_id");}window.location.href=url.toString();});})();</script>';
         echo '</div>';
     }
@@ -643,10 +670,17 @@ class AzAC_Admin_Pages
             return;
         }
         $rows = method_exists('AzAC_Core_Admin', 'get_teachers_admin_summary') ? AzAC_Core_Admin::get_teachers_admin_summary() : [];
+
+        $per_page = 20;
+        $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+        $total_items = count($rows);
+        $total_pages = ceil($total_items / $per_page);
+        $paged_rows = array_slice($rows, ($current_page - 1) * $per_page, $per_page);
+
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý Giảng viên</h1>';
         echo '<table class="widefat fixed striped"><thead><tr><th>Tên giảng viên</th><th>Danh sách lớp phụ trách</th><th>Tổng số học viên</th></tr></thead><tbody>';
-        if ($rows) {
-            foreach ($rows as $r) {
+        if ($paged_rows) {
+            foreach ($paged_rows as $r) {
                 $name = $r['name'];
                 $classes = $r['classes'];
                 $students_total = intval($r['students_total']);
@@ -664,6 +698,7 @@ class AzAC_Admin_Pages
             echo '<tr><td colspan="3">Chưa có dữ liệu giảng viên.</td></tr>';
         }
         echo '</tbody></table>';
+        AzAC_Core_Helper::render_pagination($current_page, $total_pages);
         echo '</div>';
     }
 }

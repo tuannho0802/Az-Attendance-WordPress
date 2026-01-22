@@ -2,6 +2,8 @@
   var MODE = "class";
   var CHART = null;
   var DATA = null;
+  var CURRENT_PAGE = 1;
+  var PAGE_SIZE = 20;
   function ensure(cb) {
     if (typeof Chart !== "undefined") {
       cb();
@@ -445,6 +447,65 @@
       } catch (e) {}
     }
   }
+  function renderPagination(
+    totalPages,
+    currentPage,
+  ) {
+    var container = document.getElementById(
+      "azacReviewsPagination",
+    );
+    if (!container) return;
+    if (totalPages <= 1) {
+      container.innerHTML = "";
+      return;
+    }
+    var html =
+      '<div class="tablenav-pages"><span class="pagination-links">';
+    if (currentPage > 1) {
+      html +=
+        '<a class="prev-page button" href="#" data-page="' +
+        (currentPage - 1) +
+        '"><span class="screen-reader-text">Trang trước</span><span aria-hidden="true">‹</span></a>';
+    } else {
+      html +=
+        '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">‹</span>';
+    }
+    html +=
+      '<span class="paging-input"><span class="tablenav-paging-text"> ' +
+      currentPage +
+      ' của <span class="total-pages">' +
+      totalPages +
+      "</span></span></span>";
+    if (currentPage < totalPages) {
+      html +=
+        '<a class="next-page button" href="#" data-page="' +
+        (currentPage + 1) +
+        '"><span class="screen-reader-text">Trang sau</span><span aria-hidden="true">›</span></a>';
+    } else {
+      html +=
+        '<span class="tablenav-pages-navspan button disabled" aria-hidden="true">›</span>';
+    }
+    html += "</span></div>";
+    container.innerHTML = html;
+    container
+      .querySelectorAll("a.button")
+      .forEach(function (btn) {
+        btn.addEventListener(
+          "click",
+          function (e) {
+            e.preventDefault();
+            var p = parseInt(
+              this.getAttribute("data-page"),
+              10,
+            );
+            if (p && p !== CURRENT_PAGE) {
+              CURRENT_PAGE = p;
+              load();
+            }
+          },
+        );
+      });
+  }
   function load() {
     var c = document.getElementById("azacReviewsClass");
     var f = document.getElementById("azacReviewsFilter");
@@ -454,6 +515,8 @@
     fd.append("action", "azac_get_reviews");
     fd.append("nonce", window.azacReviews.nonce);
     fd.append("class_id", cid);
+    fd.append("paged", CURRENT_PAGE);
+    fd.append("per_page", PAGE_SIZE);
     if (stars) fd.append("stars", stars);
     fetch(window.azacReviews.ajaxUrl, { method: "POST", body: fd })
       .then(function (r) {
@@ -479,8 +542,16 @@
   function init() {
     var c = document.getElementById("azacReviewsClass");
     var f = document.getElementById("azacReviewsFilter");
-    if (c) c.addEventListener("change", load);
-    if (f) f.addEventListener("change", load);
+    if (c)
+      c.addEventListener("change", function () {
+        CURRENT_PAGE = 1;
+        load();
+      });
+    if (f)
+      f.addEventListener("change", function () {
+        CURRENT_PAGE = 1;
+        load();
+      });
     var btnC = document.getElementById("azacViewClass");
     var btnS = document.getElementById("azacViewSessions");
     if (btnC) btnC.addEventListener("click", function () {

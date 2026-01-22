@@ -126,6 +126,9 @@ class AzAC_Admin_Stats
             wp_send_json_error(['message' => 'Nonce'], 403);
         }
         $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $paged = isset($_POST['paged']) ? max(1, absint($_POST['paged'])) : 1;
+        $per_page = isset($_POST['per_page']) ? max(1, absint($_POST['per_page'])) : 20;
+
         if (!$class_id) {
             wp_send_json_error(['message' => 'Invalid'], 400);
         }
@@ -166,7 +169,10 @@ class AzAC_Admin_Stats
         $avg = floatval($wpdb->get_var("SELECT AVG(rating) FROM {$feedback_table} WHERE {$where}"));
         $pm = $wpdb->postmeta;
         $users = $wpdb->users;
-        $items = $wpdb->get_results("
+
+        $offset = ($paged - 1) * $per_page;
+
+        $items = $wpdb->get_results($wpdb->prepare("
             SELECT f.student_id, f.rating, f.comment, f.session_date, COALESCE(u.display_name, p.post_title) AS name, pm.meta_value AS user_id
             FROM {$feedback_table} f
             LEFT JOIN {$pm} pm ON pm.post_id = f.student_id AND pm.meta_key = 'az_user_id'
@@ -174,8 +180,9 @@ class AzAC_Admin_Stats
             LEFT JOIN {$wpdb->posts} p ON p.ID = f.student_id
             WHERE {$where}
             ORDER BY f.session_date DESC
-            LIMIT 200
-        ", ARRAY_A);
+            LIMIT %d OFFSET %d
+        ", $per_page, $offset), ARRAY_A);
+
         $list = [];
         foreach ($items as $it) {
             $uid = intval($it['user_id']);
@@ -192,6 +199,8 @@ class AzAC_Admin_Stats
         $sess_rows = $wpdb->get_col($wpdb->prepare("SELECT session_date FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC", $class_id));
         wp_send_json_success([
             'total' => $total,
+            'total_pages' => (int) ceil($total / $per_page),
+            'current_page' => (int) $paged,
             'average' => round($avg, 1),
             'counts' => $counts,
             'items' => $list,
