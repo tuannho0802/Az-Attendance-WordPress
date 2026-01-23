@@ -173,10 +173,11 @@ class AzAC_Core_Sessions
             wp_send_json_error(['message' => 'Invalid'], 400);
         }
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
+        // Allow Manager (manage_options) to add sessions
+        $can_add = current_user_can('manage_options');
 
-        // Only Admin can add sessions
-        if (!$is_admin) {
+        // Only Admin/Manager can add sessions
+        if (!$can_add) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
 
@@ -198,10 +199,11 @@ class AzAC_Core_Sessions
             wp_send_json_error(['message' => 'Invalid'], 400);
         }
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
+        // Allow Manager (manage_options) to update sessions
+        $can_edit = current_user_can('manage_options');
 
-        // Only Admin can update sessions
-        if (!$is_admin) {
+        // Only Admin/Manager can update sessions
+        if (!$can_edit) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
 
@@ -217,7 +219,8 @@ class AzAC_Core_Sessions
         check_ajax_referer('azac_list_sessions', 'nonce');
         global $wpdb;
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
+        // Allow Manager (manage_options) to list sessions
+        $is_admin = current_user_can('manage_options');
         $is_teacher = in_array('az_teacher', $user->roles, true);
         $is_student = in_array('az_student', $user->roles, true);
         if (!$is_admin && !$is_teacher && !$is_student) {
@@ -481,11 +484,12 @@ class AzAC_Core_Sessions
 
         $class_id = $session->class_id;
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
+        $is_admin = current_user_can('manage_options');
+        $is_manager = current_user_can('az_manage_classes');
         $is_teacher = in_array('az_teacher', $user->roles, true);
 
         $can_edit = false;
-        if ($is_admin) {
+        if ($is_admin || $is_manager) {
             $can_edit = true;
         } elseif ($is_teacher) {
             $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
@@ -521,6 +525,9 @@ class AzAC_Core_Sessions
             wp_send_json_error(['message' => 'DB Error'], 500);
         }
 
+        // Audit Log
+        do_action('azac_session_content_updated', $class_id, $session->session_date, $user->ID);
+
         wp_send_json_success(['message' => 'Saved']);
     }
 
@@ -535,10 +542,10 @@ class AzAC_Core_Sessions
 
         // Permission check
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
+        $can_upload = current_user_can('upload_files') || current_user_can('manage_options');
         $is_teacher = in_array('az_teacher', $user->roles, true);
 
-        if (!$is_admin && !$is_teacher) {
+        if (!$can_upload && !$is_teacher) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
@@ -611,7 +618,7 @@ class AzAC_Core_Sessions
             if ($date !== $today) {
                 wp_send_json_error(['message' => 'Chỉ được chấm công vào đúng ngày dạy.'], 403);
             }
-        } elseif (!in_array('administrator', $user->roles, true)) {
+        } elseif (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
@@ -631,6 +638,9 @@ class AzAC_Core_Sessions
             ['%d', '%s', '%d', '%s'],
             ['%d', '%s']
         );
+
+        // Audit Log
+        do_action('azac_teacher_checkin_event', $class_id, $date, $is_checkin, $user->ID);
 
         wp_send_json_success(['is_checkin' => $is_checkin]);
     }

@@ -81,6 +81,54 @@ class AzAC_Core_Activator
             'az_manage_attendance' => true,
             'az_take_attendance' => true,
         ]);
+
+        // Role Manager: Read/Edit/Upload/Manage Options but NO DELETE
+        remove_role('az_manager'); // Reset to ensure new caps are applied
+        add_role('az_manager', 'Manager', [
+            // Core Access
+            'read' => true,
+            'manage_options' => true, // Access Settings/Plugins pages (will be restricted via Menu hiding)
+            'edit_theme_options' => true,
+            'upload_files' => true, // Media access
+
+            // Posts & Pages (Content)
+            'edit_posts' => true,
+            'edit_others_posts' => true,
+            'edit_published_posts' => true,
+            'publish_posts' => true,
+
+            'edit_pages' => true,
+            'edit_others_pages' => true,
+            'edit_published_pages' => true,
+            'publish_pages' => true,
+
+            // Users
+            'list_users' => true,
+            'create_users' => true,
+            'edit_users' => true,
+            'promote_users' => true,
+
+            // Categories/Taxonomies
+            'manage_categories' => true,
+
+            // Custom Capabilities
+            'az_manage_attendance' => true,
+            'az_view_system' => true,
+            'az_manage_classes' => true,
+            'az_manage_students' => true,
+            'az_manage_teachers' => true,
+            'az_take_attendance' => true,
+
+            // EXPLICITLY DENIED (Just for clarity, add_role doesn't need explicit false if omitted, but good for doc)
+            // 'delete_posts' => false,
+            // 'delete_others_posts' => false,
+            // 'delete_published_posts' => false,
+            // 'delete_pages' => false,
+            // 'delete_others_pages' => false,
+            // 'delete_published_pages' => false,
+            // 'delete_users' => false,
+        ]);
+
         add_role('az_student', 'Student', [
             'read' => true,
             'az_take_attendance' => true,

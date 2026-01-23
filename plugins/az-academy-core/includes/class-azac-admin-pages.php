@@ -27,6 +27,8 @@ class AzAC_Admin_Pages
             0
         );
 
+        $is_manager = in_array('az_manager', (array) $user->roles);
+
         if (!in_array('az_student', (array) $user->roles)) {
             add_menu_page(
                 'Học viên',
@@ -42,13 +44,13 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Reviews',
             'Reviews',
-            'manage_options',
+            'manage_options', // Admin & Manager
             'azac-reviews',
             [__CLASS__, 'render_reviews_page'],
             'dashicons-chart-bar',
             0
         );
-        
+
         if (!in_array('az_student', (array) $user->roles)) {
             add_menu_page(
                 'Quản lý Học viên',
@@ -63,12 +65,13 @@ class AzAC_Admin_Pages
         add_menu_page(
             'Quản lý Giảng viên',
             'Quản lý Giảng viên',
-            'manage_options',
+            'manage_options', // Admin & Manager
             'azac-manage-teachers',
             [__CLASS__, 'render_manage_teachers_page'],
             'dashicons-admin-users',
             0
         );
+
         add_menu_page(
             'Chấm công Giảng viên',
             'Chấm công Giảng viên',
@@ -104,7 +107,7 @@ class AzAC_Admin_Pages
             echo '<div class="azac-session-filters-toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px;">';
 
             // Bulk Actions
-            if ($is_admin) {
+            if (current_user_can('delete_users')) {
                 echo '<div style="display:flex; gap:5px; align-items:center;">';
                 echo '<select id="azac-bulk-action-selector-top">';
                 echo '<option value="-1">Hành động hàng loạt</option>';
@@ -191,6 +194,7 @@ class AzAC_Admin_Pages
         echo '<div class="wrap"><h1>Lớp học</h1>';
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
+        $is_manager = in_array('az_manager', (array) $user->roles);
         $is_teacher = in_array('az_teacher', $user->roles, true);
 
         // Search Logic
@@ -239,7 +243,8 @@ class AzAC_Admin_Pages
         $paged_classes = array_slice($classes, ($current_page - 1) * $per_page, $per_page);
 
         $is_admin = in_array('administrator', $user->roles, true);
-        if ($is_admin) {
+        $is_manager = in_array('az_manager', (array) $user->roles);
+        if ($is_admin || $is_manager) {
             echo '<div class="azac-inline-create">';
             echo '<input type="text" id="azac_new_class_title" class="regular-text" placeholder="Tên lớp học" />';
             $teachers = get_users(['role' => 'az_teacher']);
@@ -278,7 +283,7 @@ class AzAC_Admin_Pages
             echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
             echo '</div>';
             echo '<div class="azac-card-actions azac-actions--classes">';
-            if ($is_admin) {
+            if ($is_admin || $is_manager) {
                 if ($is_pending) {
                     echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
                 } else {
@@ -289,7 +294,9 @@ class AzAC_Admin_Pages
                 if (!$is_pending) {
                     echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a> ';
                 }
-                echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
+                if ($is_admin) {
+                    echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
+                }
             } elseif ($is_teacher) {
                 if (!$is_pending) {
                     echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
@@ -644,7 +651,7 @@ class AzAC_Admin_Pages
                 echo '<div style="display:flex;gap:5px;">';
                 echo '<button type="button" class="button button-small azac-view-student-btn" data-student="' . $modal_data . '"><span class="dashicons dashicons-visibility" style="line-height:1.3"></span></button>';
 
-                if (in_array('administrator', $user->roles, true)) {
+                if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {
                     $link_edit = admin_url('user-edit.php?user_id=' . $u->ID);
                     echo '<a href="' . esc_url($link_edit) . '" class="button button-small" title="Chỉnh sửa"><span class="dashicons dashicons-edit" style="line-height:1.3"></span></a>';
                 }
@@ -918,6 +925,7 @@ class AzAC_Admin_Pages
         $is_student = in_array('az_student', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
         $is_admin = in_array('administrator', $user->roles, true);
+        $is_manager = in_array('az_manager', (array) $user->roles);
         $assigned_teacher = intval(get_post_meta($class_id, 'az_teacher_user', true));
         $can_access = current_user_can('edit_post', $class_id) || $is_student || ($is_teacher && $assigned_teacher === intval($user->ID));
         if (!$can_access) {
@@ -995,7 +1003,7 @@ class AzAC_Admin_Pages
         }
         echo '</select> ';
         if (!$is_student) {
-            if ($is_admin) {
+            if ($is_admin || $is_manager) {
                 echo '<input type="date" id="azac_session_date" value="' . esc_attr($selected_date) . '" /> ';
                 echo '<input type="time" id="azac_session_time" value="" /> ';
                 echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button> ';
@@ -1009,7 +1017,7 @@ class AzAC_Admin_Pages
         echo '<button class="button button-primary azac-tab-btn" data-target="#azac-checkin">Điểm danh đầu giờ</button> ';
         echo '<button class="button azac-tab-btn" data-target="#azac-mid">Điểm danh giữa giờ</button> ';
         echo '</div>';
-        $can_edit = $is_admin || ($is_teacher && $selected_date === $today);
+        $can_edit = $is_admin || $is_manager || ($is_teacher && $selected_date === $today);
         echo '<div id="azac-checkin" class="azac-tab active">';
         echo '<table class="widefat fixed striped"><thead><tr><th>STT</th><th>Họ và Tên</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>';
         $i = 1;
@@ -1062,7 +1070,7 @@ class AzAC_Admin_Pages
         echo '</div>';
         echo '<script>window.azacData=' . wp_json_encode([
             'classId' => $class_id,
-            'isAdmin' => $is_admin,
+            'isAdmin' => $is_admin || $is_manager,
             'nonce' => $nonce,
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'today' => $today,
@@ -1141,7 +1149,7 @@ class AzAC_Admin_Pages
     public static function render_manage_students_page()
     {
         $user = wp_get_current_user();
-        if (!in_array('administrator', $user->roles, true) && !in_array('az_teacher', $user->roles, true)) {
+        if (!in_array('administrator', $user->roles, true) && !in_array('az_teacher', $user->roles, true) && !in_array('az_manager', (array) $user->roles)) {
             echo '<div class="wrap"><h1>Quản lý Học viên</h1><p>Unauthorized.</p></div>';
             return;
         }
@@ -1400,12 +1408,12 @@ class AzAC_Admin_Pages
     public static function render_teacher_attendance_page()
     {
         $user = wp_get_current_user();
-        if (!in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
+        if (!in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true) && !in_array('az_manager', (array) $user->roles)) {
             wp_die('Unauthorized');
         }
 
         // --- Admin View ---
-        if (in_array('administrator', $user->roles, true)) {
+        if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {
             echo '<div class="wrap"><h1>Quản lý chấm công</h1>';
 
             // Filter Params

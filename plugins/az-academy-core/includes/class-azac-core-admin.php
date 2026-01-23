@@ -8,7 +8,151 @@ class AzAC_Core_Admin
     {
         add_action('admin_menu', ['AzAC_Admin_Pages', 'register_admin_pages']);
         add_action('admin_enqueue_scripts', ['AzAC_Admin_Assets', 'enqueue_admin_assets']);
+
+        // Hide Menus & Actions logic
+        add_action('admin_menu', [__CLASS__, 'hide_admin_menus'], 999);
+
+        // Redirect Login for Manager/Teacher
+        add_filter('login_redirect', [__CLASS__, 'custom_login_redirect'], 10, 3);
+
+        // Row Actions & Bulk Actions Filters
+        add_filter('post_row_actions', [__CLASS__, 'remove_row_actions'], 10, 2);
+        add_filter('page_row_actions', [__CLASS__, 'remove_row_actions'], 10, 2);
+        add_filter('media_row_actions', [__CLASS__, 'remove_row_actions'], 10, 2); // Media
+        add_filter('user_row_actions', [__CLASS__, 'remove_user_row_actions'], 10, 2); // Users
+
+        // Apply bulk action filters for common and custom post types
+        $post_types = ['post', 'page', 'az_class', 'az_student', 'az_lesson', 'attachment', 'user']; // Added attachment, user
+        foreach ($post_types as $pt) {
+            add_filter("bulk_actions-edit-{$pt}", [__CLASS__, 'remove_bulk_actions']);
+        }
+
+        // Hotfix: Ensure Manager Role is updated (Run once)
+        add_action('admin_init', [__CLASS__, 'ensure_manager_capabilities']);
+
+        // Hide "Delete Permanently" in Media Grid via CSS
+        add_action('admin_head', [__CLASS__, 'hide_delete_ui_css']);
     }
+
+    public static function ensure_manager_capabilities()
+    {
+        if (!get_option('azac_manager_role_v6_updated')) {
+            $role = get_role('az_manager');
+            if ($role) {
+                // Core
+                $role->add_cap('manage_options');
+                $role->add_cap('edit_theme_options');
+                $role->add_cap('upload_files');
+                // Content
+                $caps = [
+                    'edit_posts',
+                    'edit_others_posts',
+                    'edit_published_posts',
+                    'publish_posts',
+                    'edit_pages',
+                    'edit_others_pages',
+                    'edit_published_pages',
+                    'publish_pages',
+                    'list_users',
+                    'create_users',
+                    'edit_users',
+                    'promote_users',
+                    'manage_categories',
+                    'az_manage_attendance',
+                    'az_view_system',
+                    'az_manage_classes',
+                    'az_manage_students',
+                    'az_manage_teachers',
+                    'az_take_attendance'
+                ];
+                foreach ($caps as $cap) {
+                    $role->add_cap($cap);
+                }
+                // Explicitly remove delete
+                $role->remove_cap('delete_posts');
+                $role->remove_cap('delete_others_posts');
+                $role->remove_cap('delete_published_posts');
+                $role->remove_cap('delete_private_posts');
+                $role->remove_cap('delete_pages');
+                $role->remove_cap('delete_others_pages');
+                $role->remove_cap('delete_published_pages');
+                $role->remove_cap('delete_private_pages');
+                $role->remove_cap('delete_users');
+                $role->remove_cap('delete_attachments');
+            }
+            update_option('azac_manager_role_v6_updated', 1);
+        }
+    }
+
+    public static function hide_admin_menus()
+    {
+        // Admin (can delete users) sees everything
+        if (current_user_can('delete_users')) {
+            return;
+        }
+
+        // For Managers (and others): Hide sensitive system menus
+        remove_menu_page('index.php');                  // Dashboard
+        remove_menu_page('edit.php');                   // Posts
+        remove_menu_page('edit.php?post_type=page');    // Pages
+        remove_menu_page('edit-comments.php');          // Comments
+        remove_menu_page('themes.php');                 // Appearance
+        remove_menu_page('plugins.php');                // Plugins
+        remove_menu_page('tools.php');                  // Tools
+        remove_menu_page('options-general.php');        // Settings
+
+        // Note: Media, Users, LMS menus are KEPT visible.
+    }
+
+    public static function hide_delete_ui_css()
+    {
+        if (!current_user_can('delete_users')) {
+            echo '<style>
+                .submitdelete, .button-link-delete, .delete-permanently, .delete { display: none !important; }
+                /* Hide Delete in Bulk Actions */
+                option[value="delete"], option[value="trash"] { display: none !important; }
+                /* Hide System Cleanup Bulk Actions */
+                #azac-do-system-bulk, #azac-bulk-action-system, 
+                #azac-log-bulk-action, #azac-log-do-bulk,
+                .azac-delete-system-item { display: none !important; }
+            </style>';
+        }
+    }
+
+    public static function remove_row_actions($actions, $post)
+    {
+        if (current_user_can('delete_users')) {
+            return $actions;
+        }
+        if (isset($actions['trash']))
+            unset($actions['trash']);
+        if (isset($actions['delete']))
+            unset($actions['delete']);
+        return $actions;
+    }
+
+    public static function remove_user_row_actions($actions, $user)
+    {
+        if (current_user_can('delete_users')) {
+            return $actions;
+        }
+        if (isset($actions['delete']))
+            unset($actions['delete']);
+        return $actions;
+    }
+
+    public static function remove_bulk_actions($actions)
+    {
+        if (current_user_can('delete_users')) {
+            return $actions;
+        }
+        if (isset($actions['trash']))
+            unset($actions['trash']);
+        if (isset($actions['delete']))
+            unset($actions['delete']);
+        return $actions;
+    }
+
     public static function get_students_admin_summary($class_id = 0)
     {
         global $wpdb;
@@ -334,6 +478,7 @@ class AzAC_Core_Admin
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
                 'isAdmin' => in_array('administrator', $user->roles, true),
+                'isManager' => in_array('az_manager', (array) $user->roles),
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
@@ -354,6 +499,7 @@ class AzAC_Core_Admin
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
                 'isAdmin' => in_array('administrator', $user->roles, true),
+                'isManager' => in_array('az_manager', (array) $user->roles),
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
@@ -375,6 +521,7 @@ class AzAC_Core_Admin
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
                 'isAdmin' => in_array('administrator', $user->roles, true),
+                'isManager' => in_array('az_manager', (array) $user->roles),
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'deleteClassNonce' => wp_create_nonce('azac_delete_class'),

@@ -17,11 +17,12 @@ class AzAC_Admin_Guides
 
         // Determine visibility based on roles
         $is_admin = in_array('administrator', $roles);
+        $is_manager = in_array('az_manager', $roles); // Added Manager
         $is_teacher = in_array('az_teacher', $roles);
         $is_student = in_array('az_student', $roles);
 
-        // Admin Guide (Admin Only) - Priority 93
-        if ($is_admin) {
+        // Admin Guide (Admin & Manager) - Priority 93
+        if ($is_admin || $is_manager) {
             add_menu_page(
                 'Hướng dẫn Admin',
                 'Hướng dẫn Admin',
@@ -36,7 +37,7 @@ class AzAC_Admin_Guides
         }
 
         // Student Guide - Priority 90
-        if ($is_admin || $is_student) {
+        if ($is_admin || $is_manager || $is_student) {
             add_menu_page(
                 'Hướng dẫn Học viên',
                 'Hướng dẫn Học viên',
@@ -51,7 +52,7 @@ class AzAC_Admin_Guides
         }
 
         // Teacher Guide - Priority 91
-        if ($is_admin || $is_teacher) {
+        if ($is_admin || $is_manager || $is_teacher) {
             add_menu_page(
                 'Hướng dẫn Giảng viên',
                 'Hướng dẫn Giảng viên',
@@ -65,8 +66,8 @@ class AzAC_Admin_Guides
             );
         }
 
-        // Technical Docs (Admin Only) - Priority 92
-        if ($is_admin) {
+        // Technical Docs (Admin & Manager) - Priority 92
+        if ($is_admin || $is_manager) {
             add_menu_page(
                 'Tài liệu Kỹ thuật',
                 'Tài liệu Kỹ thuật',

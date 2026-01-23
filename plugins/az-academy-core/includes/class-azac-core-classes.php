@@ -21,7 +21,8 @@ class AzAC_Core_Classes
             wp_send_json_error(['message' => 'Invalid'], 400);
         }
         $user = wp_get_current_user();
-        if (!in_array('administrator', $user->roles, true)) {
+        $is_manager = in_array('az_manager', (array) $user->roles);
+        if (!in_array('administrator', $user->roles, true) && !$is_manager) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
         $post = get_post($class_id);
@@ -73,7 +74,8 @@ class AzAC_Core_Classes
             wp_send_json_error(['message' => 'Thiếu tên lớp'], 400);
         }
         $user = wp_get_current_user();
-        if (!in_array('administrator', $user->roles, true)) {
+        $is_manager = in_array('az_manager', (array) $user->roles);
+        if (!in_array('administrator', $user->roles, true) && !$is_manager) {
             wp_send_json_error(['message' => 'Không đủ quyền'], 403);
         }
         $post_id = wp_insert_post([

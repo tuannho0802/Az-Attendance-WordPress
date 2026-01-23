@@ -25,6 +25,7 @@ class AzAC_System_Cleanup
         add_action('azac_session_updated', [__CLASS__, 'log_session_updated'], 10, 4);
         add_action('azac_session_deleted', [__CLASS__, 'log_session_deleted'], 10, 3);
         add_action('azac_attendance_saved', [__CLASS__, 'log_attendance_saved'], 10, 4);
+        add_action('azac_teacher_checkin_event', [__CLASS__, 'log_teacher_checkin'], 10, 4);
 
         // Log Cleanup Hook
         add_action('wp_ajax_azac_cleanup_logs', [__CLASS__, 'ajax_cleanup_logs']);
@@ -177,6 +178,12 @@ class AzAC_System_Cleanup
         self::log('SESSION_UPDATE', "Cập nhật buổi học: $class_title (Old: $old_date -> New: $new_date)", $user_id);
     }
 
+    public static function log_session_content_updated($class_id, $date, $user_id)
+    {
+        $class_title = get_the_title($class_id);
+        self::log('SESSION_CONTENT', "Cập nhật nội dung buổi học: $class_title (Date: $date)", $user_id);
+    }
+
     public static function log_session_deleted($class_id, $date, $user_id)
     {
         $class_title = get_the_title($class_id);
@@ -189,12 +196,19 @@ class AzAC_System_Cleanup
         self::log('ATTENDANCE_SAVE', "Lưu điểm danh ($type): $class_title (Date: $date)", $user_id);
     }
 
+    public static function log_teacher_checkin($class_id, $date, $is_checkin, $user_id)
+    {
+        $class_title = get_the_title($class_id);
+        $status = $is_checkin ? "Check-in" : "Hủy Check-in";
+        self::log('TEACHER_CHECKIN', "Giảng viên $status: $class_title (Date: $date)", $user_id);
+    }
+
     public static function register_menu()
     {
         add_menu_page(
             'Hệ thống',
             'Hệ thống',
-            'manage_options', // Only Administrator
+            'manage_options', // Admin & Manager (both have manage_options)
             'azac-system',
             [__CLASS__, 'render_page'],
             'dashicons-admin-generic', // Icon
@@ -253,10 +267,12 @@ class AzAC_System_Cleanup
 
     private static function render_scan_tab()
     {
+        $can_delete = current_user_can('delete_users');
         ?>
         <div class="azac-layout-wrapper"
             style="background:#fff; padding:20px; border:1px solid #c3c4c7; box-sizing:border-box;">
 
+            <?php if ($can_delete): ?>
             <div class="azac-session-filters-toolbar"
                 style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; margin-left:0; padding-left:0;">
                 <div style="display:flex; gap:5px; align-items:center;">
@@ -270,6 +286,14 @@ class AzAC_System_Cleanup
                     <strong id="azac-scan-total-count">Đang tải dữ liệu...</strong>
                 </div>
             </div>
+            <?php else: ?>
+                <div class="azac-session-filters-toolbar"
+                    style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; margin-left:0; padding-left:0;">
+                    <div style="margin-left:auto;">
+                        <strong id="azac-scan-total-count">Đang tải dữ liệu...</strong>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <div id="azac-scan-container">
                 <p class="spinner is-active" style="float:none;"></p> Đang quét hệ thống...
@@ -334,8 +358,9 @@ class AzAC_System_Cleanup
         try {
             check_ajax_referer('azac_system_cleanup_nonce', 'nonce');
 
-            if (!current_user_can('manage_options')) {
-                throw new Exception('Bạn không có quyền thực hiện hành động này.');
+            // Allow Manager to VIEW logs (az_view_system)
+            if (!current_user_can('manage_options') && !current_user_can('az_view_system')) {
+                throw new Exception('Bạn không có quyền xem nhật ký.');
             }
 
             global $wpdb;
@@ -384,9 +409,13 @@ class AzAC_System_Cleanup
             $logs = $wpdb->get_results($sql);
 
             ob_clean(); // Clean before outputting HTML
+
+            $can_delete = current_user_can('delete_users');
+
             ob_start();
             ?>
                                 <div class="tablenav top">
+                                    <?php if ($can_delete): ?>
                                     <div class="alignleft actions bulkactions">
                                     <select id="azac-log-bulk-action">
                                         <option value="-1">Hành động hàng loạt</option>
@@ -396,6 +425,7 @@ class AzAC_System_Cleanup
                                     </select>
                                     <button type="button" id="azac-log-do-bulk" class="button action">Áp dụng</button>
                                 </div>
+                                <?php endif; ?>
                                     <div class="alignright">
                                         <?php self::render_pagination($total_items, $page, $limit, 'logs'); ?>
                                     </div>
@@ -477,8 +507,9 @@ class AzAC_System_Cleanup
         try {
             check_ajax_referer('azac_system_cleanup_nonce', 'nonce');
 
-            if (!current_user_can('manage_options')) {
-                throw new Exception('Forbidden');
+            // Allow Manager to VIEW scan data (az_view_system)
+            if (!current_user_can('manage_options') && !current_user_can('az_view_system')) {
+                throw new Exception('Bạn không có quyền xem dữ liệu quét.');
             }
 
             $page = isset($_POST['paged']) ? max(1, intval($_POST['paged'])) : 1;
@@ -553,6 +584,9 @@ class AzAC_System_Cleanup
 
             ob_clean(); // Clean any previous output (warnings/notices)
 
+            // Check capability for Delete buttons
+            $can_delete = current_user_can('delete_users');
+
             ob_start();
             ?>
             <div class="azac-scan-tools"
@@ -585,13 +619,18 @@ class AzAC_System_Cleanup
                     <thead>
                         <tr>
                             <td id="cb" class="manage-column column-cb check-column"
-                                style="width:30px; text-align:center; padding:8px 0;"><input type="checkbox"
-                                    id="cb-select-all-system"></td>
+                                style="width:30px; text-align:center; padding:8px 0;">
+                                <?php if ($can_delete): ?>
+                                                                    <input type="checkbox" id="cb-select-all-system">
+                                <?php endif; ?>
+                            </td>
                             <th style="width:120px;">Loại dữ liệu</th>
                             <th style="width:100px;">Dung lượng</th>
                             <th>Mô tả chi tiết</th>
                             <th style="width:150px;">Ngày phát hiện</th>
+                            <?php if ($can_delete): ?>
                             <th style="width:100px; text-align:right;">Hành động</th>
+                            <?php endif; ?>
                         </tr>
                     </thead>
                     <tbody id="azac-system-tbody">
@@ -607,42 +646,45 @@ class AzAC_System_Cleanup
                             <?php foreach ($all_items as $item): ?>
                                                                                                                                                         <tr data-id="<?php echo esc_attr($item['raw_id']); ?>" data-type="<?php echo esc_attr($item['type']); ?>">
                                                                                                                                         <td class="check-column" style="text-align:center; vertical-align:middle;">
-                                                                                                                                            <input type="checkbox" class="cb-select-system"
-                                                                                                                                                value="<?php echo esc_attr($item['type'] . '|' . $item['raw_id']); ?>">
-                                                                                                                                        </td>
-                                                                                                                                        <td>
-                                                                                                                                            <?php
-                                                                                                                                            $badge_color = '#999';
-                                                                                                                                            $label = $item['type'];
-                                                                                                                        switch ($item['type']) {
-                                                                                                                            case 'media':
-                                                                                                                                $badge_color = '#0073aa';
-                                                                                                                                $label = 'MEDIA';
-                                                                                                                                break;
-                                                                                                                            case 'attendance':
-                                                                                                                                $badge_color = '#e65100';
-                                                                                                                                $label = 'ATTENDANCE';
-                                                                                                                                break;
-                                                                                                                            case 'review':
-                                                                                                                                $badge_color = '#8e44ad';
-                                                                                                                                $label = 'REVIEW';
-                                                                                                                                break;
-                                                                                                                            case 'teaching_hours':
-                                                                                                                                $badge_color = '#d35400';
-                                                                                                                                $label = 'TEACHING';
-                                                                                                                                break;
-                                                                                                                        }
-                                                                                                                        echo '<span style="background:' . $badge_color . '; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">' . esc_html($label) . '</span>';
-                                                                                                                        ?>
+                                        <?php if ($can_delete): ?>
+                                                                                            <input type="checkbox" class="cb-select-system" value="<?php echo esc_attr($item['type'] . '|' . $item['raw_id']); ?>">
+                                        <?php endif; ?>
+                                                        </td>
+                                                        <td>
+                                                                                <?php
+                                                                                $badge_color = '#999';
+                                                                                $label = $item['type'];
+                                                                                switch ($item['type']) {
+                                                                                    case 'media':
+                                                                                        $badge_color = '#0073aa';
+                                                                                        $label = 'MEDIA';
+                                                                                        break;
+                                                                                    case 'attendance':
+                                                                                        $badge_color = '#e65100';
+                                                                                        $label = 'ATTENDANCE';
+                                                                                        break;
+                                                                                    case 'review':
+                                                                                        $badge_color = '#8e44ad';
+                                                                                        $label = 'REVIEW';
+                                                                                        break;
+                                                                                    case 'teaching_hours':
+                                                                                        $badge_color = '#d35400';
+                                                                                        $label = 'TEACHING';
+                                                                                        break;
+                                                                                }
+                                                                                echo '<span style="background:' . $badge_color . '; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">' . esc_html($label) . '</span>';
+                                                                                ?>
                                     </td>
                                     <td><?php echo isset($item['size']) ? esc_html($item['size']) : '-'; ?></td>
                                     <td><?php echo $item['desc']; ?></td>
                                     <td><?php echo esc_html($item['date']); ?></td>
+                                    <?php if ($can_delete): ?>
                                     <td style="text-align:right;">
-                                        <button type="button" class="button button-small button-link-delete azac-delete-system-item"
-                                            data-id="<?php echo esc_attr($item['raw_id']); ?>"
-                                            data-type="<?php echo esc_attr($item['type']); ?>" style="color:#a00;">Xóa vĩnh viễn</button>
+                                                                    <button type="button" class="button button-small button-link-delete azac-delete-system-item"
+                                                                        data-id="<?php echo esc_attr($item['raw_id']); ?>"
+                                                data-type="<?php echo esc_attr($item['type']); ?>" style="color:#a00;">Xóa vĩnh viễn</button>
                                     </td>
+                                    <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>
                         <?php endif; ?>

@@ -49,6 +49,7 @@ class AzAC_Admin_Stats
         $is_student = in_array('az_student', $user->roles, true);
         $is_admin = in_array('administrator', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
+        $is_manager = in_array('az_manager', (array) $user->roles);
 
         if (!$user) {
             wp_send_json_error(['message' => 'Unauthorized'], 401);
@@ -57,7 +58,7 @@ class AzAC_Admin_Stats
         $student_post_id = 0;
         $req_student_id = isset($_POST['student_id']) ? absint($_POST['student_id']) : 0;
 
-        if ($req_student_id && ($is_admin || $is_teacher)) {
+        if ($req_student_id && ($is_admin || $is_teacher || $is_manager)) {
             $student_post_id = $req_student_id;
         } elseif ($is_student) {
             $student_post_id = AzAC_Core_Helper::get_current_student_post_id();

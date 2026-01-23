@@ -20,7 +20,8 @@ class AzAC_Core_Attendance
         $biz = isset($_POST['biz']) ? sanitize_text_field($_POST['biz']) : '';
 
         $user = wp_get_current_user();
-        if (!in_array('administrator', $user->roles, true)) {
+        $is_manager = in_array('az_manager', (array) $user->roles);
+        if (!in_array('administrator', $user->roles, true) && !$is_manager) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
@@ -153,14 +154,15 @@ class AzAC_Core_Attendance
             wp_send_json_error(['message' => 'Invalid'], 400);
         }
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
+        $is_admin = current_user_can('manage_options');
+        $is_manager = current_user_can('az_take_attendance');
         $is_teacher = in_array('az_teacher', $user->roles, true);
 
-        if (!$is_admin && !$is_teacher) {
+        if (!$is_admin && !$is_manager && !$is_teacher) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
 
-        if ($is_teacher && !$is_admin) {
+        if ($is_teacher && !$is_admin && !$is_manager) {
             $today = current_time('Y-m-d');
             if ($session_date !== $today) {
                 wp_send_json_error(['message' => 'Bạn chỉ được điểm danh cho ngày hôm nay.'], 403);
@@ -229,7 +231,9 @@ class AzAC_Core_Attendance
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
-        if (!$is_admin) {
+        $is_manager = in_array('az_manager', (array) $user->roles);
+
+        if (!$is_admin && !$is_manager) {
             if ($is_teacher) {
                 $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
                 if ($teacher_user !== intval($user->ID)) {
