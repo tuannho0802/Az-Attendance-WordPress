@@ -86,7 +86,7 @@ class AzAC_Admin_Pages
         echo '<div class="wrap"><h1>Quản lý điểm danh</h1>';
         $user = wp_get_current_user();
         $is_teacher = in_array('az_teacher', $user->roles, true);
-        $is_admin = in_array('administrator', $user->roles, true);
+        $is_admin = current_user_can('manage_options');
         $is_student = in_array('az_student', $user->roles, true);
         echo '<div class="azac-tabs" style="margin-bottom:10px;">';
         echo '<button class="button azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
@@ -97,8 +97,22 @@ class AzAC_Admin_Pages
         if ($is_teacher || $is_admin || $is_student) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
 
+            // Main Layout Wrapper
+            echo '<div class="azac-layout-wrapper" style="background:#fff; padding:20px; border:1px solid #c3c4c7; box-sizing:border-box;">';
+
             // New Toolbar
-            echo '<div class="azac-session-filters-toolbar" style="background:#f0f0f1; padding:10px; border:1px solid #c3c4c7; border-radius:4px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px;">';
+            echo '<div class="azac-session-filters-toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px;">';
+
+            // Bulk Actions
+            if ($is_admin) {
+                echo '<div style="display:flex; gap:5px; align-items:center;">';
+                echo '<select id="azac-bulk-action-selector-top">';
+                echo '<option value="-1">Hành động hàng loạt</option>';
+                echo '<option value="delete">Xóa các buổi đã chọn</option>';
+                echo '</select>';
+                echo '<input type="submit" id="azac-do-bulk-action" class="button action" value="Áp dụng">';
+                echo '</div>';
+            }
 
             // Class Filter (Select2)
             echo '<div style="flex:1; min-width:200px;">';
@@ -135,7 +149,10 @@ class AzAC_Admin_Pages
             echo '<table class="wp-list-table widefat fixed striped table-view-list">';
             echo '<thead>';
             echo '<tr>';
-            echo '<th style="width: 25%;">Lớp</th>';
+            if ($is_admin) {
+                echo '<th class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-1"></th>';
+            }
+            echo '<th>Lớp</th>';
             echo '<th style="width: 8%; text-align:center;">Buổi</th>';
             echo '<th style="width: 17%;">Thời gian</th>';
             echo '<th style="width: 15%;">Trạng thái ngày dạy</th>';
@@ -151,6 +168,7 @@ class AzAC_Admin_Pages
             echo '</div>';
 
             echo '<div id="azac-sessions-pagination"></div>';
+            echo '</div>'; // End azac-layout-wrapper
             echo '</div>'; // End #azac-tab-sessions
 
             if ($is_student) {

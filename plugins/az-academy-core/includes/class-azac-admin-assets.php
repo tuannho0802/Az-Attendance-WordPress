@@ -38,10 +38,12 @@ class AzAC_Admin_Assets
                 'nonce' => wp_create_nonce('azac_create_class'),
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
-                'isAdmin' => in_array('administrator', $user->roles, true),
+                'isAdmin' => current_user_can('manage_options'),
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
+                'deleteSessionNonce' => wp_create_nonce('azac_delete_session'),
+                'bulkDeleteNonce' => wp_create_nonce('az_bulk_delete_nonce'),
             ];
             wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list);
             wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list);

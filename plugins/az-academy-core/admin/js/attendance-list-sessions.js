@@ -226,6 +226,90 @@
       },
     );
 
+    // Bulk Delete
+    $(document).on("click", "#azac-do-bulk-action", function (e) {
+      e.preventDefault();
+      var action = $("#azac-bulk-action-selector-top").val();
+      if (action !== "delete") {
+        return;
+      }
+      
+      var selected = [];
+      $(".cb-select-1:checked").each(function () {
+        selected.push($(this).val());
+      });
+      
+      if (selected.length === 0) {
+        alert("Vui lòng chọn ít nhất một buổi học.");
+        return;
+      }
+      
+      if (!confirm("Bạn có chắc chắn muốn xóa " + selected.length + " buổi học đã chọn?")) {
+        return;
+      }
+      
+      var btn = $(this);
+      btn.prop("disabled", true);
+      
+      var data = {
+          action: "azac_bulk_delete_sessions",
+          _ajax_nonce: AZAC_LIST.bulkDeleteNonce,
+          session_ids: selected,
+      };
+      
+      console.log("Bulk Delete Data:", data);
+
+      $.post(
+        AZAC_LIST.ajaxUrl,
+        data,
+        function (res) {
+          btn.prop("disabled", false);
+          if (res.success) {
+            location.reload();
+          } else {
+            alert("Lỗi: " + (res.data ? (res.data.message || res.data) : "Không thể xóa"));
+          }
+        }
+      ).fail(function(xhr) {
+          btn.prop("disabled", false);
+          var msg = "Lỗi kết nối hoặc server error (400/500).";
+          if (xhr.responseJSON && xhr.responseJSON.data) {
+              msg = xhr.responseJSON.data.message || xhr.responseJSON.data;
+          }
+          alert(msg);
+      });
+    });
+
+    // Single Delete Session
+    $(document).on("click", ".azac-delete-session-btn", function (e) {
+      e.preventDefault();
+      var id = $(this).data("id");
+      if (!confirm("Bạn có chắc chắn muốn xóa buổi học này?")) {
+        return;
+      }
+      
+      $.post(
+        AZAC_LIST.ajaxUrl,
+        {
+          action: "azac_delete_session",
+          _ajax_nonce: AZAC_LIST.deleteSessionNonce,
+          id: id,
+        },
+        function (res) {
+          if (res.success) {
+            location.reload();
+          } else {
+            alert("Lỗi: " + (res.data ? res.data.message : "Không thể xóa"));
+          }
+        }
+      );
+    });
+
+    // Select All Checkbox
+    $(document).on("change", "#cb-select-all-1", function () {
+      $(".cb-select-1").prop("checked", $(this).prop("checked"));
+    });
+
     // Initial Load
     if (
       $("#azac-tab-sessions").hasClass("active")
@@ -343,7 +427,7 @@
             );
           } else {
             $tbody.html(
-              '<tr><td colspan="5" style="text-align:center; color:red; padding: 20px;">Lỗi tải dữ liệu.</td></tr>',
+              '<tr><td colspan="8" style="text-align:center; color:red; padding: 20px;">Lỗi tải dữ liệu.</td></tr>',
             );
           }
         },
@@ -424,8 +508,30 @@
 
           var editUrl = s.link;
 
+          // Action Buttons
+          var actionButtons =
+            '<a href="' +
+            editUrl +
+            '" class="button button-small" style="display:inline-flex;align-items:center;gap:3px">' +
+            '<span class="dashicons dashicons-edit" style="font-size:14px;width:14px;height:14px;padding-top:2px;"></span> Vào điểm danh' +
+            "</a>";
+
+          if (AZAC_LIST.isAdmin) {
+            actionButtons +=
+              '<button type="button" class="button button-small azac-delete-session-btn" data-id="' +
+              s.id +
+              '" style="color:#a00; border-color:#d00; display:inline-flex; align-items:center; justify-content:center;">' +
+              '<span class="dashicons dashicons-trash" style="font-size:16px;width:16px;height:16px;"></span>' +
+              "</button>";
+          }
+
           return [
             '<tr style="' + rowStyle + '">',
+            AZAC_LIST.isAdmin
+              ? '<td class="check-column" style="text-align:center; vertical-align:middle;"><input type="checkbox" name="session[]" value="' +
+                s.id +
+                '" class="cb-select-1"></td>'
+              : "",
             "<td><strong>" +
               s.class_title +
               "</strong></td>",
@@ -443,13 +549,9 @@
             "<td>" + dateStatusBadge + "</td>",
             "<td>" + rateHtml + "</td>",
             "<td>" + statusBadge + "</td>",
-            "<td>",
-            '<a href="' +
-              editUrl +
-              '" class="button button-small" style="display:inline-flex;align-items:center;gap:3px">',
-            '<span class="dashicons dashicons-edit" style="font-size:14px;width:14px;height:14px;padding-top:2px;"></span> Vào điểm danh',
-            "</a>",
-            "</td>",
+            '<td><div style="display:flex; gap:8px; align-items:center;">',
+            actionButtons,
+            "</div></td>",
             "</tr>",
           ].join("");
         })

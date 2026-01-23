@@ -16,6 +16,8 @@ class AzAC_Core_Sessions
         add_action('wp_ajax_azac_upload_pdf_image', [__CLASS__, 'ajax_upload_pdf_image']);
         add_action('wp_ajax_azac_get_class_session_dates', [__CLASS__, 'ajax_get_class_session_dates']);
         add_action('wp_ajax_azac_teacher_checkin', [__CLASS__, 'ajax_teacher_checkin']);
+        add_action('wp_ajax_azac_delete_session', [__CLASS__, 'ajax_delete_session']);
+        add_action('wp_ajax_azac_bulk_delete_sessions', [__CLASS__, 'ajax_bulk_delete_sessions']);
     }
     public static function ajax_get_class_session_dates()
     {
@@ -350,6 +352,7 @@ class AzAC_Core_Sessions
             $rate_overall = round(($rate_checkin + $rate_mid) / 2);
 
             $out[] = [
+                'id' => intval($s->id),
                 'class_id' => $c_id,
                 'class_title' => $c_title,
                 'session_number' => intval($s->session_number),
@@ -595,5 +598,82 @@ class AzAC_Core_Sessions
         );
 
         wp_send_json_success(['is_checkin' => $is_checkin]);
+    }
+
+    public static function ajax_delete_session()
+    {
+        check_ajax_referer('azac_delete_session', '_ajax_nonce');
+        if (!current_user_can('administrator')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        $id = isset($_POST['id']) ? absint($_POST['id']) : 0;
+        if (!$id) {
+            wp_send_json_error(['message' => 'Invalid ID'], 400);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_sessions';
+
+        $session = $wpdb->get_row($wpdb->prepare("SELECT class_id, session_date FROM $table WHERE id = %d", $id));
+
+        if ($session) {
+            $deleted = $wpdb->delete($table, ['id' => $id], ['%d']);
+            if ($deleted) {
+                $att_table = $wpdb->prefix . 'az_attendance';
+                $wpdb->delete($att_table, [
+                    'class_id' => $session->class_id,
+                    'session_date' => $session->session_date
+                ], ['%d', '%s']);
+
+                wp_send_json_success(['message' => 'Deleted']);
+            }
+        }
+
+        wp_send_json_error(['message' => 'Failed to delete'], 500);
+    }
+
+    public static function ajax_bulk_delete_sessions()
+    {
+        check_ajax_referer('az_bulk_delete_nonce', '_ajax_nonce');
+        if (!current_user_can('administrator')) {
+            wp_send_json_error(['message' => 'Forbidden'], 403);
+        }
+
+        $ids = isset($_POST['session_ids']) ? (array) $_POST['session_ids'] : [];
+        $ids = array_map('absint', $ids);
+        $ids = array_filter($ids);
+
+        if (empty($ids)) {
+            wp_send_json_error(['message' => 'Không có buổi học nào được chọn'], 400);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_sessions';
+        $att_table = $wpdb->prefix . 'az_attendance';
+
+        $ids_placeholder = implode(',', array_fill(0, count($ids), '%d'));
+
+        $sessions = $wpdb->get_results($wpdb->prepare(
+            "SELECT class_id, session_date FROM $table WHERE id IN ($ids_placeholder)",
+            $ids
+        ));
+
+        $deleted = $wpdb->query($wpdb->prepare(
+            "DELETE FROM $table WHERE id IN ($ids_placeholder)",
+            $ids
+        ));
+
+        if ($deleted !== false) {
+            foreach ($sessions as $sess) {
+                $wpdb->delete($att_table, [
+                    'class_id' => $sess->class_id,
+                    'session_date' => $sess->session_date
+                ], ['%d', '%s']);
+            }
+            wp_send_json_success(['message' => 'Deleted ' . $deleted . ' sessions']);
+        }
+
+        wp_send_json_error(['message' => 'Failed to delete'], 500);
     }
 }

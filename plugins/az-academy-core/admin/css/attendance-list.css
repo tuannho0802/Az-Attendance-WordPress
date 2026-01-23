@@ -211,3 +211,49 @@
   word-break: break-word;
   word-break: break-word;
 }
+
+/* Checkbox Column Width */
+.column-cb.check-column,
+.check-column {
+    width: 30px !important;
+    text-align: center !important;
+    vertical-align: middle !important;
+    padding: 8px 0 !important;
+}
+
+/* Ensure actions cell doesn't collapse */
+.azac-actions-cell {
+    white-space: nowrap;
+}
+
+/* Fix Left Overflow & Layout */
+.azac-table-responsive {
+    margin-left: 0 !important;
+    padding: 0 !important;
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    box-shadow: none;
+    border: none;
+    overflow-x: auto;
+}
+
+/* Align Toolbar */
+.azac-session-filters-toolbar {
+    margin-left: 0 !important;
+    padding-left: 0 !important;
+}
+
+table.wp-list-table {
+    margin-left: 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    table-layout: auto !important;
+    box-sizing: border-box !important;
+}
+
+/* Class Column Padding */
+.wp-list-table td:nth-child(2),
+.wp-list-table th:nth-child(2) {
+    padding-left: 10px !important;
+}
