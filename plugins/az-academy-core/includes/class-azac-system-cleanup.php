@@ -22,6 +22,9 @@ class AzAC_System_Cleanup
         add_action('azac_session_updated', [__CLASS__, 'log_session_updated'], 10, 4);
         add_action('azac_session_deleted', [__CLASS__, 'log_session_deleted'], 10, 3);
         add_action('azac_attendance_saved', [__CLASS__, 'log_attendance_saved'], 10, 4);
+
+        // Log Cleanup Hook
+        add_action('wp_ajax_azac_cleanup_logs', [__CLASS__, 'ajax_cleanup_logs']);
     }
 
     // --- LOGGING HELPERS ---
@@ -129,8 +132,10 @@ class AzAC_System_Cleanup
         wp_localize_script('azac-system-cleanup', 'AZAC_SYSTEM', [
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'nonce' => wp_create_nonce('azac_system_cleanup_nonce'),
+            'cleanupLogsNonce' => wp_create_nonce('azac_cleanup_logs_nonce'),
             'confirmDelete' => 'Bạn có chắc chắn muốn xóa dữ liệu này? Hành động không thể hoàn tác.',
-            'confirmBulkDelete' => 'Bạn có chắc chắn muốn dọn dẹp toàn bộ mục đã chọn?'
+            'confirmBulkDelete' => 'Bạn có chắc chắn muốn dọn dẹp toàn bộ mục đã chọn?',
+            'confirmLogDelete' => 'Bạn có chắc chắn muốn xóa các nhật ký đã chọn?'
         ]);
     }
 
@@ -157,7 +162,7 @@ class AzAC_System_Cleanup
             $logs = get_option('azac_system_logs', []);
             if (!is_array($logs))
                 $logs = [];
-            $logs = array_reverse($logs); // Newest first
+            // $logs are stored Newest First (unshift). We keep that order.
         }
 
         ?>
@@ -210,10 +215,11 @@ class AzAC_System_Cleanup
         }
 
         foreach ($attendance as $item) {
+            $class_name = isset($item->class_title) && $item->class_title ? $item->class_title : 'Unknown Class';
             $all_items[] = [
                 'type' => 'attendance',
                 'id' => $item->id, // attendance ID
-                'desc' => 'Điểm danh thừa: Class ID ' . $item->class_id . ', Date ' . $item->session_date . ' (Không khớp buổi học nào)',
+                'desc' => 'Điểm danh thừa: Class <strong>' . $class_name . '</strong> (ID: ' . $item->class_id . '), Date <strong>' . $item->session_date . '</strong>',
                 'date' => isset($item->created_at) ? $item->created_at : 'N/A',
                 'raw_id' => $item->id
             ];
@@ -373,18 +379,42 @@ class AzAC_System_Cleanup
             return;
         }
         ?>
+                                                                <div class="tablenav top">
+                                                                    <div class="alignleft actions bulkactions">
+                                                                        <select id="azac-log-bulk-action">
+                                                                            <option value="-1">Hành động hàng loạt</option>
+                                                                            <option value="delete_selected">Xóa đã chọn</option>
+                                                                            <option value="older_30">Xóa cũ hơn 30 ngày</option>
+                                                                            <option value="delete_all">Xóa toàn bộ nhật ký</option>
+                                                                        </select>
+                                                                        <button type="button" id="azac-do-log-cleanup" class="button action">Áp dụng</button>
+                                                                    </div>
+                                                                    <div class="alignright">
+                                                                        <strong>Tổng số:
+                                                                    <?php echo count($logs); ?> dòng
+                                                                </strong>
+                                                            </div>
+                                                        </div>
+
         <table class="wp-list-table widefat fixed striped">
             <thead>
                 <tr>
+                    <td id="cb" class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-logs"></td>
                     <th style="width:180px;">Thời gian</th>
                     <th style="width:150px;">User thực hiện</th>
                     <th style="width:150px;">Loại hành động</th>
                     <th>Nội dung chi tiết</th>
                 </tr>
             </thead>
-            <tbody>
-                <?php foreach ($logs as $log): ?>
+            <tbody id="azac-logs-tbody">
+                <?php foreach ($logs as $index => $log):
+                    // Create a unique hash for identification
+                    $log_hash = md5($log['time'] . $log['user'] . (isset($log['message']) ? $log['message'] : ''));
+                    ?>
                     <tr>
+                        <th scope="row" class="check-column">
+                            <input type="checkbox" class="cb-select-log" value="<?php echo esc_attr($log_hash); ?>">
+                        </th>
                         <td><?php echo esc_html($log['time']); ?></td>
                         <td><?php echo esc_html($log['user']); ?></td>
                         <td>
@@ -412,6 +442,54 @@ class AzAC_System_Cleanup
                 <?php endforeach; ?>
             </tbody>
         </table>
+        
+        <script>
+        jQuery(document).ready(function($) {
+            // Select All
+            $('#cb-select-all-logs').on('change', function() {
+                $('.cb-select-log').prop('checked', $(this).prop('checked'));
+            });
+
+            // Bulk Action
+            $('#azac-do-log-cleanup').on('click', function() {
+                var action = $('#azac-log-bulk-action').val();
+                if(action === '-1') return;
+
+                var selected = [];
+                if(action === 'delete_selected') {
+                    $('.cb-select-log:checked').each(function() {
+                        selected.push($(this).val());
+                    });
+                    if(selected.length === 0) {
+                        alert('Vui lòng chọn ít nhất một dòng.');
+                        return;
+                    }
+                }
+
+                if(!confirm(AZAC_SYSTEM.confirmLogDelete)) return;
+
+                var data = {
+                    action: 'azac_cleanup_logs',
+                    nonce: AZAC_SYSTEM.cleanupLogsNonce,
+                    mode: action,
+                    items: selected
+                };
+
+                var $btn = $(this);
+                $btn.prop('disabled', true).text('Đang xử lý...');
+
+                $.post(AZAC_SYSTEM.ajaxUrl, data, function(res) {
+                    if(res.success) {
+                        alert(res.data.message);
+                        location.reload();
+                    } else {
+                        alert('Lỗi: ' + (res.data || 'Unknown error'));
+                        $btn.prop('disabled', false).text('Áp dụng');
+                    }
+                });
+            });
+        });
+        </script>
         <?php
     }
 
@@ -604,21 +682,22 @@ class AzAC_System_Cleanup
         }
 
         // Find reviews where (class_id, session_date) pair is NOT in sessions table
-        // Or session exists but is logically deleted (if you have is_deleted column, but current schema deletes rows)
-        // Here we assume session row deletion = deleted session.
+        // OR Class is deleted
 
         $orphaned = $wpdb->get_results("
-            SELECT f.*, NULL as session_id 
+            SELECT f.*, p.post_title as class_title
             FROM $feedback_table f 
+            LEFT JOIN {$wpdb->posts} p ON f.class_id = p.ID
             LEFT JOIN $sess_table s ON f.class_id = s.class_id AND f.session_date = s.session_date
-            WHERE s.id IS NULL
+            WHERE p.ID IS NULL OR s.id IS NULL
             LIMIT 100
         ");
 
         $items = [];
         foreach ($orphaned as $o) {
+            $class_name = $o->class_title ? $o->class_title : 'Unknown Class';
             $o->type = 'review';
-            $o->reason = 'Review thuộc buổi học (Class ID: ' . $o->class_id . ', Date: ' . $o->session_date . ') đã bị xóa khỏi hệ thống.';
+            $o->reason = 'Review thuộc buổi học (Class: <strong>' . $class_name . '</strong>, Date: ' . $o->session_date . ') đã bị xóa.';
             $items[] = $o;
         }
         return $items;
@@ -636,17 +715,19 @@ class AzAC_System_Cleanup
         }
 
         $orphaned = $wpdb->get_results("
-            SELECT t.* 
+            SELECT t.*, p.post_title as class_title
             FROM $table t 
+            LEFT JOIN {$wpdb->posts} p ON t.class_id = p.ID
             LEFT JOIN $sess_table s ON t.class_id = s.class_id AND t.session_date = s.session_date
-            WHERE s.id IS NULL
+            WHERE p.ID IS NULL OR s.id IS NULL
             LIMIT 100
         ");
 
         $items = [];
         foreach ($orphaned as $o) {
+            $class_name = $o->class_title ? $o->class_title : 'Unknown Class';
             $o->type = 'teaching_hours'; // Custom type
-            $o->reason = 'Giờ dạy thuộc buổi học (Class ID: ' . $o->class_id . ', Date: ' . $o->session_date . ') đã bị xóa.';
+            $o->reason = 'Giờ dạy thuộc buổi học (Class: <strong>' . $class_name . '</strong>, Date: ' . $o->session_date . ') đã bị xóa.';
             $items[] = $o;
         }
         return $items;
@@ -754,12 +835,15 @@ class AzAC_System_Cleanup
             return [];
         }
 
-        // Find attendance records where (class_id, session_date) pair is NOT in sessions table
+        // Find attendance records where Class is deleted OR Session is deleted
+        // Join wp_posts to get Class Title
         return $wpdb->get_results("
-            SELECT a.* 
+            SELECT a.*, p.post_title as class_title
             FROM $att_table a 
+            LEFT JOIN {$wpdb->posts} p ON a.class_id = p.ID
             LEFT JOIN $sess_table s ON a.class_id = s.class_id AND a.session_date = s.session_date
-            WHERE s.id IS NULL
+            WHERE p.ID IS NULL 
+               OR (s.id IS NULL AND a.session_date != '0000-00-00')
             LIMIT 100
         ");
     }
@@ -871,6 +955,70 @@ class AzAC_System_Cleanup
                 'reviews' => $count_reviews,
                 'meta' => $count_meta
             ]
+        ]);
+    }
+
+    public static function ajax_cleanup_logs()
+    {
+        check_ajax_referer('azac_cleanup_logs_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Forbidden');
+        }
+
+        $mode = isset($_POST['mode']) ? sanitize_text_field($_POST['mode']) : '';
+        $items = isset($_POST['items']) ? $_POST['items'] : []; // Array of hashes
+
+        $logs = get_option('azac_system_logs', []);
+        if (!is_array($logs))
+            $logs = [];
+
+        // Note: logs are stored Newest First (index 0 is newest)
+        // Re-indexing is automatic with array_values if we unset
+
+        $initial_count = count($logs);
+        $deleted = 0;
+
+        if ($mode === 'delete_all') {
+            $logs = [];
+            $deleted = $initial_count;
+        } elseif ($mode === 'older_30') {
+            $cutoff = strtotime('-30 days');
+            $filtered = [];
+            foreach ($logs as $log) {
+                // Time format is mysql (Y-m-d H:i:s)
+                $time = strtotime($log['time']);
+                if ($time >= $cutoff) {
+                    $filtered[] = $log;
+                } else {
+                    $deleted++;
+                }
+            }
+            $logs = $filtered;
+        } elseif ($mode === 'delete_selected') {
+            if (empty($items)) {
+                wp_send_json_error('Chưa chọn nhật ký nào.');
+            }
+
+            $filtered = [];
+            foreach ($logs as $log) {
+                $hash = md5($log['time'] . $log['user'] . (isset($log['message']) ? $log['message'] : ''));
+                if (in_array($hash, $items)) {
+                    $deleted++;
+                } else {
+                    $filtered[] = $log;
+                }
+            }
+            $logs = $filtered;
+        } else {
+            wp_send_json_error('Chế độ không hợp lệ.');
+        }
+
+        update_option('azac_system_logs', array_values($logs));
+
+        wp_send_json_success([
+            'message' => "Đã xóa $deleted dòng nhật ký.",
+            'remaining' => count($logs)
         ]);
     }
 }
