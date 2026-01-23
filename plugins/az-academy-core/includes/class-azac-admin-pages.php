@@ -96,23 +96,62 @@ class AzAC_Admin_Pages
         echo '</div>';
         if ($is_teacher || $is_admin || $is_student) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
-            echo '<div class="azac-session-filters">';
-            echo '<label>Nhóm ';
-            echo '<select id="azac-filter-group"><option value="session">Buổi học</option><option value="class">Lớp học</option></select>';
-            echo '</label> ';
-            echo '<label>Sắp xếp ';
-            echo '<select id="azac-filter-sort"><option value="date_desc">Ngày mới nhất</option><option value="date_asc">Ngày cũ nhất</option><option value="rate_desc">Tỉ lệ có mặt cao→thấp</option><option value="rate_asc">Tỉ lệ có mặt thấp→cao</option></select>';
-            echo '</label> ';
-            echo '<label>Lọc lớp ';
-            echo '<select id="azac-filter-class"><option value="">Tất cả</option></select>';
-            echo '</label>';
-            echo '<label><input type="text" id="azac-filter-search" placeholder="Tìm kiếm lớp..." style="margin-left:5px"></label>';
-            echo '<label style="margin-left:10px"><input type="checkbox" id="azac-filter-today" value="1"> Hôm nay</label>';
+
+            // New Toolbar
+            echo '<div class="azac-session-filters-toolbar" style="background:#f0f0f1; padding:10px; border:1px solid #c3c4c7; border-radius:4px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px;">';
+
+            // Class Filter (Select2)
+            echo '<div style="flex:1; min-width:200px;">';
+            echo '<select id="azac-filter-class" class="azac-select2" style="width:100%">';
+            echo '<option value="">Tất cả lớp học</option>';
+            echo '</select>';
             echo '</div>';
-            echo '<div id="azac-sessions-grid" class="azac-grid">';
-            echo '<div class="azac-card"><div class="azac-card-title">Đang tải danh sách buổi học...</div></div>';
+
+            // Date Range
+            echo '<div style="display:flex; align-items:center; gap:5px;">';
+            echo '<input type="text" id="azac-filter-date-start" placeholder="Từ ngày" class="regular-text" style="width:110px">';
+            echo '<span>-</span>';
+            echo '<input type="text" id="azac-filter-date-end" placeholder="Đến ngày" class="regular-text" style="width:110px">';
             echo '</div>';
+
+            // Sort
+            echo '<div>';
+            echo '<select id="azac-filter-sort" style="height:30px; line-height:1;">';
+            echo '<option value="date_desc">Mới nhất</option>';
+            echo '<option value="date_asc">Cũ nhất</option>';
+            echo '<option value="rate_asc">Tỷ lệ vắng cao nhất</option>';
+            echo '</select>';
             echo '</div>';
+
+            // Search
+            echo '<div>';
+            echo '<input type="text" id="azac-filter-search" placeholder="Tìm kiếm..." style="height:30px;">';
+            echo '</div>';
+
+            echo '</div>'; // End Toolbar
+
+            // Table
+            echo '<div class="azac-table-responsive" style="overflow-x:auto;">';
+            echo '<table class="wp-list-table widefat fixed striped table-view-list">';
+            echo '<thead>';
+            echo '<tr>';
+            echo '<th style="width: 25%;">Lớp</th>';
+            echo '<th style="width: 8%; text-align:center;">Buổi</th>';
+            echo '<th style="width: 17%;">Thời gian</th>';
+            echo '<th style="width: 20%;">Tỷ lệ có mặt</th>';
+            echo '<th style="width: 15%;">Trạng thái</th>';
+            echo '<th style="width: 15%;">Hành động</th>';
+            echo '</tr>';
+            echo '</thead>';
+            echo '<tbody id="azac-sessions-table-body">';
+            echo '<tr><td colspan="6">Đang tải danh sách buổi học...</td></tr>';
+            echo '</tbody>';
+            echo '</table>';
+            echo '</div>';
+
+            echo '<div id="azac-sessions-pagination"></div>';
+            echo '</div>'; // End #azac-tab-sessions
+
             if ($is_student) {
                 echo '<div id="azac-tab-stats" class="azac-tab">';
                 echo '<div id="azac-stats-grid" class="azac-grid">';

@@ -193,6 +193,8 @@ class AzAC_Core_Sessions
         $sort = isset($_POST['sort']) ? sanitize_text_field($_POST['sort']) : 'date_desc';
         $search = isset($_POST['search']) ? sanitize_text_field($_POST['search']) : '';
         $filter_today = isset($_POST['filter_today']) ? intval($_POST['filter_today']) : 0;
+        $date_start = isset($_POST['date_start']) ? sanitize_text_field($_POST['date_start']) : '';
+        $date_end = isset($_POST['date_end']) ? sanitize_text_field($_POST['date_end']) : '';
 
         $allowed_class_ids = [];
         $args = [
@@ -207,9 +209,9 @@ class AzAC_Core_Sessions
         }
 
         if ($is_teacher && !$is_admin) {
-                $args['meta_key'] = 'az_teacher_user';
-                $args['meta_value'] = intval($user->ID);
-            }
+            $args['meta_key'] = 'az_teacher_user';
+            $args['meta_value'] = intval($user->ID);
+        }
 
         $all_classes_ids = get_posts($args);
         $available_classes = [];
@@ -237,6 +239,8 @@ class AzAC_Core_Sessions
             }
         }
 
+        // Filter by class_id from POST
+        $filter_class_id = isset($_POST['filter_class_id']) ? absint($_POST['filter_class_id']) : $filter_class_id;
         if ($filter_class_id) {
             if (in_array($filter_class_id, $allowed_class_ids)) {
                 $allowed_class_ids = [$filter_class_id];
@@ -252,29 +256,62 @@ class AzAC_Core_Sessions
         $sess_table = $wpdb->prefix . 'az_sessions';
         $ids_placeholder = implode(',', array_fill(0, count($allowed_class_ids), '%d'));
 
+        // Build Date Where Clause
+        $where_sql = "";
+        $params_where = $allowed_class_ids;
+
+        if ($date_start) {
+            $ds = date('Y-m-d', strtotime($date_start));
+            $where_sql .= " AND session_date >= %s";
+            $params_where[] = $ds;
+        }
+        if ($date_end) {
+            $de = date('Y-m-d', strtotime($date_end));
+            $where_sql .= " AND session_date <= %s";
+            $params_where[] = $de;
+        }
+        if ($filter_today && !$date_start && !$date_end) {
+            $today = current_time('Y-m-d');
+            $where_sql .= " AND session_date = %s";
+            $params_where[] = $today;
+        }
+
         $total_items = $wpdb->get_var($wpdb->prepare(
-            "SELECT COUNT(*) FROM {$sess_table} WHERE class_id IN ($ids_placeholder)",
-            $allowed_class_ids
+            "SELECT COUNT(*) FROM {$sess_table} WHERE class_id IN ($ids_placeholder) {$where_sql}",
+            $params_where
         ));
 
         $total_pages = ceil($total_items / $per_page);
         $offset = ($paged - 1) * $per_page;
 
         $order_sql = "ORDER BY session_date DESC, session_time DESC";
+        $join_sql = "";
+        $select_extra = "";
+
         if ($sort === 'date_asc') {
             $order_sql = "ORDER BY session_date ASC, session_time ASC";
+        } elseif ($sort === 'rate_asc' || $sort === 'rate_desc') {
+            // Calculate attendance rate for sorting
+            // Rate = (Sum of status=1) / (Count of records)
+            // Using a subquery might be slow but functional
+            $att_table = $wpdb->prefix . 'az_attendance';
+            $select_extra = ", (SELECT COALESCE(SUM(status),0) / NULLIF(COUNT(*),0) FROM {$att_table} WHERE class_id={$sess_table}.class_id AND session_date={$sess_table}.session_date) as att_rate";
+
+            if ($sort === 'rate_asc') {
+                // High Absence = Low Attendance Rate -> rate ASC
+                $order_sql = "ORDER BY att_rate ASC, session_date DESC";
+            } else {
+                $order_sql = "ORDER BY att_rate DESC, session_date DESC";
+            }
         }
 
-        $where_sql = "";
-        if ($filter_today) {
-            $today = current_time('Y-m-d');
-            $where_sql = $wpdb->prepare(" AND session_date = %s", $today);
-        }
+        // Calculate Session Number (Ordinal)
+        $select_extra .= ", (SELECT COUNT(*) FROM {$sess_table} as s2 WHERE s2.class_id = {$sess_table}.class_id AND s2.session_date <= {$sess_table}.session_date) as session_number";
 
-        $rows = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$sess_table} WHERE class_id IN ($ids_placeholder) {$where_sql} {$order_sql} LIMIT %d OFFSET %d",
-            array_merge($allowed_class_ids, [$per_page, $offset])
-        ));
+        $query = "SELECT * {$select_extra} FROM {$sess_table} WHERE class_id IN ($ids_placeholder) {$where_sql} {$order_sql} LIMIT %d OFFSET %d";
+        $query_params = array_merge($params_where, [$per_page, $offset]);
+
+        $rows = $wpdb->get_results($wpdb->prepare($query, $query_params));
 
         $out = [];
         foreach ($rows as $s) {
@@ -315,6 +352,7 @@ class AzAC_Core_Sessions
             $out[] = [
                 'class_id' => $c_id,
                 'class_title' => $c_title,
+                'session_number' => intval($s->session_number),
                 'date' => $s_date,
                 'time' => $s->session_time,
                 'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $c_id . '&session_date=' . urlencode($s_date)),
