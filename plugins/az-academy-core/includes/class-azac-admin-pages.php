@@ -375,9 +375,66 @@ class AzAC_Admin_Pages
         }
 
         // Execute Main Query
-        $user_query = new WP_User_Query($args);
-        $students = $user_query->get_results();
-        $total_items = $user_query->get_total();
+        global $wpdb;
+        $students = [];
+        $total_items = 0;
+
+        if ($orderby === 'attendance') {
+            // Sort by Attendance (Custom Logic)
+            $args['number'] = -1; // Fetch all for sorting
+            $args['fields'] = 'ID';
+            $user_query = new WP_User_Query($args);
+            $all_uids = $user_query->get_results();
+            $total_items = count($all_uids);
+
+            if ($all_uids) {
+                // 1. Map User ID -> CPT ID
+                $placeholders = implode(',', array_fill(0, count($all_uids), '%d'));
+                $sql_cpt = "SELECT pm.meta_value as user_id, p.ID as cpt_id FROM $wpdb->postmeta pm JOIN $wpdb->posts p ON pm.post_id = p.ID WHERE p.post_type = 'az_student' AND p.post_status = 'publish' AND pm.meta_key = 'az_user_id' AND pm.meta_value IN ($placeholders)";
+                $cpt_results = $wpdb->get_results($wpdb->prepare($sql_cpt, $all_uids));
+                $cpt_map = [];
+                foreach ($cpt_results as $r)
+                    $cpt_map[$r->user_id] = $r->cpt_id;
+
+                // 2. Map CPT ID -> Attendance Score
+                $cpt_ids = array_values($cpt_map);
+                $stats_map = [];
+                if ($cpt_ids) {
+                    $cpt_placeholders = implode(',', array_fill(0, count($cpt_ids), '%d'));
+                    $sql_stats = "SELECT student_id, COUNT(*) as total, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) as present FROM {$wpdb->prefix}az_attendance WHERE student_id IN ($cpt_placeholders) GROUP BY student_id";
+                    $stats_results = $wpdb->get_results($wpdb->prepare($sql_stats, $cpt_ids));
+                    foreach ($stats_results as $r) {
+                        $stats_map[$r->student_id] = ($r->total > 0) ? round(($r->present / $r->total) * 100) : 0;
+                    }
+                }
+
+                // 3. Sort
+                usort($all_uids, function ($uid_a, $uid_b) use ($cpt_map, $stats_map, $order) {
+                    $cpt_a = isset($cpt_map[$uid_a]) ? $cpt_map[$uid_a] : 0;
+                    $cpt_b = isset($cpt_map[$uid_b]) ? $cpt_map[$uid_b] : 0;
+                    $score_a = isset($stats_map[$cpt_a]) ? $stats_map[$cpt_a] : 0;
+                    $score_b = isset($stats_map[$cpt_b]) ? $stats_map[$cpt_b] : 0;
+
+                    if ($score_a == $score_b)
+                        return 0;
+                    return ($order === 'ASC') ? ($score_a <=> $score_b) : ($score_b <=> $score_a);
+                });
+
+                // 4. Slice
+                $offset = ($current_page - 1) * $per_page;
+                $sliced_ids = array_slice($all_uids, $offset, $per_page);
+
+                if ($sliced_ids) {
+                    $students = get_users(['include' => $sliced_ids, 'orderby' => 'include']);
+                }
+            }
+        } else {
+            // Standard Query
+            $user_query = new WP_User_Query($args);
+            $students = $user_query->get_results();
+            $total_items = $user_query->get_total();
+        }
+
         $total_pages = ceil($total_items / $per_page);
 
         // Helper for Sort Links
@@ -391,8 +448,6 @@ class AzAC_Admin_Pages
         if (empty($students)) {
             echo '<p>Không tìm thấy học viên nào.</p>';
         } else {
-            global $wpdb;
-
             // 1. Prepare Class Map (Get classes for students)
             $student_classes_map = [];
             $class_rows = $wpdb->get_results("
@@ -416,9 +471,11 @@ class AzAC_Admin_Pages
                 }
             }
 
-            // 2. Batch fetch CPT IDs for Performance (Simulate LEFT JOIN)
+            // 2. Batch fetch CPT IDs & Attendance Stats
             $student_uids = wp_list_pluck($students, 'ID');
             $user_cpt_map = [];
+            $attendance_map = [];
+
             if (!empty($student_uids)) {
                 $placeholders = implode(',', array_fill(0, count($student_uids), '%d'));
                 $sql = "
@@ -432,8 +489,20 @@ class AzAC_Admin_Pages
                 ";
                 $prepared = $wpdb->prepare($sql, $student_uids);
                 $results = $wpdb->get_results($prepared);
+                $cpt_ids_for_stats = [];
                 foreach ($results as $r) {
                     $user_cpt_map[$r->user_id] = $r->cpt_id;
+                    $cpt_ids_for_stats[] = $r->cpt_id;
+                }
+
+                // Fetch Stats for current page students
+                if ($cpt_ids_for_stats) {
+                    $cpt_placeholders = implode(',', array_fill(0, count($cpt_ids_for_stats), '%d'));
+                    $sql_stats = "SELECT student_id, COUNT(*) as total, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) as present FROM {$wpdb->prefix}az_attendance WHERE student_id IN ($cpt_placeholders) GROUP BY student_id";
+                    $stats_results = $wpdb->get_results($wpdb->prepare($sql_stats, $cpt_ids_for_stats));
+                    foreach ($stats_results as $r) {
+                        $attendance_map[$r->student_id] = ($r->total > 0) ? round(($r->present / $r->total) * 100) : 0;
+                    }
                 }
             }
 
@@ -445,6 +514,7 @@ class AzAC_Admin_Pages
             echo '<th>Số điện thoại</th>';
             echo '<th>Lĩnh vực kinh doanh</th>';
             echo '<th>Trạng thái lớp</th>';
+            echo '<th><a href="' . esc_url($sort_link('attendance')) . '" style="color:#fff;">Chuyên cần ' . ($orderby == 'attendance' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
             echo '<th>Hành động</th>';
             echo '</tr></thead>';
             echo '<tbody>';
@@ -493,6 +563,23 @@ class AzAC_Admin_Pages
 
                 // Class Status
                 echo '<td>' . $class_status . '</td>';
+
+                // Attendance Badge
+                $percent = (isset($attendance_map) && isset($attendance_map[$cpt_id])) ? $attendance_map[$cpt_id] : 0;
+                $badge_bg = '#e74c3c'; // Danger (< 50%)
+                if ($percent >= 80) {
+                    $badge_bg = '#2ecc71'; // Safe (>= 80%)
+                } elseif ($percent >= 50) {
+                    $badge_bg = '#f39c12'; // Warning (50-79%)
+                }
+
+                echo '<td>';
+                if ($cpt_id && isset($attendance_map) && isset($attendance_map[$cpt_id])) {
+                    echo '<span style="background-color:' . $badge_bg . '; color:#fff; padding:3px 8px; border-radius:10px; font-weight:bold; font-size:12px;">' . $percent . '%</span>';
+                } else {
+                    echo '<span style="color:#999;">-</span>';
+                }
+                echo '</td>';
 
                 // Actions
                 echo '<td>';
