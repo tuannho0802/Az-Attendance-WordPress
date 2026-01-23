@@ -373,14 +373,69 @@ class AzAC_Core_CPT
             echo '<h4 style="margin:0 0 10px 0;">Chọn từ danh sách (Học viên chưa vào lớp)</h4>';
 
             // Get students not in $selected
-            $args_available = [
-                'post_type' => 'az_student',
-                'posts_per_page' => 100, // Limit to 100
-                'post__not_in' => !empty($selected) ? $selected : [0],
-                'orderby' => 'title',
-                'order' => 'ASC'
+            // NEW LOGIC: Query Users directly, then map/create CPTs
+            // 1. Get WP Users with role 'az_student'
+            $user_args = [
+                'role' => 'az_student',
+                'number' => 100, // Limit
+                'orderby' => 'display_name',
+                'order' => 'ASC',
+                'fields' => 'all_with_meta'
             ];
-            $available_posts = get_posts($args_available);
+            
+            // Filter out users who are already linked to CPTs that are in $selected
+            // But we don't know the User->CPT mapping yet. 
+            // So we fetch users, then filter.
+            // Optimization: We can't easily exclude users in $selected in WP_User_Query 
+            // because $selected contains CPT IDs, not User IDs.
+            
+            $users = get_users($user_args);
+            $available_posts = [];
+            
+            foreach ($users as $u) {
+                // Check if CPT exists for this user
+                // We use a direct query for performance inside loop? 
+                // Or better: fetch all CPTs for these users in one go before loop?
+                // Given limit 100, one-by-one is okay, but batch is better.
+                // For simplicity and robustness (handling "create if missing"), let's check one by one or cached.
+                
+                // Try to find existing CPT
+                $cpt_args = [
+                    'post_type' => 'az_student',
+                    'posts_per_page' => 1,
+                    'meta_key' => 'az_user_id',
+                    'meta_value' => $u->ID,
+                    'fields' => 'ids'
+                ];
+                $cpt_ids = get_posts($cpt_args);
+                $cpt_id = !empty($cpt_ids) ? $cpt_ids[0] : 0;
+                
+                if ($cpt_id) {
+                    // CPT exists. Check if it's in the class ($selected)
+                    if (in_array($cpt_id, $selected)) {
+                        continue; // Already in class
+                    }
+                } else {
+                    // CPT does not exist. Create it!
+                    $cpt_id = wp_insert_post([
+                        'post_type' => 'az_student',
+                        'post_title' => $u->display_name ?: $u->user_login,
+                        'post_status' => 'publish'
+                    ]);
+                    if ($cpt_id && !is_wp_error($cpt_id)) {
+                        update_post_meta($cpt_id, 'az_user_id', $u->ID);
+                    } else {
+                        continue; // Failed to create
+                    }
+                }
+                
+                // Create a dummy post object for compatibility with the loop below
+                $p = get_post($cpt_id);
+                if ($p) {
+                    $available_posts[] = $p;
+                }
+            }
+
 
             if ($available_posts) {
                 echo '<div class="azac-select-all-wrap"><label><input type="checkbox" id="azac_select_all_available"> Chọn tất cả</label></div>';

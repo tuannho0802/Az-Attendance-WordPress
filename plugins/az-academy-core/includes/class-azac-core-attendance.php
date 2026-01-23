@@ -24,70 +24,89 @@ class AzAC_Core_Attendance
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
-        $args = [
-            'post_type' => 'az_student',
-            'posts_per_page' => 20,
-            'post_status' => 'publish',
+        // NEW LOGIC: Search Users first, then ensure CPTs exist
+        $u_args = [
+            'role' => 'az_student',
+            'number' => 20, // Limit
+            'fields' => 'all_with_meta'
         ];
 
-        // Meta query for linking to users matching criteria
         $meta_query = [];
-        $user_ids = [];
 
-        // If searching by user fields (email, phone, biz), we find users first
-        if ($email || $phone || $biz) {
-            $u_args = [
-                'number' => -1,
-                'fields' => 'ID',
-            ];
-            $u_meta = [];
-            if ($email) {
-                $u_args['search'] = '*' . $email . '*';
-                $u_args['search_columns'] = ['user_email'];
-            }
-            if ($phone) {
-                $u_meta[] = [
-                    'key' => 'billing_phone', // Common phone key, or use 'phone'
-                    'value' => $phone,
-                    'compare' => 'LIKE'
-                ];
-            }
-            if ($biz) {
-                $u_meta[] = [
-                    'key' => 'az_business_field',
-                    'value' => $biz,
-                    'compare' => 'LIKE'
-                ];
-            }
-            if (!empty($u_meta)) {
-                $u_args['meta_query'] = $u_meta;
-            }
-
-            $found_users = get_users($u_args);
-            if (empty($found_users)) {
-                // If specific user criteria provided but no users found, return empty
-                wp_send_json_success(['results' => []]);
-            }
-            $user_ids = $found_users;
+        // Search by Name (using 'search' param which covers display_name, email, login)
+        if ($name) {
+            $u_args['search'] = '*' . $name . '*';
+            $u_args['search_columns'] = ['display_name', 'user_login', 'user_email'];
         }
 
-        if (!empty($user_ids)) {
+        // Search by Email (specific)
+        if ($email) {
+            // If email is specific, strict search? Or just use it.
+            // WP_User_Query doesn't combine 'search' (OR) with 'user_email' (AND) easily if both present.
+            // But usually only one field is filled by the UI?
+            // UI has separate fields.
+            // If email is present, filtering by email is precise.
+            $u_args['search'] = '*' . $email . '*';
+            $u_args['search_columns'] = ['user_email'];
+        }
+
+        // Meta query for Phone / Biz
+        if ($phone) {
             $meta_query[] = [
-                'key' => 'az_user_id',
-                'value' => $user_ids,
-                'compare' => 'IN'
+                'key' => 'billing_phone', // Check both billing_phone and phone?
+                'value' => $phone,
+                'compare' => 'LIKE'
+            ];
+            // Note: OR logic for phone keys is hard in single WP_User_Query meta_query without advanced syntax.
+            // Assuming billing_phone is primary.
+        }
+        if ($biz) {
+            $meta_query[] = [
+                'key' => 'az_business_field',
+                'value' => $biz,
+                'compare' => 'LIKE'
             ];
         }
 
         if (!empty($meta_query)) {
-            $args['meta_query'] = $meta_query;
+            $u_args['meta_query'] = $meta_query;
         }
 
-        if ($name) {
-            $args['s'] = $name;
+        $users = get_users($u_args);
+        $posts = [];
+
+        foreach ($users as $u) {
+            // Try to find existing CPT
+            $cpt_args = [
+                'post_type' => 'az_student',
+                'posts_per_page' => 1,
+                'meta_key' => 'az_user_id',
+                'meta_value' => $u->ID,
+                'fields' => 'ids'
+            ];
+            $cpt_ids = get_posts($cpt_args);
+            $cpt_id = !empty($cpt_ids) ? $cpt_ids[0] : 0;
+
+            if (!$cpt_id) {
+                // CPT does not exist. Create it!
+                $cpt_id = wp_insert_post([
+                    'post_type' => 'az_student',
+                    'post_title' => $u->display_name ?: $u->user_login,
+                    'post_status' => 'publish'
+                ]);
+                if ($cpt_id && !is_wp_error($cpt_id)) {
+                    update_post_meta($cpt_id, 'az_user_id', $u->ID);
+                } else {
+                    continue;
+                }
+            }
+
+            $p = get_post($cpt_id);
+            if ($p) {
+                $posts[] = $p;
+            }
         }
 
-        $posts = get_posts($args);
         $results = [];
         foreach ($posts as $p) {
             $uid = get_post_meta($p->ID, 'az_user_id', true);
