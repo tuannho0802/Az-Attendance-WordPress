@@ -441,18 +441,22 @@ class AzAC_Admin_Pages
             }
         }
         echo '</div>';
-        
+
         AzAC_Core_Helper::render_pagination($current_page, $total_pages);
 
         $stats_nonce = wp_create_nonce('azac_student_stats');
 
         ?>
-        <div id="azac-student-modal" class="azac-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
-            <div class="azac-modal-content" style="background:#fff;padding:20px;border-radius:8px;width:90%;max-width:600px;position:relative;max-height:90vh;overflow-y:auto;">
-                <span class="azac-close" style="position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;">&times;</span>
+        <div id="azac-student-modal" class="azac-modal"
+            style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:9999;align-items:center;justify-content:center;">
+            <div class="azac-modal-content"
+                style="background:#fff;padding:20px;border-radius:8px;width:90%;max-width:600px;position:relative;max-height:90vh;overflow-y:auto;">
+                <span class="azac-close"
+                    style="position:absolute;top:10px;right:15px;font-size:24px;cursor:pointer;">&times;</span>
                 <div class="azac-modal-body">
                     <div style="text-align:center;margin-bottom:20px;">
-                        <img id="modal-avatar" src="" style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin-bottom:10px;">
+                        <img id="modal-avatar" src=""
+                            style="width:100px;height:100px;border-radius:50%;object-fit:cover;margin-bottom:10px;">
                         <h2 id="modal-name" style="margin:0 0 5px;"></h2>
                         <div style="font-size:13px;color:#666;">
                             <span id="modal-email"></span> • <span id="modal-phone"></span>
@@ -461,7 +465,7 @@ class AzAC_Admin_Pages
                             Lĩnh vực: <span id="modal-business"></span> • Đăng ký: <span id="modal-date"></span>
                         </div>
                     </div>
-                    
+
                     <div style="border-top:1px solid #eee;padding-top:15px;">
                         <h3 style="margin-top:0;margin-bottom:15px;font-size:16px;color:#0f6d5e;">Quá trình học tập</h3>
                         <div id="modal-classes-container">
@@ -486,9 +490,9 @@ class AzAC_Admin_Pages
                     $('#modal-date').text(data.date);
 
                     if (!data.id) {
-                         $('#modal-classes-container').html('<p style="text-align:center;color:#e74c3c;">Học viên chưa tham gia lớp học nào.</p>');
-                         $('#azac-student-modal').css('display', 'flex');
-                         return;
+                        $('#modal-classes-container').html('<p style="text-align:center;color:#e74c3c;">Học viên chưa tham gia lớp học nào.</p>');
+                        $('#azac-student-modal').css('display', 'flex');
+                        return;
                     }
 
                     $('#modal-classes-container').html('<p style="text-align:center;color:#666;">Đang tải dữ liệu...</p>');
@@ -511,11 +515,31 @@ class AzAC_Admin_Pages
                                 } else {
                                     html += '<div class="azac-modal-list" style="display:flex;flex-direction:column;gap:15px;">';
                                     res.data.classes.forEach(function (c) {
-                                        var present = c.checkin.present;
-                                        var absent = c.checkin.absent;
-                                        var total = present + absent;
-                                        var percent = total > 0 ? Math.round(present / total * 100) : 0;
-                                        var color = percent >= 80 ? '#2ecc71' : (percent >= 50 ? '#f39c12' : '#e74c3c');
+                                        // Calculate based on SLOTS (checkpoints) to match user expectation (1 checkin + 1 mid = 2 slots)
+                                        var present_slots = 0;
+                                        var total_slots = 0;
+                                        if (c.sessions && Array.isArray(c.sessions)) {
+                                            c.sessions.forEach(function (s) {
+                                                // Check Start (Dau gio)
+                                                if (s.checkin !== null) {
+                                                    total_slots++;
+                                                    if (s.checkin == 1) present_slots++;
+                                                }
+                                                // Check Mid (Giua gio)
+                                                if (s.mid !== null) {
+                                                    total_slots++;
+                                                    if (s.mid == 1) present_slots++;
+                                                }
+                                            });
+                                        }
+                                        var present = present_slots;
+                                        var absent = total_slots - present_slots;
+                                        var percent = total_slots > 0 ? Math.round((present / total_slots) * 100) : 0;
+
+                                        // Color logic: >80% Green, 50-80% Yellow, <50% Red
+                                        var color = '#e74c3c';
+                                        if (percent > 80) color = '#2ecc71';
+                                        else if (percent >= 50) color = '#f39c12';
 
                                         html += '<div class="azac-class-item" style="border:1px solid #eee;border-radius:8px;padding:10px;">';
                                         html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
