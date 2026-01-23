@@ -315,13 +315,17 @@ class AzAC_Admin_Pages
         $per_page = 20;
         $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
 
+        // Sorting
+        $orderby = isset($_GET['orderby']) ? sanitize_text_field($_GET['orderby']) : 'display_name';
+        $order = isset($_GET['order']) ? sanitize_text_field($_GET['order']) : 'ASC';
+
         // Build Query Args
         $args = [
             'role' => 'az_student',
             'number' => $per_page,
             'paged' => $current_page,
-            'orderby' => 'display_name',
-            'order' => 'ASC',
+            'orderby' => $orderby,
+            'order' => $order,
         ];
 
         // Search Logic
@@ -370,16 +374,46 @@ class AzAC_Admin_Pages
         $total_items = $user_query->get_total();
         $total_pages = ceil($total_items / $per_page);
 
-        // Render Grid
-        echo '<div class="azac-grid">';
+        // Helper for Sort Links
+        $base_url = remove_query_arg(['paged'], admin_url('admin.php?page=azac-students-list'));
+        $sort_link = function ($col) use ($base_url, $orderby, $order) {
+            $new_order = ($orderby === $col && $order === 'ASC') ? 'DESC' : 'ASC';
+            return add_query_arg(['orderby' => $col, 'order' => $new_order], $base_url);
+        };
+
+        // Render Table
         if (empty($students)) {
             echo '<p>Không tìm thấy học viên nào.</p>';
         } else {
-            // Batch fetch CPT IDs for Performance (Simulate LEFT JOIN)
+            global $wpdb;
+
+            // 1. Prepare Class Map (Get classes for students)
+            $student_classes_map = [];
+            $class_rows = $wpdb->get_results("
+                SELECT p.ID, p.post_title, pm.meta_value 
+                FROM $wpdb->posts p 
+                LEFT JOIN $wpdb->postmeta pm ON p.ID = pm.post_id AND pm.meta_key = 'az_students'
+                WHERE p.post_type = 'az_class' AND p.post_status = 'publish'
+            ");
+
+            if ($class_rows) {
+                foreach ($class_rows as $cr) {
+                    $sids = maybe_unserialize($cr->meta_value);
+                    if (is_array($sids)) {
+                        foreach ($sids as $sid) {
+                            if (!isset($student_classes_map[$sid])) {
+                                $student_classes_map[$sid] = [];
+                            }
+                            $student_classes_map[$sid][] = $cr->post_title;
+                        }
+                    }
+                }
+            }
+
+            // 2. Batch fetch CPT IDs for Performance (Simulate LEFT JOIN)
             $student_uids = wp_list_pluck($students, 'ID');
             $user_cpt_map = [];
             if (!empty($student_uids)) {
-                global $wpdb;
                 $placeholders = implode(',', array_fill(0, count($student_uids), '%d'));
                 $sql = "
                     SELECT pm.meta_value as user_id, p.ID as cpt_id 
@@ -397,6 +431,18 @@ class AzAC_Admin_Pages
                 }
             }
 
+            echo '<div style="overflow-x:auto;">';
+            echo '<table class="wp-list-table widefat fixed striped table-view-list">';
+            echo '<thead><tr>';
+            echo '<th><a href="' . esc_url($sort_link('display_name')) . '" style="color:#fff;">Học viên ' . ($orderby == 'display_name' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
+            echo '<th><a href="' . esc_url($sort_link('email')) . '" style="color:#fff;">Email ' . ($orderby == 'email' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
+            echo '<th>Số điện thoại</th>';
+            echo '<th>Lĩnh vực kinh doanh</th>';
+            echo '<th>Trạng thái lớp</th>';
+            echo '<th>Hành động</th>';
+            echo '</tr></thead>';
+            echo '<tbody>';
+
             foreach ($students as $u) {
                 // Get CPT ID from Map
                 $cpt_id = isset($user_cpt_map[$u->ID]) ? $user_cpt_map[$u->ID] : 0;
@@ -406,19 +452,11 @@ class AzAC_Admin_Pages
                 $business_field = get_user_meta($u->ID, 'az_business_field', true);
                 $registered_date = $u->user_registered;
 
-                echo '<div class="azac-card azac-student-card">';
-                echo '<img src="' . esc_url($avatar_url) . '" class="azac-avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block;">';
-                echo '<div class="azac-card-title" style="text-align:center">' . esc_html($u->display_name) . '</div>';
-                echo '<div class="azac-card-body" style="text-align:center">';
-                echo '<div>' . ($phone ? esc_html($phone) : 'Chưa có SĐT') . '</div>';
-
-                // Show "Chưa tham gia lớp học" if no CPT
-                if (!$cpt_id) {
-                    echo '<div style="color:#e74c3c;font-size:12px;margin-top:5px;">Chưa tham gia lớp học</div>';
+                // Get Class Status
+                $class_status = '<span style="color:#e74c3c">Chưa tham gia lớp học</span>';
+                if ($cpt_id && isset($student_classes_map[$cpt_id]) && !empty($student_classes_map[$cpt_id])) {
+                    $class_status = implode(', ', $student_classes_map[$cpt_id]);
                 }
-
-                echo '</div>';
-                echo '<div class="azac-card-actions azac-actions--single" style="justify-content:center;gap:10px;">';
 
                 $modal_data = htmlspecialchars(json_encode([
                     'id' => $cpt_id, // Pass CPT ID (0 if none)
@@ -430,17 +468,43 @@ class AzAC_Admin_Pages
                     'date' => date_i18n(get_option('date_format'), strtotime($registered_date))
                 ]), ENT_QUOTES, 'UTF-8');
 
-                echo '<button type="button" class="button azac-view-student-btn" data-student="' . $modal_data . '">Xem chi tiết</button>';
+                echo '<tr>';
+
+                // Student Column
+                echo '<td class="column-student" style="display:flex;align-items:center;gap:10px;">';
+                echo get_avatar($u->ID, 32, '', '', ['class' => 'avatar-circle', 'style' => 'border-radius:50%;']);
+                echo '<strong>' . esc_html($u->display_name) . '</strong>';
+                echo '</td>';
+
+                // Email
+                echo '<td>' . esc_html($u->user_email) . '</td>';
+
+                // Phone
+                echo '<td>' . ($phone ? esc_html($phone) : '<span style="color:#999">Chưa có SĐT</span>') . '</td>';
+
+                // Business
+                echo '<td>' . esc_html($business_field) . '</td>';
+
+                // Class Status
+                echo '<td>' . $class_status . '</td>';
+
+                // Actions
+                echo '<td>';
+                echo '<div style="display:flex;gap:5px;">';
+                echo '<button type="button" class="button button-small azac-view-student-btn" data-student="' . $modal_data . '"><span class="dashicons dashicons-visibility" style="line-height:1.3"></span></button>';
 
                 if (in_array('administrator', $user->roles, true)) {
                     $link_edit = admin_url('user-edit.php?user_id=' . $u->ID);
-                    echo '<a href="' . esc_url($link_edit) . '" class="button button-primary">Chỉnh sửa</a>';
+                    echo '<a href="' . esc_url($link_edit) . '" class="button button-small" title="Chỉnh sửa"><span class="dashicons dashicons-edit" style="line-height:1.3"></span></a>';
                 }
                 echo '</div>';
-                echo '</div>';
+                echo '</td>';
+
+                echo '</tr>';
             }
+            echo '</tbody></table>';
+            echo '</div>';
         }
-        echo '</div>';
 
         AzAC_Core_Helper::render_pagination($current_page, $total_pages);
 
