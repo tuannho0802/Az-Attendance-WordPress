@@ -10,6 +10,95 @@ class AzAC_System_Cleanup
         add_action('admin_menu', [__CLASS__, 'register_menu']);
         add_action('admin_enqueue_scripts', [__CLASS__, 'enqueue_assets']);
         add_action('wp_ajax_azac_system_cleanup', [__CLASS__, 'ajax_cleanup']);
+
+        // Audit Log Hooks
+        add_action('user_register', [__CLASS__, 'log_user_register']);
+        add_action('profile_update', [__CLASS__, 'log_user_update']);
+        add_action('wp_insert_post', [__CLASS__, 'log_post_update'], 10, 3);
+        add_action('deleted_post', [__CLASS__, 'log_post_delete']);
+
+        // Session & Attendance Hooks
+        add_action('azac_session_created', [__CLASS__, 'log_session_created'], 10, 4);
+        add_action('azac_session_updated', [__CLASS__, 'log_session_updated'], 10, 4);
+        add_action('azac_session_deleted', [__CLASS__, 'log_session_deleted'], 10, 3);
+        add_action('azac_attendance_saved', [__CLASS__, 'log_attendance_saved'], 10, 4);
+    }
+
+    // --- LOGGING HELPERS ---
+    public static function log($action, $message, $user_id = null)
+    {
+        if (!$user_id)
+            $user_id = get_current_user_id();
+        $user = get_user_by('id', $user_id);
+        $username = $user ? $user->user_login : 'System';
+
+        $entry = [
+            'time' => current_time('mysql'),
+            'user' => $username,
+            'action' => $action,
+            'message' => $message
+        ];
+
+        $logs = get_option('azac_system_logs', []);
+        if (!is_array($logs))
+            $logs = [];
+        array_unshift($logs, $entry); // Add to beginning
+
+        if (count($logs) > 500) {
+            $logs = array_slice($logs, 0, 500);
+        }
+
+        update_option('azac_system_logs', $logs);
+    }
+
+    public static function log_user_register($user_id)
+    {
+        self::log('USER_NEW', "Đăng ký thành viên mới: ID $user_id", $user_id);
+    }
+
+    public static function log_user_update($user_id)
+    {
+        self::log('USER_UPDATE', "Cập nhật hồ sơ thành viên: ID $user_id", $user_id);
+    }
+
+    public static function log_post_update($post_id, $post, $update)
+    {
+        if ($post->post_type === 'az_class') {
+            $action = $update ? 'CLASS_UPDATE' : 'CLASS_CREATE';
+            self::log($action, "Lớp học: " . $post->post_title . " (ID $post_id)");
+        }
+    }
+
+    public static function log_post_delete($post_id)
+    {
+        $post = get_post($post_id);
+        if ($post && $post->post_type === 'az_class') {
+            self::log('CLASS_DELETE', "Xóa lớp học: " . $post->post_title . " (ID $post_id)");
+        }
+    }
+
+    public static function log_session_created($class_id, $date, $time, $user_id)
+    {
+        $class_title = get_the_title($class_id);
+        self::log('SESSION_CREATE', "Tạo buổi học: $class_title (Date: $date, Time: $time)", $user_id);
+    }
+
+    public static function log_session_updated($class_id, $old_date, $new_date, $user_id)
+    {
+        $class_title = get_the_title($class_id);
+        self::log('SESSION_UPDATE', "Cập nhật buổi học: $class_title (Old: $old_date -> New: $new_date)", $user_id);
+    }
+
+    public static function log_session_deleted($class_id, $date, $user_id)
+    {
+        $class_title = get_the_title($class_id);
+        self::log('SESSION_DELETE', "Xóa buổi học: $class_title (Date: $date)", $user_id);
+    }
+
+    public static function log_attendance_saved($class_id, $date, $type, $user_id)
+    {
+        $class_title = get_the_title($class_id);
+        self::log('ATTENDANCE_SAVE', "Lưu điểm danh ($type): $class_title (Date: $date)", $user_id);
     }
 
     public static function register_menu()
@@ -55,6 +144,7 @@ class AzAC_System_Cleanup
         $orphaned_attendance = [];
         $orphaned_reviews = [];
         $orphaned_meta = [];
+        $orphaned_teaching = [];
         $logs = [];
 
         if ($active_tab === 'scan') {
@@ -62,6 +152,7 @@ class AzAC_System_Cleanup
             $orphaned_attendance = self::get_orphaned_attendance();
             $orphaned_reviews = self::get_orphaned_reviews();
             $orphaned_meta = self::get_orphaned_meta();
+            $orphaned_teaching = self::get_orphaned_teaching_hours();
         } else {
             $logs = get_option('azac_system_logs', []);
             if (!is_array($logs))
@@ -82,7 +173,7 @@ class AzAC_System_Cleanup
 
             <div class="azac-system-content" style="margin-top: 20px;">
                 <?php if ($active_tab === 'scan'): ?>
-                    <?php self::render_scan_tab($orphaned_media, $orphaned_attendance, $orphaned_reviews, $orphaned_meta); ?>
+                    <?php self::render_scan_tab($orphaned_media, $orphaned_attendance, $orphaned_reviews, $orphaned_meta, $orphaned_teaching); ?>
                 <?php else: ?>
                     <?php self::render_logs_tab($logs); ?>
                 <?php endif; ?>
@@ -91,7 +182,7 @@ class AzAC_System_Cleanup
         <?php
     }
 
-    private static function render_scan_tab($media, $attendance, $reviews, $meta)
+    private static function render_scan_tab($media, $attendance, $reviews, $meta, $teaching = [])
     {
         $all_items = [];
 
@@ -133,6 +224,16 @@ class AzAC_System_Cleanup
                 'type' => 'review',
                 'id' => $item->id, // review ID
                 'desc' => 'Review thuộc buổi học ID <strong>#' . esc_html($item->class_id) . '</strong> ngày <strong>' . esc_html($item->session_date) . '</strong> (Đã bị xóa)',
+                'date' => isset($item->created_at) ? $item->created_at : 'N/A',
+                'raw_id' => $item->id
+            ];
+        }
+
+        foreach ($teaching as $item) {
+            $all_items[] = [
+                'type' => 'teaching_hours',
+                'id' => $item->id,
+                'desc' => 'Teaching Hour mồ côi: Class ID ' . $item->class_id . ', Date ' . $item->session_date,
                 'date' => isset($item->created_at) ? $item->created_at : 'N/A',
                 'raw_id' => $item->id
             ];
@@ -215,15 +316,36 @@ class AzAC_System_Cleanup
                                 <td>
                                     <?php
                                     $badge_color = '#999';
-                                    if ($item['type'] === 'media')
-                                        $badge_color = '#0073aa';
-                                    if ($item['type'] === 'attendance')
-                                        $badge_color = '#e65100';
-                                    if ($item['type'] === 'review')
-                                        $badge_color = '#8e44ad'; // Purple
-                                    if ($item['type'] === 'meta')
-                                        $badge_color = '#666';
-                                    echo '<span style="background:' . $badge_color . '; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">' . esc_html($item['type']) . '</span>';
+                                    $label = $item['type'];
+
+                                    switch ($item['type']) {
+                                        case 'media':
+                                            $badge_color = '#0073aa';
+                                            $label = 'MEDIA';
+                                            break;
+                                        case 'attendance':
+                                            $badge_color = '#e65100';
+                                            $label = 'ATTENDANCE';
+                                            break;
+                                        case 'review':
+                                            $badge_color = '#8e44ad';
+                                            $label = 'REVIEW';
+                                            break;
+                                        case 'teaching_hours':
+                                            $badge_color = '#d35400';
+                                            $label = 'TEACHING';
+                                            break;
+                                        case 'meta':
+                                            $badge_color = '#666';
+                                            $label = 'META';
+                                            break;
+                                        case 'physical_file':
+                                            $badge_color = '#c0392b';
+                                            $label = 'FILE RÁC';
+                                            break;
+                                    }
+
+                                    echo '<span style="background:' . $badge_color . '; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">' . esc_html($label) . '</span>';
                                     ?>
                                 </td>
                                 <td><?php echo isset($item['size']) ? esc_html($item['size']) : '-'; ?></td>
@@ -255,8 +377,9 @@ class AzAC_System_Cleanup
             <thead>
                 <tr>
                     <th style="width:180px;">Thời gian</th>
-                    <th>Người thực hiện</th>
-                    <th>Nội dung</th>
+                    <th style="width:150px;">User thực hiện</th>
+                    <th style="width:150px;">Loại hành động</th>
+                    <th>Nội dung chi tiết</th>
                 </tr>
             </thead>
             <tbody>
@@ -264,6 +387,26 @@ class AzAC_System_Cleanup
                     <tr>
                         <td><?php echo esc_html($log['time']); ?></td>
                         <td><?php echo esc_html($log['user']); ?></td>
+                        <td>
+                            <?php
+                                $action_label = isset($log['action']) ? $log['action'] : 'INFO';
+                                $bg_color = '#f0f0f1';
+                                $text_color = '#333';
+
+                                if (strpos($action_label, 'CREATE') !== false || strpos($action_label, 'NEW') !== false) {
+                                    $bg_color = '#d4edda';
+                                    $text_color = '#155724'; // Green
+                                } elseif (strpos($action_label, 'UPDATE') !== false || strpos($action_label, 'SAVE') !== false) {
+                                    $bg_color = '#fff3cd';
+                                    $text_color = '#856404'; // Yellow
+                                } elseif (strpos($action_label, 'DELETE') !== false) {
+                                    $bg_color = '#f8d7da';
+                                    $text_color = '#721c24'; // Red
+                                }
+
+                                echo '<span style="background:' . $bg_color . '; color:' . $text_color . '; padding:2px 6px; border-radius:3px; font-weight:500; font-size:11px;">' . esc_html($action_label) . '</span>';
+                                ?>
+                        </td>
                         <td><?php echo esc_html($log['message']); ?></td>
                     </tr>
                 <?php endforeach; ?>
@@ -425,10 +568,24 @@ class AzAC_System_Cleanup
                     continue;
             }
 
+            // Check 4: Thumbnail Sizes (New)
+            // Ensures that if a resized version is used, the original is not marked as orphan
+            $metadata = wp_get_attachment_metadata($c->ID);
+            if ($metadata && isset($metadata['sizes']) && is_array($metadata['sizes'])) {
+                foreach ($metadata['sizes'] as $size_info) {
+                    if (isset($size_info['file'])) {
+                        $thumb_file = $size_info['file']; // e.g. image-150x150.jpg
+                        if (strpos($big_string, $thumb_file) !== false) {
+                            continue 2; // Found usage, skip this candidate
+                        }
+                    }
+                }
+            }
+
             // Found Trash
             $c->size_formatted = size_format(filesize($file_path));
             $c->image_url = $file_url;
-            $c->reason = 'Không tìm thấy ID/URL trong Content, Meta, Options hay User Data.';
+            $c->reason = 'Không tìm thấy ID/URL (bao gồm cả thumbnail) trong Content, Meta, Options hay User Data.';
             $filtered[] = $c;
         }
 
@@ -462,6 +619,34 @@ class AzAC_System_Cleanup
         foreach ($orphaned as $o) {
             $o->type = 'review';
             $o->reason = 'Review thuộc buổi học (Class ID: ' . $o->class_id . ', Date: ' . $o->session_date . ') đã bị xóa khỏi hệ thống.';
+            $items[] = $o;
+        }
+        return $items;
+    }
+
+    private static function get_orphaned_teaching_hours()
+    {
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_teaching_hours';
+        $sess_table = $wpdb->prefix . 'az_sessions';
+
+        // Check table exists
+        if ($wpdb->get_var($wpdb->prepare("SHOW TABLES LIKE %s", $table)) !== $table) {
+            return [];
+        }
+
+        $orphaned = $wpdb->get_results("
+            SELECT t.* 
+            FROM $table t 
+            LEFT JOIN $sess_table s ON t.class_id = s.class_id AND t.session_date = s.session_date
+            WHERE s.id IS NULL
+            LIMIT 100
+        ");
+
+        $items = [];
+        foreach ($orphaned as $o) {
+            $o->type = 'teaching_hours'; // Custom type
+            $o->reason = 'Giờ dạy thuộc buổi học (Class ID: ' . $o->class_id . ', Date: ' . $o->session_date . ') đã bị xóa.';
             $items[] = $o;
         }
         return $items;
@@ -607,6 +792,7 @@ class AzAC_System_Cleanup
         $count_media = 0;
         $count_attendance = 0;
         $count_reviews = 0;
+        $count_teaching = 0;
         $count_meta = 0;
         $count_physical = 0;
 
@@ -641,6 +827,10 @@ class AzAC_System_Cleanup
             } elseif ($type === 'review') {
                 if ($wpdb->delete($wpdb->prefix . 'az_feedback', ['id' => $id], ['%d'])) {
                     $count_reviews++;
+                }
+            } elseif ($type === 'teaching_hours') {
+                if ($wpdb->delete($wpdb->prefix . 'az_teaching_hours', ['id' => $id], ['%d'])) {
+                    $count_teaching++;
                 }
             } elseif ($type === 'meta') {
                 if ($wpdb->delete($wpdb->postmeta, ['meta_id' => $id], ['%d'])) {

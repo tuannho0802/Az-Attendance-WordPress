@@ -171,6 +171,11 @@ class AzAC_Core_Attendance
             if ($res !== false)
                 $inserted++;
         }
+        
+        if ($inserted > 0) {
+            do_action('azac_attendance_saved', $class_id, $session_date, $type, $user->ID);
+        }
+        
         wp_send_json_success(['inserted' => $inserted]);
     }
     public static function ajax_get_attendance()

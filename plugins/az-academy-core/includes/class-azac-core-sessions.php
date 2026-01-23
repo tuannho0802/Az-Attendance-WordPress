@@ -18,6 +18,33 @@ class AzAC_Core_Sessions
         add_action('wp_ajax_azac_teacher_checkin', [__CLASS__, 'ajax_teacher_checkin']);
         add_action('wp_ajax_azac_delete_session', [__CLASS__, 'ajax_delete_session']);
         add_action('wp_ajax_azac_bulk_delete_sessions', [__CLASS__, 'ajax_bulk_delete_sessions']);
+
+        // Cascade delete when Class is deleted
+        add_action('before_delete_post', [__CLASS__, 'on_class_delete']);
+    }
+
+    public static function on_class_delete($post_id)
+    {
+        $post = get_post($post_id);
+        if (!$post || $post->post_type !== 'az_class') {
+            return;
+        }
+
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $att_table = $wpdb->prefix . 'az_attendance';
+        $teaching_table = $wpdb->prefix . 'az_teaching_hours';
+
+        // 1. Delete Attendance
+        $wpdb->delete($att_table, ['class_id' => $post_id], ['%d']);
+
+        // 2. Delete Teaching Hours (if exists)
+        if ($wpdb->get_var("SHOW TABLES LIKE '$teaching_table'") === $teaching_table) {
+            $wpdb->delete($teaching_table, ['class_id' => $post_id], ['%d']);
+        }
+
+        // 3. Delete Sessions
+        $wpdb->delete($sess_table, ['class_id' => $post_id], ['%d']);
     }
     public static function ajax_get_class_session_dates()
     {
@@ -154,6 +181,10 @@ class AzAC_Core_Sessions
         }
 
         $sessions = self::upsert_class_session($class_id, $date, $time);
+
+        // Audit Log
+        do_action('azac_session_created', $class_id, $date, $time, $user->ID);
+
         wp_send_json_success(['sessions' => $sessions, 'selected' => $date]);
     }
     public static function ajax_update_session()
@@ -175,6 +206,10 @@ class AzAC_Core_Sessions
         }
 
         $sessions = self::update_class_session($class_id, $date, $new_date, $new_time);
+
+        // Audit Log
+        do_action('azac_session_updated', $class_id, $date, $new_date, $user->ID);
+
         wp_send_json_success(['sessions' => $sessions, 'selected' => $new_date]);
     }
     public static function ajax_list_sessions()
@@ -626,6 +661,17 @@ class AzAC_Core_Sessions
                     'session_date' => $session->session_date
                 ], ['%d', '%s']);
 
+                // Cascade Delete: Teaching Hours
+                $teaching_table = $wpdb->prefix . 'az_teaching_hours';
+                if ($wpdb->get_var("SHOW TABLES LIKE '$teaching_table'") === $teaching_table) {
+                    $wpdb->delete($teaching_table, [
+                        'class_id' => $session->class_id,
+                        'session_date' => $session->session_date
+                    ], ['%d', '%s']);
+                }
+
+                do_action('azac_session_deleted', $session->class_id, $session->session_date, get_current_user_id());
+
                 wp_send_json_success(['message' => 'Deleted']);
             }
         }
@@ -670,6 +716,17 @@ class AzAC_Core_Sessions
                     'class_id' => $sess->class_id,
                     'session_date' => $sess->session_date
                 ], ['%d', '%s']);
+
+                // Cascade Delete: Teaching Hours
+                $teaching_table = $wpdb->prefix . 'az_teaching_hours';
+                if ($wpdb->get_var("SHOW TABLES LIKE '$teaching_table'") === $teaching_table) {
+                    $wpdb->delete($teaching_table, [
+                        'class_id' => $sess->class_id,
+                        'session_date' => $sess->session_date
+                    ], ['%d', '%s']);
+                }
+
+                do_action('azac_session_deleted', $sess->class_id, $sess->session_date, get_current_user_id());
             }
             wp_send_json_success(['message' => 'Deleted ' . $deleted . ' sessions']);
         }
