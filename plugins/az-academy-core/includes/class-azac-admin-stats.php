@@ -151,8 +151,10 @@ class AzAC_Admin_Stats
         }
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
+        $is_manager = in_array('az_manager', $user->roles, true);
         $is_teacher = in_array('az_teacher', $user->roles, true);
-        if (!$is_admin) {
+
+        if (!$is_admin && !$is_manager) {
             if ($is_teacher) {
                 $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
                 if ($teacher_user !== intval($user->ID)) {

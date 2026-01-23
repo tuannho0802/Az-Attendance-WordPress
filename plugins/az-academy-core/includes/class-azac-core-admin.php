@@ -36,7 +36,7 @@ class AzAC_Core_Admin
 
     public static function ensure_manager_capabilities()
     {
-        if (!get_option('azac_manager_role_v6_updated')) {
+        if (!get_option('azac_manager_role_v7_updated')) {
             $role = get_role('az_manager');
             if ($role) {
                 // Core
@@ -80,7 +80,7 @@ class AzAC_Core_Admin
                 $role->remove_cap('delete_users');
                 $role->remove_cap('delete_attachments');
             }
-            update_option('azac_manager_role_v6_updated', 1);
+            update_option('azac_manager_role_v7_updated', 1);
         }
     }
 
@@ -92,10 +92,8 @@ class AzAC_Core_Admin
         }
 
         // For Managers (and others): Hide sensitive system menus
-        remove_menu_page('index.php');                  // Dashboard
-        remove_menu_page('edit.php');                   // Posts
-        remove_menu_page('edit.php?post_type=page');    // Pages
-        remove_menu_page('edit-comments.php');          // Comments
+        // REMOVED: Dashboard, Posts, Pages, Comments are now ALLOWED for Manager
+
         remove_menu_page('themes.php');                 // Appearance
         remove_menu_page('plugins.php');                // Plugins
         remove_menu_page('tools.php');                  // Tools
@@ -115,6 +113,10 @@ class AzAC_Core_Admin
                 #azac-do-system-bulk, #azac-bulk-action-system, 
                 #azac-log-bulk-action, #azac-log-do-bulk,
                 .azac-delete-system-item { display: none !important; }
+                /* Hide Media Grid Delete */
+                .media-modal .delete-attachment, .media-modal .trash-attachment { display: none !important; }
+                /* Hide User Delete */
+                .users-php .submitdelete { display: none !important; }
             </style>';
         }
     }
