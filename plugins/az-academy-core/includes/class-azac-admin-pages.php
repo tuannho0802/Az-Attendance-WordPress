@@ -273,134 +273,172 @@ class AzAC_Admin_Pages
         }
         echo '</form>';
 
-        // Fetch Students
-        // If Teacher, get allowed student IDs first
-        $allowed_student_ids = null;
+        // Allowed Users Logic (Teacher Restriction)
+        $allowed_user_ids = null;
         if (in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true)) {
-            $allowed_student_ids = [];
+            $allowed_user_ids = [];
             $classes = get_posts([
                 'post_type' => 'az_class',
                 'numberposts' => -1,
                 'meta_key' => 'az_teacher_user',
                 'meta_value' => $user->ID,
-                'post_status' => ['publish', 'pending']
+                'post_status' => ['publish', 'pending'],
+                'fields' => 'ids'
             ]);
-            foreach ($classes as $c) {
-                $s_list = get_post_meta($c->ID, 'az_students', true);
+
+            $cpt_ids = [];
+            foreach ($classes as $cid) {
+                $s_list = get_post_meta($cid, 'az_students', true);
                 if (is_array($s_list)) {
-                    $allowed_student_ids = array_merge($allowed_student_ids, array_map('absint', $s_list));
+                    $cpt_ids = array_merge($cpt_ids, array_map('absint', $s_list));
                 }
             }
-            $allowed_student_ids = array_unique($allowed_student_ids);
-            if (empty($allowed_student_ids)) {
-                echo '<p>Bạn chưa có học viên nào.</p></div>';
-                return;
+            $cpt_ids = array_unique($cpt_ids);
+
+            if (!empty($cpt_ids)) {
+                global $wpdb;
+                $placeholders = implode(',', array_fill(0, count($cpt_ids), '%d'));
+                $sql = "SELECT meta_value FROM $wpdb->postmeta WHERE meta_key = 'az_user_id' AND post_id IN ($placeholders)";
+                $prepared = $wpdb->prepare($sql, $cpt_ids);
+                $uids = $wpdb->get_col($prepared);
+                if ($uids) {
+                    $allowed_user_ids = array_map('absint', $uids);
+                }
+            }
+
+            if (empty($allowed_user_ids)) {
+                $allowed_user_ids = [0]; // Force no results
             }
         }
 
-        // Query Students
+        // Pagination Setup
+        $per_page = 20;
+        $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+
+        // Build Query Args
         $args = [
-            'post_type' => 'az_student',
-            'numberposts' => -1,
-            'orderby' => 'title',
+            'role' => 'az_student',
+            'number' => $per_page,
+            'paged' => $current_page,
+            'orderby' => 'display_name',
             'order' => 'ASC',
         ];
 
-        if ($allowed_student_ids !== null) {
-            $args['post__in'] = $allowed_student_ids;
-        }
-
+        // Search Logic
         if ($search) {
-            $args_title = $args;
-            $args_title['s'] = $search;
-            $by_title = get_posts($args_title);
+            // 1. Search by Name/Email/Login
+            $q1_args = [
+                'role' => 'az_student',
+                'search' => '*' . $search . '*',
+                'fields' => 'ID'
+            ];
+            $q1 = new WP_User_Query($q1_args);
+            $ids1 = $q1->get_results();
 
-            $user_query = new WP_User_Query([
+            // 2. Search by Phone (Meta)
+            $q2_args = [
+                'role' => 'az_student',
                 'meta_key' => 'az_phone',
                 'meta_value' => $search,
-                'meta_compare' => 'LIKE'
-            ]);
-            $phone_users = $user_query->get_results();
-            $phone_user_ids = wp_list_pluck($phone_users, 'ID');
+                'meta_compare' => 'LIKE',
+                'fields' => 'ID'
+            ];
+            $q2 = new WP_User_Query($q2_args);
+            $ids2 = $q2->get_results();
 
-            $by_phone = [];
-            if (!empty($phone_user_ids)) {
-                $args_phone = $args;
-                $args_phone['meta_query'] = [
-                    [
-                        'key' => 'az_user_id',
-                        'value' => $phone_user_ids,
-                        'compare' => 'IN'
-                    ]
-                ];
-                $by_phone = get_posts($args_phone);
+            $merged_ids = array_unique(array_merge($ids1, $ids2));
+
+            // Intersect with Allowed Users if Teacher
+            if ($allowed_user_ids !== null) {
+                $merged_ids = array_intersect($merged_ids, $allowed_user_ids);
             }
 
-            $merged = [];
-            foreach ($by_title as $p)
-                $merged[$p->ID] = $p;
-            foreach ($by_phone as $p)
-                $merged[$p->ID] = $p;
-            $students = array_values($merged);
+            if (empty($merged_ids)) {
+                $args['include'] = [0];
+            } else {
+                $args['include'] = $merged_ids;
+            }
         } else {
-            $students = get_posts($args);
+            if ($allowed_user_ids !== null) {
+                $args['include'] = $allowed_user_ids;
+            }
         }
 
-        // Filter: Only allow students linked to users with 'az_student' role (or no user)
-        $students = array_filter($students, function ($s) {
-            $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
-            if (!$uid)
-                return true;
-            $u = get_userdata($uid);
-            if (!$u)
-                return true;
-            return in_array('az_student', $u->roles, true);
-        });
-
-        // Pagination
-        $students = array_values($students);
-        $per_page = 20;
-        $current_page = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
-        $total_items = count($students);
+        // Execute Main Query
+        $user_query = new WP_User_Query($args);
+        $students = $user_query->get_results();
+        $total_items = $user_query->get_total();
         $total_pages = ceil($total_items / $per_page);
-        $paged_students = array_slice($students, ($current_page - 1) * $per_page, $per_page);
 
         // Render Grid
         echo '<div class="azac-grid">';
-        foreach ($paged_students as $s) {
-            $uid = intval(get_post_meta($s->ID, 'az_user_id', true));
-            $u = $uid ? get_userdata($uid) : false;
-            $avatar_url = $uid ? get_avatar_url($uid, ['size' => 200]) : get_avatar_url(0, ['size' => 200]);
-            $phone = $uid ? get_user_meta($uid, 'az_phone', true) : '';
-            $business_field = $uid ? get_user_meta($uid, 'az_business_field', true) : '';
-            $registered_date = $s->post_date;
-
-            echo '<div class="azac-card azac-student-card">';
-            echo '<img src="' . esc_url($avatar_url) . '" class="azac-avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block;">';
-            echo '<div class="azac-card-title" style="text-align:center">' . esc_html($u ? $u->display_name : $s->post_title) . '</div>';
-            echo '<div class="azac-card-body" style="text-align:center">';
-            echo '<div>' . ($phone ? esc_html($phone) : 'Chưa có SĐT') . '</div>';
-            echo '</div>';
-            echo '<div class="azac-card-actions azac-actions--single" style="justify-content:center;gap:10px;">';
-
-            $modal_data = htmlspecialchars(json_encode([
-                'id' => $s->ID,
-                'name' => $u ? $u->display_name : $s->post_title,
-                'avatar' => $avatar_url,
-                'email' => $u ? $u->user_email : '',
-                'phone' => $phone,
-                'business' => $business_field,
-                'date' => date_i18n(get_option('date_format'), strtotime($registered_date))
-            ]), ENT_QUOTES, 'UTF-8');
-
-            echo '<button type="button" class="button azac-view-student-btn" data-student="' . $modal_data . '">Xem chi tiết</button>';
-
-            if (in_array('administrator', $user->roles, true)) {
-                $link_edit = $uid ? admin_url('user-edit.php?user_id=' . $uid) : admin_url('post.php?post=' . $s->ID . '&action=edit');
-                echo '<a href="' . esc_url($link_edit) . '" class="button button-primary">Chỉnh sửa</a>';
+        if (empty($students)) {
+            echo '<p>Không tìm thấy học viên nào.</p>';
+        } else {
+            // Batch fetch CPT IDs for Performance (Simulate LEFT JOIN)
+            $student_uids = wp_list_pluck($students, 'ID');
+            $user_cpt_map = [];
+            if (!empty($student_uids)) {
+                global $wpdb;
+                $placeholders = implode(',', array_fill(0, count($student_uids), '%d'));
+                $sql = "
+                    SELECT pm.meta_value as user_id, p.ID as cpt_id 
+                    FROM $wpdb->postmeta pm
+                    JOIN $wpdb->posts p ON pm.post_id = p.ID
+                    WHERE p.post_type = 'az_student'
+                    AND p.post_status = 'publish'
+                    AND pm.meta_key = 'az_user_id'
+                    AND pm.meta_value IN ($placeholders)
+                ";
+                $prepared = $wpdb->prepare($sql, $student_uids);
+                $results = $wpdb->get_results($prepared);
+                foreach ($results as $r) {
+                    $user_cpt_map[$r->user_id] = $r->cpt_id;
+                }
             }
-            echo '</div>';
-            echo '</div>';
+
+            foreach ($students as $u) {
+                // Get CPT ID from Map
+                $cpt_id = isset($user_cpt_map[$u->ID]) ? $user_cpt_map[$u->ID] : 0;
+
+                $avatar_url = get_avatar_url($u->ID, ['size' => 200]);
+                $phone = get_user_meta($u->ID, 'az_phone', true);
+                $business_field = get_user_meta($u->ID, 'az_business_field', true);
+                $registered_date = $u->user_registered;
+
+                echo '<div class="azac-card azac-student-card">';
+                echo '<img src="' . esc_url($avatar_url) . '" class="azac-avatar" style="width:80px;height:80px;border-radius:50%;object-fit:cover;margin:0 auto 10px;display:block;">';
+                echo '<div class="azac-card-title" style="text-align:center">' . esc_html($u->display_name) . '</div>';
+                echo '<div class="azac-card-body" style="text-align:center">';
+                echo '<div>' . ($phone ? esc_html($phone) : 'Chưa có SĐT') . '</div>';
+
+                // Show "Chưa tham gia lớp học" if no CPT
+                if (!$cpt_id) {
+                    echo '<div style="color:#e74c3c;font-size:12px;margin-top:5px;">Chưa tham gia lớp học</div>';
+                }
+
+                echo '</div>';
+                echo '<div class="azac-card-actions azac-actions--single" style="justify-content:center;gap:10px;">';
+
+                $modal_data = htmlspecialchars(json_encode([
+                    'id' => $cpt_id, // Pass CPT ID (0 if none)
+                    'name' => $u->display_name,
+                    'avatar' => $avatar_url,
+                    'email' => $u->user_email,
+                    'phone' => $phone,
+                    'business' => $business_field,
+                    'date' => date_i18n(get_option('date_format'), strtotime($registered_date))
+                ]), ENT_QUOTES, 'UTF-8');
+
+                echo '<button type="button" class="button azac-view-student-btn" data-student="' . $modal_data . '">Xem chi tiết</button>';
+
+                if (in_array('administrator', $user->roles, true)) {
+                    $link_edit = admin_url('user-edit.php?user_id=' . $u->ID);
+                    echo '<a href="' . esc_url($link_edit) . '" class="button button-primary">Chỉnh sửa</a>';
+                }
+                echo '</div>';
+                echo '</div>';
+            }
         }
         echo '</div>';
         
@@ -446,6 +484,12 @@ class AzAC_Admin_Pages
                     $('#modal-phone').text(data.phone);
                     $('#modal-business').text(data.business);
                     $('#modal-date').text(data.date);
+
+                    if (!data.id) {
+                         $('#modal-classes-container').html('<p style="text-align:center;color:#e74c3c;">Học viên chưa tham gia lớp học nào.</p>');
+                         $('#azac-student-modal').css('display', 'flex');
+                         return;
+                    }
 
                     $('#modal-classes-container').html('<p style="text-align:center;color:#666;">Đang tải dữ liệu...</p>');
                     $('#azac-student-modal').css('display', 'flex');
