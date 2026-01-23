@@ -6,6 +6,8 @@ class AzAC_Admin_Pages
 {
     public static function register_admin_pages()
     {
+        $user = wp_get_current_user();
+
         add_menu_page(
             'Quản lý điểm danh',
             'Quản lý điểm danh',
@@ -24,15 +26,19 @@ class AzAC_Admin_Pages
             'dashicons-book-alt',
             0
         );
-        add_menu_page(
-            'Học viên',
-            'Học viên',
-            'read',
-            'azac-students-list',
-            [__CLASS__, 'render_students_list_page'],
-            'dashicons-id',
-            0
-        );
+
+        if (!in_array('az_student', (array) $user->roles)) {
+            add_menu_page(
+                'Học viên',
+                'Học viên',
+                'read',
+                'azac-students-list',
+                [__CLASS__, 'render_students_list_page'],
+                'dashicons-id',
+                0
+            );
+        }
+
         add_menu_page(
             'Reviews',
             'Reviews',
@@ -42,7 +48,7 @@ class AzAC_Admin_Pages
             'dashicons-chart-bar',
             0
         );
-        $user = wp_get_current_user();
+        
         if (!in_array('az_student', (array) $user->roles)) {
             add_menu_page(
                 'Quản lý Học viên',

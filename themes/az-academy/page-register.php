@@ -18,6 +18,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_register_submit']
     } else {
         $username = sanitize_user($_POST['user_login']);
         $email = sanitize_email($_POST['user_email']);
+        $first_name = sanitize_text_field($_POST['first_name']);
+        $last_name = sanitize_text_field($_POST['last_name']);
         $password = $_POST['user_pass'];
         $confirm = $_POST['user_pass_confirm'];
         $phone = sanitize_text_field($_POST['az_phone']);
@@ -29,7 +31,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_register_submit']
             $reg_error = 'Tên đăng nhập hoặc Email đã tồn tại.';
         } else {
             // Create user
-            $user_id = wp_create_user($username, $password, $email);
+            $user_id = wp_insert_user([
+                'user_login' => $username,
+                'user_pass' => $password,
+                'user_email' => $email,
+                'first_name' => $first_name,
+                'last_name' => $last_name,
+                'display_name' => $first_name . ' ' . $last_name,
+                'role' => 'az_student',
+            ]);
 
             if (is_wp_error($user_id)) {
                 $reg_error = $user_id->get_error_message();
@@ -85,6 +95,19 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_register_submit']
 
                 <form id="azac-register-form" method="post" action="">
                     <?php wp_nonce_field('azac_register_action', 'azac_register_nonce'); ?>
+
+                    <div class="form-group">
+                        <label for="first_name">Họ và tên lót *</label>
+                        <input type="text" name="first_name" id="first_name" class="form-control" required
+                            placeholder="Nguyễn Văn"
+                            value="<?php echo isset($_POST['first_name']) ? esc_attr($_POST['first_name']) : ''; ?>">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="last_name">Tên *</label>
+                        <input type="text" name="last_name" id="last_name" class="form-control" required placeholder="A"
+                            value="<?php echo isset($_POST['last_name']) ? esc_attr($_POST['last_name']) : ''; ?>">
+                    </div>
 
                     <div class="form-group">
                         <label for="user_login">Tên đăng nhập *</label>
