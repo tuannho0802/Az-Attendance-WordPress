@@ -354,12 +354,40 @@
       sessions,
       $tbody,
     ) {
+      var today = new Date();
+      var y = today.getFullYear();
+      var m = String(
+        today.getMonth() + 1,
+      ).padStart(2, "0");
+      var d = String(today.getDate()).padStart(
+        2,
+        "0",
+      );
+      var todayStr = y + "-" + m + "-" + d;
+
       var html = sessions
         .map(function (s) {
           var dateStr = s.date;
           var timeStr = s.time
             ? s.time.substring(0, 5)
             : ""; // HH:mm
+
+          // Calculate Date Status
+          var dateStatusBadge = "";
+          var rowStyle = "";
+
+          if (dateStr === todayStr) {
+            dateStatusBadge =
+              '<span style="background:#d4edda; color:#155724; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Hôm nay</span>';
+            rowStyle =
+              "background-color: #fff9c4;"; // Light yellow highlight
+          } else if (dateStr < todayStr) {
+            dateStatusBadge =
+              '<span style="background:#e9ecef; color:#495057; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Đã kết thúc</span>';
+          } else {
+            dateStatusBadge =
+              '<span style="background:#fff3cd; color:#856404; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Sắp diễn ra</span>';
+          }
 
           // Calculate Rate
           var total =
@@ -397,7 +425,7 @@
           var editUrl = s.link;
 
           return [
-            "<tr>",
+            '<tr style="' + rowStyle + '">',
             "<td><strong>" +
               s.class_title +
               "</strong></td>",
@@ -412,6 +440,7 @@
                   ")</span>"
                 : "") +
               "</td>",
+            "<td>" + dateStatusBadge + "</td>",
             "<td>" + rateHtml + "</td>",
             "<td>" + statusBadge + "</td>",
             "<td>",

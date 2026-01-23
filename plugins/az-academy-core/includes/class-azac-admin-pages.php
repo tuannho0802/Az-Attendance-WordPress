@@ -138,13 +138,14 @@ class AzAC_Admin_Pages
             echo '<th style="width: 25%;">Lớp</th>';
             echo '<th style="width: 8%; text-align:center;">Buổi</th>';
             echo '<th style="width: 17%;">Thời gian</th>';
-            echo '<th style="width: 20%;">Tỷ lệ có mặt</th>';
-            echo '<th style="width: 15%;">Trạng thái</th>';
-            echo '<th style="width: 15%;">Hành động</th>';
+            echo '<th style="width: 15%;">Trạng thái ngày dạy</th>';
+            echo '<th style="width: 15%;">Tỷ lệ có mặt</th>';
+            echo '<th style="width: 10%;">Trạng thái</th>';
+            echo '<th style="width: 10%;">Hành động</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody id="azac-sessions-table-body">';
-            echo '<tr><td colspan="6">Đang tải danh sách buổi học...</td></tr>';
+            echo '<tr><td colspan="7">Đang tải danh sách buổi học...</td></tr>';
             echo '</tbody>';
             echo '</table>';
             echo '</div>';

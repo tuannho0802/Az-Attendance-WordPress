@@ -284,10 +284,10 @@ class AzAC_Core_Sessions
         $total_pages = ceil($total_items / $per_page);
         $offset = ($paged - 1) * $per_page;
 
-        $order_sql = "ORDER BY session_date DESC, session_time DESC";
+        $order_sql = "ORDER BY (session_date = CURRENT_DATE()) DESC, session_date DESC, session_time DESC";
         $join_sql = "";
         $select_extra = "";
-
+        
         if ($sort === 'date_asc') {
             $order_sql = "ORDER BY session_date ASC, session_time ASC";
         } elseif ($sort === 'rate_asc' || $sort === 'rate_desc') {
