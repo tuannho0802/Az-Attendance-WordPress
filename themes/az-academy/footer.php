@@ -1,7 +1,41 @@
 <?php if (!defined('ABSPATH')) { exit; } ?>
-<footer style="background:#f4f6f6;margin-top:24px">
+<footer class="site-footer">
     <div class="container">
-        <p>© Az Academy</p>
+        <div class="footer-grid">
+            <!-- Column 1: Brand & Mission -->
+            <div class="footer-col">
+                <div class="footer-brand">
+                    <img src="<?php echo get_template_directory_uri(); ?>/assets/img/logo.png" alt="Az Academy"
+                        class="footer-logo">
+                </div>
+                <p class="footer-desc">Nền tảng giáo dục và đào tạo chuyên nghiệp. Chúng tôi cam kết mang lại trải nghiệm học
+                    tập và quản lý lớp học hiệu quả nhất cho giảng viên và học viên.</p>
+            </div>
+        
+            <!-- Column 2: Quick Links -->
+            <div class="footer-col">
+                <h3 class="footer-title">Liên kết nhanh</h3>
+                <ul class="footer-links">
+                    <li><a href="<?php echo esc_url(home_url('/classes')); ?>">Danh sách Lớp học</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/teachers')); ?>">Đội ngũ Giảng viên</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/guide')); ?>">Hướng dẫn sử dụng</a></li>
+                    <li><a href="<?php echo esc_url(home_url('/privacy')); ?>">Chính sách bảo mật</a></li>
+                </ul>
+            </div>
+        
+            <!-- Column 3: Contact Info -->
+            <div class="footer-col">
+                <h3 class="footer-title">Thông tin liên hệ</h3>
+                <ul class="footer-contact">
+                    <li><strong>Email:</strong> support@azacademy.vn</li>
+                    <li><strong>Hotline:</strong> 090.123.4567</li>
+                    <li><strong>Địa chỉ:</strong> Hà Nội, Việt Nam</li>
+                </ul>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>© <?php echo date('Y'); ?> Az Academy. All rights reserved.</p>
+        </div>
     </div>
 </footer>
 <?php wp_footer(); ?>
