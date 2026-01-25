@@ -376,9 +376,12 @@
 .azac-reviews-list .button-primary:hover,
 .azac-tabs .button-primary:hover,
 .azac-tabs .azac-tab-btn.button-primary:hover {
-  background-color: #0e2440;
-  border-color: #0e2440;
-  color: #fff;
+  background-color: #0d233e !important;
+  border-color: #0d233e !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
   filter: none;
 }
 .wp-core-ui .azac-card .button-primary:hover,
@@ -395,9 +398,12 @@
 .wp-core-ui
   .azac-tabs
   .azac-tab-btn.button-primary:hover {
-  background-color: #0e2440 !important;
-  border-color: #0e2440 !important;
-  color: #fff !important;
+  background-color: #0d233e !important;
+  border-color: #0d233e !important;
+  color: #ffffff !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
   filter: none !important;
 }
 

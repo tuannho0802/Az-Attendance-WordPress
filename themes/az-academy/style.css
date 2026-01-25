@@ -226,6 +226,9 @@ a:hover {
     background-color: #0d233e !important; /* Darker than #15345a */
     color: #ffffff !important; /* Force White Text */
     border-color: #0d233e !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    display: inline-flex !important;
     transform: translateY(-1px);
     box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }

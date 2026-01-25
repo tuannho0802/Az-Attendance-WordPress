@@ -336,9 +336,16 @@
   border-color: var(--az-primary);
 }
 .button-primary:hover {
-  background-color: var(--az-primary-hover) !important;
-  color: #fff !important;
-  border-color: var(--az-primary-hover) !important;
+  background-color: #0d233e !important;
+  color: #ffffff !important;
+  border-color: #0d233e !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+
+.button, .az-btn, .azac-btn {
+    transition: all 0.3s ease !important;
 }
 .button-warning {
   background: #e67e22;
@@ -597,4 +604,38 @@ body.post-type-az_student .search-box .button {
 .azac-select-all-wrap label {
     font-weight: 600;
     cursor: pointer;
+}
+
+/* Custom Admin Footer */
+#wpfooter {
+    position: relative !important;
+    bottom: auto !important;
+    clear: both !important;
+}
+
+body.folded #wpfooter {
+    margin-left: 36px;
+}
+#footer-upgrade {
+    display: none !important;
+}
+/* Ensure content doesn't get hidden behind fixed footer */
+#wpbody-content {
+    padding-bottom: 50px;
+}
+
+@media screen and (max-width: 960px) {
+    #wpfooter {
+        margin-left: 36px;
+    }
+}
+@media screen and (max-width: 782px) {
+    #wpfooter {
+        margin-left: 0;
+        background: transparent;
+        border-top: none;
+    }
+    #wpbody-content {
+        padding-bottom: 20px;
+    }
 }
