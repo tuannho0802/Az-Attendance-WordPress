@@ -30,11 +30,11 @@ if (in_array('az_student', (array) $current_user->roles)) {
 <section class="az-hero">
     <div class="container">
         <div class="az-hero-content">
-            <h1 class="az-hero-title">Nền tảng Quản lý Lớp học & Điểm danh Chuyên nghiệp</h1>
-            <p class="az-hero-subtitle">Giải pháp toàn diện dành cho Giảng viên và Học viên tại Az Academy. Theo dõi
-                tiến độ, điểm danh nhanh chóng và hiệu quả.</p>
+            <h1 class="az-hero-title">Trung Tâm Đào Tạo Digital Marketing Thực Chiến</h1>
+            <p class="az-hero-subtitle">Học Để Làm Được - Áp dụng ngay vào thực tế công việc kinh doanh. Case study thực
+                tế, thực hành trên tài khoản thật.</p>
             <div class="az-hero-actions">
-                <a href="#az-latest-classes" class="az-btn az-btn-primary az-btn-lg">Khám phá Lớp học</a>
+                <a href="#az-latest-classes" class="az-btn az-btn-primary az-btn-lg">Xem Khóa Học</a>
                 <?php if (!is_user_logged_in()): ?>
                     <a href="<?php echo esc_url(home_url('/register')); ?>" class="az-btn az-btn-outline az-btn-lg">Đăng ký
                         ngay</a>
@@ -48,8 +48,8 @@ if (in_array('az_student', (array) $current_user->roles)) {
 <section id="az-latest-classes" class="az-section">
     <div class="container">
         <div class="az-section-header">
-            <h2 class="az-section-title">Lớp học Mới nhất</h2>
-            <p class="az-section-desc">Cập nhật các lớp học đang và sắp diễn ra tại Az Academy</p>
+            <h2 class="az-section-title">Các Khóa Học Digital Marketing</h2>
+            <p class="az-section-desc">Cập nhật lịch khai giảng Facebook Ads, Google Ads, TikTok Ads mới nhất</p>
         </div>
 
         <?php
@@ -132,21 +132,27 @@ if (in_array('az_student', (array) $current_user->roles)) {
     </div>
 </section>
 
-<!-- Features/Benefits (Optional placeholder for layout balance) -->
+<!-- Features/Benefits -->
 <section class="az-section az-bg-light">
     <div class="container">
         <div class="az-grid az-features-grid">
             <div class="az-feature-item">
-                <h3>Điểm danh Online</h3>
-                <p>Check-in nhanh chóng qua QR Code hoặc hệ thống quản lý.</p>
+                <span class="dashicons dashicons-chart-area"
+                    style="font-size: 40px; width: 40px; height: 40px; color: var(--az-primary); margin-bottom: 15px;"></span>
+                <h3>Case study thực tế</h3>
+                <p>Học trên các dự án thực tế, phân tích số liệu thật để tối ưu hiệu quả kinh doanh.</p>
             </div>
             <div class="az-feature-item">
-                <h3>Thống kê Chi tiết</h3>
-                <p>Theo dõi tỷ lệ chuyên cần và tiến độ học tập trực quan.</p>
+                <span class="dashicons dashicons-laptop"
+                    style="font-size: 40px; width: 40px; height: 40px; color: var(--az-primary); margin-bottom: 15px;"></span>
+                <h3>Thực hành tài khoản thật</h3>
+                <p>Thực hành trực tiếp trên tài khoản quảng cáo, không dạy lý thuyết suông.</p>
             </div>
             <div class="az-feature-item">
-                <h3>Kết nối Dễ dàng</h3>
-                <p>Tương tác giữa Giảng viên và Học viên thuận tiện hơn.</p>
+                <span class="dashicons dashicons-update"
+                    style="font-size: 40px; width: 40px; height: 40px; color: var(--az-primary); margin-bottom: 15px;"></span>
+                <h3>Cập nhật liên tục</h3>
+                <p>Nội dung giáo trình được cập nhật liên tục theo thay đổi của nền tảng.</p>
             </div>
         </div>
     </div>
