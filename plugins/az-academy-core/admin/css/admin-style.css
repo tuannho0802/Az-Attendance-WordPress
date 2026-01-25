@@ -7,7 +7,7 @@
   .widefat.fixed.striped
   thead
   th {
-  background: #15345a;
+  background: var(--az-primary);
   color: #fff;
 }
 .azac-admin-teal
@@ -263,21 +263,7 @@
   color: #fff;
 }
 
-.azac-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-@media (max-width: 1200px) {
-  .azac-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-@media (max-width: 760px) {
-  .azac-grid {
-    grid-template-columns: 1fr;
-  }
-}
+/* Layout handled by theme style.css */
 .azac-card {
   background: #fff;
   border: 1px solid #e2e2e2;
@@ -350,7 +336,9 @@
   border-color: var(--az-primary);
 }
 .button-primary:hover {
-  filter: brightness(0.94);
+  background-color: var(--az-primary-hover) !important;
+  color: #fff !important;
+  border-color: var(--az-primary-hover) !important;
 }
 .button-warning {
   background: #e67e22;
@@ -541,7 +529,7 @@ body.post-type-az_student .search-box .button {
 
 /* Student Table Styling */
 .azac-students-table thead th {
-    background-color: #15345a !important;
+    background-color: var(--az-primary) !important;
     color: #fff !important;
     font-weight: 600;
 }

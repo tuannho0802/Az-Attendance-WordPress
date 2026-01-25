@@ -3,36 +3,136 @@ Theme Name: Az Academy
 Theme URI: https://az-academy.local
 Author: Az Academy
 Description: Theme tối giản phù hợp hệ thống điểm danh Az Academy.
-Version: 0.1.0
+Version: 0.1.1
 Text Domain: az-academy
 */
+
+:root {
+    --az-primary: #15345a;
+    --az-sidebar-top: 20px;
+    --az-min-height: 800px;
+    --az-primary-hover: #0e2440;
+    --az-secondary: #f0fcf9;
+    --az-text-main: #222;
+    --az-text-light: #666;
+    --az-white: #ffffff;
+    --az-border: #eee;
+}
+
+/* =========================================
+   CRITICAL LAYOUT OVERRIDES (USER REQUESTED - FIX 2.0)
+   ========================================= */
+/* Ép buộc cấu trúc Grid cho Container cha cao nhất */
+.azac-layout {
+    display: grid !important;
+    grid-template-columns: 1fr 320px !important;
+    align-items: stretch !important; /* Quan trọng nhất: Ép 2 cột dài bằng nhau */
+    min-height: 800px !important;
+    gap: 30px !important;
+    overflow: visible !important; /* Sticky fix */
+}
+
+/* Moved to consolidated media queries at bottom */
+
+/* Wrapper ID fallback */
+#azac-layout-wrapper {
+    display: contents !important; 
+}
+
+/* Ép Sticky Sidebar */
+.azac-info-sidebar {
+    position: -webkit-sticky !important;
+    position: sticky !important;
+    top: var(--az-sidebar-top) !important;
+    height: fit-content !important;
+    z-index: 10;
+}
+
+/* Khóa chiều cao nội dung */
+.azac-content-area, #azac-main-content {
+    min-height: 800px !important;
+    background: #fff;
+    flex: 1 !important; /* Ensure it fills parent flex container if used */
+}
+
+/* Header UI Fixes - Strong Selectors */
+header.site-header, .site-header-container { 
+    background-color: var(--az-primary) !important; 
+} 
+.main-navigation a, .header-user-welcome, .az-menu a, .header-auth a { 
+    color: #ffffff !important; 
+} 
+.site-logo { filter: brightness(0) invert(1); }
+
+html {
+    overflow-x: hidden; /* Prevent horizontal scroll */
+    scroll-behavior: smooth;
+}
+
 body {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
-  margin: 0;
-  color: #222;
-  line-height: 1.6;
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, sans-serif;
+    margin: 0;
+    color: var(--az-text-main);
+    line-height: 1.6;
 }
 
 a {
-  color: #0f6d5e;
-  text-decoration: none;
-  transition: color 0.2s;
+    color: var(--az-primary);
+    text-decoration: none;
+    transition: color 0.2s;
 }
 
 a:hover {
-  color: #0b4f44;
+    color: var(--az-primary-hover);
 }
 
 .container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 24px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
 }
 
-/* Header Styles */
+/* =========================================
+   3. Header & Logo Optimization
+   ========================================= */
+.site-header {
+    background-color: var(--az-primary);
+    color: var(--az-white);
+    padding: 15px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+}
+
+.site-header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+}
+
+/* Logo Optimization */
+.site-logo {
+    height: 45px;
+    width: auto;
+    display: block;
+    /* Drop shadow to make it pop on dark bg */
+    filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.6)); 
+    transition: transform 0.3s ease;
+}
+
+.site-logo:hover {
+    transform: scale(1.05);
+    filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.8));
+}
+
+.site-logo-link {
+    display: inline-block;
+    padding: 5px; 
+}
+
+/* Menu Text Colors */
 .az-menu {
     display: flex;
     gap: 20px;
@@ -40,87 +140,107 @@ a:hover {
     margin: 0;
     padding: 0;
 }
-.az-menu a {
-    color: rgba(255,255,255,0.9);
+
+/* User Requested: Specific Selector for Menu Links */
+#header-menu a, .main-navigation a, .az-menu a {
+    color: #ffffff !important; /* Pure white */
+    font-weight: 500;
+    opacity: 0.9;
+    transition: all 0.2s ease;
 }
+
 .az-menu a:hover {
-    color: #fff;
+    color: #ffffff;
+    opacity: 1;
+    text-shadow: 0 0 10px rgba(255,255,255,0.4);
 }
 
-/* Logo Styles */
-.site-logo {
-    height: 45px;
-    width: auto;
-    display: block;
-    filter: brightness(0) invert(1) rop-shadow(0 2px 4px rgba(0,0,0,0.1));
-    transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
-    
+.header-right-group {
+    display: flex;
+    align-items: center;
+    gap: 20px;
 }
 
-.site-logo:hover {
-    transform: scale(1.1) rotate(-2deg);
-    filter: brightness(1.1) drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+.header-user-welcome {
+    margin-right: 10px;
+    font-size: 14px;
+    color: #ffffff; /* Pure white */
 }
 
-.site-logo-link {
-    display: inline-block;
+/* Header Buttons */
+.header-btn-admin, 
+.header-btn-register {
+    background: var(--az-white);
+    color: var(--az-primary);
+    border-color: var(--az-white);
 }
 
-.footer-logo {
-    height: 36px;
-    width: auto;
-    filter: brightness(0) invert(1);
-    transition: transform 0.3s ease;
+.header-btn-admin:hover,
+.header-btn-register:hover {
+    background: #f0f0f0;
+    color: var(--az-primary-hover);
+    box-shadow: 0 0 10px rgba(255,255,255,0.3);
 }
 
-.footer-logo:hover {
-    transform: scale(1.05);
+.header-btn-login {
+    color: var(--az-white);
+    border-color: rgba(255,255,255,0.6);
 }
 
-/* Button Styles */
-.az-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-decoration: none;
-  padding: 10px 20px;
-  border-radius: 6px;
-  font-size: 15px;
-  font-weight: 600;
-  transition: all 0.2s;
-  cursor: pointer;
-  border: 1px solid transparent;
+.header-btn-login:hover {
+    border-color: var(--az-white);
+    background: rgba(255,255,255,0.1);
+    color: var(--az-white);
 }
 
-.az-btn-sm {
-    padding: 6px 14px;
-    font-size: 13px;
+/* =========================================
+   2. Button Styles & Hover Fixes
+   ========================================= */
+.az-btn, .azac-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: all 0.2s ease-in-out;
+    cursor: pointer;
+    border: 1px solid transparent;
+    line-height: 1.2;
 }
 
-.az-btn-lg {
-    padding: 14px 32px;
-    font-size: 16px;
+.az-btn-sm { padding: 6px 14px; font-size: 13px; }
+.az-btn-lg { padding: 14px 32px; font-size: 16px; }
+
+/* Primary Button */
+.az-btn-primary, .azac-btn {
+    background-color: var(--az-primary);
+    color: var(--az-white);
+    border-color: var(--az-primary);
 }
 
-.az-btn-primary {
-  background: #0f6d5e;
-  color: #fff;
-  border-color: #0f6d5e;
+/* Explicit Hover for Primary */
+.az-btn-primary:hover, .azac-btn:hover {
+    background-color: #0d233e !important; /* Darker than #15345a */
+    color: #ffffff !important; /* Force White Text */
+    border-color: #0d233e !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
 }
 
-.az-btn-primary:hover {
-  background: #0b4f44;
-  border-color: #0b4f44;
+/* Outline Button */
+.az-btn-outline, .azac-btn-outline {
+    background: transparent;
+    color: var(--az-primary);
+    border: 1px solid var(--az-primary);
 }
 
-.az-btn-outline {
-  background: transparent;
-  color: #0f6d5e;
-  border-color: #0f6d5e;
-}
-
-.az-btn-outline:hover {
-  background: #f0fcf9;
+.az-btn-outline:hover, .azac-btn-outline:hover {
+    background-color: var(--az-primary);
+    color: var(--az-white) !important;
+    border-color: var(--az-primary);
 }
 
 .az-btn-block {
@@ -128,248 +248,143 @@ a:hover {
     box-sizing: border-box;
 }
 
-/* Hero Section */
-.az-hero {
-    background: linear-gradient(135deg, #f0fcf9 0%, #e6f7f5 100%);
-    padding: 80px 0;
-    text-align: center;
-}
-
-.az-hero-title {
-    font-size: 42px;
-    color: #0b3d3b;
-    margin-bottom: 16px;
-    font-weight: 800;
-}
-
-.az-hero-subtitle {
-    font-size: 18px;
-    color: #555;
-    max-width: 700px;
-    margin: 0 auto 32px;
-}
-
-.az-hero-actions {
+/* =========================================
+   1. Layout Fixes (Stability & Flexbox)
+   ========================================= */
+/* Main Layout - Flexbox for Sticky Sidebar Support */
+.azac-layout {
     display: flex;
-    gap: 16px;
-    justify-content: center;
+    align-items: stretch; /* Stretch children to equal height */
+    gap: 30px;
+    margin-top: 30px;
 }
 
-/* Sections */
-.az-section {
-    padding: 60px 0;
-}
 
-.az-bg-light {
-    background: #f8faf9;
-}
 
-.az-section-header {
-    text-align: center;
-    margin-bottom: 48px;
-}
-
-.az-section-title {
-    font-size: 32px;
-    color: #0b3d3b;
-    margin-bottom: 8px;
-}
-
-.az-section-desc {
-    color: #666;
-    font-size: 16px;
-}
-
-/* Grid System */
-.az-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 24px;
-}
-
-@media (max-width: 992px) {
-    .az-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-}
-
-@media (max-width: 768px) {
-    .az-grid {
-        grid-template-columns: 1fr;
-    }
-    .az-hero-title {
-        font-size: 32px;
-    }
-    .header-right {
-        flex-direction: column;
-        align-items: flex-start;
-        width: 100%;
-        margin-top: 15px;
-    }
-}
-
-/* Cards */
-.az-card {
-  background: #fff;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0,0,0,0.05);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  border-top: 4px solid transparent; /* Placeholder for hover effect */
-}
-
-.az-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
-    border-top-color: #0f6d5e;
-}
-
-.az-card-body {
-    padding: 24px;
-    flex: 1;
-}
-
-.az-card-title {
-    margin: 0 0 12px;
-    font-size: 20px;
-    line-height: 1.4;
-}
-
-.az-card-title a {
-    color: #0b3d3b;
-}
-
-.az-card-title a:hover {
-    color: #0f6d5e;
-}
-
-.az-card-meta {
-    font-size: 14px;
-    color: #666;
-    margin-bottom: 16px;
-}
-
-.az-meta-item {
+.azac-main-col {
+    flex: 1; /* Take remaining space */
+    min-width: 0; /* Prevent flex overflow */
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
 }
 
-.az-card-excerpt {
-    font-size: 15px;
-    color: #555;
-    margin-bottom: 16px;
-}
-
-.az-card-footer {
-    padding: 20px 24px;
-    background: #f8faf9;
-    border-top: 1px solid #eee;
-}
-
-/* Footer */
-.site-footer {
-    background: #0b3d3b;
-    color: #fff;
-    padding: 60px 0 20px;
-    margin-top: auto;
-}
-
-.footer-grid {
-    display: grid;
-    grid-template-columns: 2fr 1fr 1fr;
-    gap: 40px;
-    margin-bottom: 40px;
-}
-
-@media (max-width: 768px) {
-    .footer-grid {
-        grid-template-columns: 1fr;
-        gap: 30px;
-    }
-}
-
-.footer-brand {
-    margin-bottom: 20px;
-}
-
-.footer-desc {
-    color: #a0c4c1;
-    line-height: 1.6;
-    max-width: 300px;
-}
-
-.footer-title {
-    font-size: 18px;
-    margin-bottom: 20px;
-    color: #fff;
-}
-
-.footer-links, .footer-contact {
-    list-style: none;
-    padding: 0;
-    margin: 0;
-}
-
-.footer-links li, .footer-contact li {
-    margin-bottom: 12px;
-}
-
-.footer-links a {
-    color: #a0c4c1;
-}
-
-.footer-links a:hover {
-    color: #fff;
-}
-
-.footer-contact li {
-    color: #a0c4c1;
-}
-
-.footer-bottom {
-    border-top: 1px solid rgba(255,255,255,0.1);
-    padding-top: 20px;
-    text-align: center;
-    color: #a0c4c1;
-    font-size: 14px;
-}
-
-/* Single Class Page Styles */
-.azac-tab.active {
-    background: var(--az-teal);
-    color: white;
-    border-color: var(--az-teal);
-    box-shadow: 0 4px 6px rgba(21, 52, 90, 0.2);
-}
-
-/* Content Box */
+/* Content Area Stability */
 .azac-content-area {
     background: #fff;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.05);
     padding: 40px;
-    min-height: 600px; /* Fixed min-height */
+    /* Fixed Minimum height as requested */
+    min-height: 800px; 
     transition: opacity 0.3s ease;
+    border-top: 4px solid var(--az-primary); /* Branding accent */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    flex: 1; /* Fill height */
 }
 
+/* Empty Content Placeholder */
+.azac-empty-content {
+    text-align: center;
+    padding: 60px 20px;
+    color: var(--az-text-light);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 300px;
+}
+.azac-empty-icon {
+    font-size: 48px;
+    color: rgba(21, 52, 90, 0.3); /* Brand faded */
+    margin-bottom: 20px;
+}
+.azac-empty-text {
+    font-size: 16px;
+    font-style: italic;
+    color: var(--az-primary);
+    opacity: 0.7;
+}
+
+/* Skeleton Animation */
+@keyframes skeleton-pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 0.8; }
+    100% { opacity: 0.6; }
+}
+.azac-skeleton-wrapper {
+    animation: skeleton-pulse 1.5s infinite ease-in-out;
+}
+.azac-skeleton-heading, .azac-skeleton-line, .azac-skeleton-block {
+    background-color: #e3eaf2 !important; /* Brand light tint */
+}
+
+/* Fade Transition */
 .azac-fade-in {
-    animation: fadeIn 0.4s ease-in-out;
+    animation: fadeIn 0.3s ease-in-out;
 }
-
 @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(10px); }
+    from { opacity: 0; transform: translateY(5px); }
     to { opacity: 1; transform: translateY(0); }
 }
 
-/* Right Sidebar (Class Info) */
+/* Timeline / Tabs */
+.azac-timeline {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 10px;
+    padding-top: 5px;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--az-border);
+    scrollbar-width: thin;
+}
+
+.azac-tab {
+    flex: 0 0 auto;
+    padding: 10px 20px;
+    background: #fff;
+    border-radius: 6px; /* Slightly squared for cleaner look */
+    border: 1px solid #ddd;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--az-text-light);
+    min-width: 100px; /* Uniform width */
+    text-align: center;
+}
+
+.azac-tab:hover {
+    border-color: var(--az-primary);
+    color: var(--az-primary);
+    background: var(--az-secondary);
+}
+
+.azac-tab.active {
+    background: var(--az-primary);
+    color: var(--az-white);
+    border-color: var(--az-primary);
+    box-shadow: 0 4px 6px rgba(21, 52, 90, 0.2);
+    transform: translateY(-2px);
+}
+
+/* =========================================
+   Sidebar Info Card
+   ========================================= */
 .azac-info-sidebar {
+    width: 320px;
+    flex-shrink: 0; /* Do not shrink */
+    position: -webkit-sticky;
     position: sticky;
     top: 20px;
+    z-index: 100;
+    height: fit-content; /* Critical for sticky to work in flex-stretch */
+    transition: top 0.3s ease;
 }
+
+/* Media query moved to bottom */
 
 .azac-info-card {
     background: #fff;
@@ -379,7 +394,7 @@ a:hover {
 }
 
 .azac-info-header {
-    background: #004E44; /* Teal for Header */
+    background: var(--az-primary);
     color: white;
     padding: 15px 20px;
     font-size: 16px;
@@ -388,20 +403,13 @@ a:hover {
     letter-spacing: 0.5px;
 }
 
-.azac-info-body {
-    padding: 20px;
-}
-
+.azac-info-body { padding: 20px; }
 .azac-info-row {
     margin-bottom: 15px;
     border-bottom: 1px solid #eee;
     padding-bottom: 10px;
 }
-.azac-info-row:last-child {
-    border-bottom: none;
-    margin-bottom: 0;
-}
-
+.azac-info-row:last-child { border-bottom: none; margin-bottom: 0; }
 .azac-info-label {
     font-size: 12px;
     color: #888;
@@ -409,7 +417,6 @@ a:hover {
     margin-bottom: 4px;
     display: block;
 }
-
 .azac-info-value {
     font-size: 15px;
     font-weight: 600;
@@ -417,9 +424,7 @@ a:hover {
 }
 
 /* Progress Bar */
-.azac-progress-wrapper {
-    margin-top: 10px;
-}
+.azac-progress-wrapper { margin-top: 10px; }
 .azac-progress-bar {
     height: 8px;
     background: #eee;
@@ -428,69 +433,130 @@ a:hover {
 }
 .azac-progress-fill {
     height: 100%;
-    background: var(--az-teal);
+    background: var(--az-primary);
     border-radius: 4px;
 }
 
-/* Hide Sidebar styling from previous version */
-.azac-sidebar { display: none; }
-
-.azac-content-header {
+/* =========================================
+   Hero & General UI
+   ========================================= */
+.az-hero {
+    background: linear-gradient(135deg, var(--az-secondary) 0%, #e6f7f5 100%);
+    padding: 80px 0;
+    text-align: center;
+}
+.az-hero-title {
+    font-size: 42px;
+    color: var(--az-primary);
+    margin-bottom: 16px;
+    font-weight: 800;
+}
+.az-hero-subtitle {
+    font-size: 18px;
+    color: var(--az-text-light);
+    max-width: 700px;
+    margin: 0 auto 32px;
+}
+.az-hero-actions {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 20px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid #eee;
+    gap: 16px;
+    justify-content: center;
 }
 
-.azac-btn {
-    background-color: var(--az-teal);
-    color: white;
-    padding: 10px 20px;
-    /* Bigger button */
-    border-radius: 6px;
-    text-decoration: none;
-    border: none;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    /* Bigger text */
-    transition: background 0.2s;
-    font-weight: 500;
+.az-section { padding: 60px 0; }
+.az-bg-light { background: #f8faf9; }
+.az-section-header { text-align: center; margin-bottom: 48px; }
+.az-section-title {
+    font-size: 32px;
+    color: var(--az-primary);
+    margin-bottom: 8px;
+}
+.az-section-desc { color: var(--az-text-light); font-size: 16px; }
+
+/* Grid System */
+.az-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 24px;
+}
+/* Media queries moved to bottom */
+
+/* Cards */
+.az-card {
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    border-top: 4px solid transparent;
+}
+.az-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    border-top-color: var(--az-primary);
+}
+.az-card-body { padding: 24px; flex: 1; }
+.az-card-title { margin: 0 0 12px; font-size: 20px; line-height: 1.4; }
+.az-card-title a { color: var(--az-primary); }
+.az-card-title a:hover { color: var(--az-primary-hover); }
+.az-card-meta { font-size: 14px; color: var(--az-text-light); margin-bottom: 16px; }
+.az-meta-item { display: flex; align-items: center; gap: 6px; }
+.az-card-excerpt { font-size: 15px; color: #555; margin-bottom: 16px; }
+.az-card-footer { padding: 20px 24px; background: #f8faf9; border-top: 1px solid #eee; }
+
+/* Footer */
+.site-footer {
+    background: var(--az-primary);
+    color: #fff;
+    padding: 60px 0 20px;
+    margin-top: auto;
+}
+.footer-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 40px;
+    margin-bottom: 40px;
 }
 
-.azac-btn:hover {
-    background-color: var(--az-teal-hover);
-    color: white;
+.footer-brand { margin-bottom: 20px; }
+.footer-logo {
+    height: 36px;
+    width: auto;
+    filter: brightness(0) invert(1);
+    transition: transform 0.3s ease;
+}
+.footer-logo:hover { transform: scale(1.05); }
+.footer-desc { color: #a0c4c1; line-height: 1.6; max-width: 300px; }
+.footer-title { font-size: 18px; margin-bottom: 20px; color: #fff; }
+.footer-links, .footer-contact { list-style: none; padding: 0; margin: 0; }
+.footer-links li, .footer-contact li { margin-bottom: 12px; }
+.footer-links a { color: #a0c4c1; }
+.footer-links a:hover { color: #fff; }
+.footer-contact li { color: #a0c4c1; }
+.footer-bottom {
+    border-top: 1px solid rgba(255,255,255,0.1);
+    padding-top: 20px;
+    text-align: center;
+    color: #a0c4c1;
+    font-size: 14px;
 }
 
-.azac-btn-outline {
-    background: transparent;
-    border: 1px solid var(--az-teal);
-    color: var(--az-teal);
-}
-
-.azac-btn-outline:hover {
-    background: var(--az-teal);
-    color: white;
-}
-
-/* Preview Mode Styles */
+/* =========================================
+   Preview Mode & Attachments
+   ========================================= */
 .azac-preview-container {
     max-width: 800px;
     margin: 40px auto;
     text-align: center;
 }
-
 .azac-preview-title {
     margin-bottom: 20px;
     font-size: 32px;
-    color: #0b3d3b;
+    color: var(--az-primary);
 }
-
 .azac-preview-card {
     background: #fff;
     padding: 40px;
@@ -499,124 +565,68 @@ a:hover {
     position: relative;
     overflow: hidden;
 }
-
 .azac-preview-card::before {
     content: '';
     position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 6px;
-    background: linear-gradient(90deg, #0f6d5e, #2ecc71);
+    top: 0; left: 0; width: 100%; height: 6px;
+    background: linear-gradient(90deg, var(--az-primary), #2ecc71);
 }
-
 .azac-preview-icon {
     font-size: 64px;
-    color: #0f6d5e;
+    color: var(--az-primary);
     margin-bottom: 20px;
     display: inline-block;
-    background: #f0fcf9;
-    width: 100px;
-    height: 100px;
-    line-height: 100px;
+    background: var(--az-secondary);
+    width: 100px; height: 100px; line-height: 100px;
     border-radius: 50%;
 }
-
-.azac-preview-heading {
-    color: #0b3d3b;
-    font-size: 24px;
-    margin-bottom: 15px;
-}
-
-.azac-preview-message {
-    font-size: 16px;
-    color: #555;
-    margin-bottom: 30px;
-    line-height: 1.6;
-}
-
+.azac-preview-heading { color: var(--az-primary); font-size: 24px; margin-bottom: 15px; }
+.azac-preview-message { font-size: 16px; color: #555; margin-bottom: 30px; line-height: 1.6; }
 .azac-class-info-preview {
     background: #f9f9f9;
     padding: 25px;
     border-radius: 8px;
     margin-bottom: 30px;
     text-align: left;
-    border-left: 4px solid #0f6d5e;
+    border-left: 4px solid var(--az-primary);
 }
+.azac-class-info-preview p { margin-bottom: 10px; color: #333; }
+.azac-class-info-preview p:last-child { margin-bottom: 0; }
+.azac-preview-actions { display: flex; justify-content: center; gap: 15px; }
 
-.azac-class-info-preview p {
-    margin-bottom: 10px;
-    color: #333;
-}
-
-.azac-class-info-preview p:last-child {
-    margin-bottom: 0;
-}
-
-.azac-preview-actions {
+/* Editor & Attachments */
+.azac-content-header {
     display: flex;
-    justify-content: center;
-    gap: 15px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #eee;
 }
-
-/* Editor Specifics */
 #wp-azac_session_editor-wrap {
     border: 1px solid #ddd;
     border-radius: 4px;
     overflow: hidden;
 }
-
-#wp-azac_session_editor-editor-container {
-    border-radius: 0 0 4px 4px;
-}
-
-/* Make editor taller */
-.mce-edit-area iframe {
-    height: 500px !important;
-    /* Force taller height */
-    min-height: 400px;
-}
-
-/* Editor Container */
-#azac-editor-container {
-    display: none;
-    margin-top: 20px;
-    background: #fff;
-}
-
+#wp-azac_session_editor-editor-container { border-radius: 0 0 4px 4px; }
+.mce-edit-area iframe { height: 500px !important; min-height: 400px; }
+#azac-editor-container { display: none; margin-top: 20px; background: #fff; }
 .azac-editor-instruction {
     background: #eef3f9;
-    border-left: 4px solid var(--az-teal);
+    border-left: 4px solid var(--az-primary);
     padding: 15px;
     margin-bottom: 20px;
     border-radius: 4px;
 }
-
-.azac-editor-instruction h4 {
-    margin: 0 0 5px 0;
-    color: var(--az-teal);
-}
-
-.azac-editor-instruction p {
-    margin: 0;
-    font-size: 14px;
-    color: #555;
-}
-
-/* Attachments */
-.azac-attachments {
-    margin-top: 30px;
-    border-top: 1px solid #eee;
-    padding-top: 20px;
-}
-
+.azac-editor-instruction h4 { margin: 0 0 5px 0; color: var(--az-primary); }
+.azac-editor-instruction p { margin: 0; font-size: 14px; color: #555; }
+.azac-attachments { margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px; }
 .azac-att-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: 15px;
     margin-top: 15px;
 }
-
 .azac-att-card {
     border: 1px solid #ddd;
     border-radius: 6px;
@@ -627,96 +637,179 @@ a:hover {
     background: #f9f9f9;
     transition: transform 0.2s;
 }
-
-.azac-att-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.azac-att-icon {
-    font-size: 24px;
-    width: 32px;
-    text-align: center;
-}
-
-.azac-att-icon.pdf {
-    color: #e74c3c;
-}
-
-.azac-att-icon.word {
-    color: #3498db;
-}
-
-.azac-att-icon.image {
-    color: #2ecc71;
-}
-
-.azac-att-info {
-    flex: 1;
-    overflow: hidden;
-}
-
+.azac-att-card:hover { transform: translateY(-2px); box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1); }
+.azac-att-icon { font-size: 24px; width: 32px; text-align: center; }
+.azac-att-icon.pdf { color: #e74c3c; }
+.azac-att-icon.word { color: #3498db; }
+.azac-att-icon.image { color: #2ecc71; }
+.azac-att-info { flex: 1; overflow: hidden; }
 .azac-att-title {
-    font-size: 13px;
-    font-weight: 600;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: block;
+    font-size: 13px; font-weight: 600;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;
+}
+.azac-att-actions { font-size: 12px; }
+
+/* Modal Styles */
+.azac-modal {
+    display: none; 
+    position: fixed; 
+    z-index: 9999; 
+    left: 0; top: 0; width: 100%; height: 100%; 
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.6); 
+    backdrop-filter: blur(5px);
+}
+.azac-modal-content {
+    background-color: #fefefe;
+    margin: 2% auto; 
+    padding: 0;
+    border: 1px solid #888;
+    width: 80%; max-width: 900px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    display: flex; flex-direction: column;
+    height: 90vh;
+}
+.azac-modal-header {
+    padding: 15px 20px;
+    background: var(--az-primary);
+    color: white;
+    border-top-left-radius: 12px;
+    border-top-right-radius: 12px;
+    display: flex; justify-content: space-between; align-items: center;
+}
+.azac-modal-header h3 { margin: 0; font-size: 18px; color: white; }
+.azac-close { color: white; font-size: 28px; font-weight: bold; cursor: pointer; line-height: 1; }
+.azac-close:hover, .azac-close:focus { color: #ddd; text-decoration: none; cursor: pointer; }
+.azac-actions { display: flex; gap: 10px; }
+.azac-modal-body { flex: 1; padding: 0; background: #525659; overflow: hidden; }
+.azac-modal-body iframe { width: 100%; height: 100%; border: none; }
+.azac-modal-footer {
+    padding: 15px 20px;
+    border-top: 1px solid #ddd;
+    display: flex; justify-content: flex-end; gap: 10px;
+    background: #fff;
+    border-bottom-left-radius: 12px; border-bottom-right-radius: 12px;
 }
 
-.azac-att-actions {
-    font-size: 12px;
-}
-
-/* Editor Container */
-#azac-editor-container {
-    display: none;
-    margin-top: 20px;
-}
-
-/* Print Styles */
+/* Print */
 @media print {
+    header, footer, .azac-sidebar, .azac-actions, .azac-editor-controls { display: none !important; }
+    .azac-content-area { box-shadow: none; padding: 0; }
+    .azac-layout { display: block; }
+    body { background: white; }
+}
 
-    header,
-    footer,
-    .azac-sidebar,
-    .azac-actions,
-    .azac-editor-controls {
-        display: none !important;
+/* 4. Branding for Admin-like Elements (Tables) */
+th, .azac-table-header {
+    background-color: var(--az-primary);
+    color: var(--az-white);
+    padding: 12px;
+    text-align: left;
+}
+
+/* =========================================
+   RESPONSIVE & MEDIA QUERIES (CONSOLIDATED)
+   ========================================= */
+
+/* --- Tablet & Small Desktop (Max Width: 992px) --- */
+@media (max-width: 992px) {
+    /* Grid System */
+    .az-grid { 
+        grid-template-columns: repeat(2, 1fr); 
     }
 
-    .azac-content-area {
-        box-shadow: none;
-        padding: 0;
+    /* Reviews Grid (Merged from attendance.css) */
+    .azac-reviews-grid {
+        grid-template-columns: 1fr;
     }
 
-    .azac-layout {
-        display: block;
-    }
-
-    body {
-        background: white;
+    /* Sidebar - Disable Sticky */
+    .azac-info-sidebar {
+        width: 100%;
+        position: static; 
+        height: auto;
     }
 }
 
-/* Responsive */
+/* --- Mobile (Max Width: 768px) --- */
 @media (max-width: 768px) {
-    .azac-sidebar {
-        flex: 100%;
-        overflow-x: auto;
-        white-space: nowrap;
-        padding: 5px;
+    /* 1. Global Width Enforcement (User Request) */
+    .azac-layout, .container, .azac-main-col, .azac-content-area {
+        min-width: 100% !important;
+        width: 100% !important;
+        box-sizing: border-box !important;
     }
 
+    /* 2. Horizontal Scroll Timeline */
+    .azac-timeline {
+        display: flex !important;
+        flex-wrap: nowrap !important;
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch;
+        padding-bottom: 10px;
+        gap: 10px !important;
+        scrollbar-width: none;
+        margin-bottom: 20px;
+    }
+    
+    .azac-timeline::-webkit-scrollbar {
+        display: none;
+    }
+    
     .azac-tab {
-        display: inline-block;
-        border-left: none;
-        border-bottom: 3px solid transparent;
+        flex: 0 0 auto !important;
+        white-space: nowrap !important;
+        padding: 8px 16px !important;
+        font-size: 14px !important;
     }
 
-    .azac-tab.active {
-        border-left: none;
-        border-bottom-color: var(--az-teal);
+    /* 3. Fix Word Break & Content */
+    .azac-content-area, .azac-main-col, body, html {
+        word-break: normal !important;
+        overflow-wrap: break-word;
+    }
+    
+    /* 4. Optimize Header & Logo */
+    .container, .site-header-container {
+        padding: 0 15px !important;
+    }
+    
+    .site-logo {
+        height: 35px !important;
+        width: auto;
+    }
+    
+    .header-right {
+        flex-direction: column;
+        align-items: flex-start;
+        width: 100%;
+        margin-top: 15px;
+    }
+
+    .az-hero-title { 
+        font-size: 32px; 
+    }
+    
+    .az-grid { 
+        grid-template-columns: 1fr; 
+    }
+
+    /* 5. Sidebar Position & Layout Flow */
+    .azac-layout {
+        flex-direction: column !important;
+        display: flex !important; /* Re-assert flex */
+    }
+    
+    .azac-info-sidebar {
+        width: 100% !important;
+        margin-top: 20px !important;
+        order: 2;
+        position: static !important;
+    }
+    
+    .azac-main-col {
+        order: 1;
+        width: 100% !important;
     }
 }

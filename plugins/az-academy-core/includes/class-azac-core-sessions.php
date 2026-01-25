@@ -454,8 +454,20 @@ class AzAC_Core_Sessions
             }
         }
 
+        $content = wpautop(stripslashes($row->session_content));
+        
+        // Logic xử lý buổi trống & Wrapper
+        if (empty($content) || !trim($content)) {
+            $html_response = '<div class="azac-empty-placeholder" style="min-height: 800px; display: flex; flex-direction: column; align-items: center; justify-content: center; color:#15345a; opacity:0.5;">
+                <span class="dashicons dashicons-media-document" style="font-size:50px; width:50px; height:50px;"></span>
+                <p>Nội dung buổi học này đang được cập nhật...</p>
+            </div>';
+        } else {
+            $html_response = '<div class="azac-actual-content" style="min-height: 800px;">' . $content . '</div>';
+        }
+
         wp_send_json_success([
-            'content' => wpautop(stripslashes($row->session_content)),
+            'content' => $html_response,
             'raw_content' => stripslashes($row->session_content),
             'attachments' => $attachments
         ]);

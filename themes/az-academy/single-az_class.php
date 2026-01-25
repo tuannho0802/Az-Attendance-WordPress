@@ -52,153 +52,6 @@ wp_enqueue_script('jquery');
 
 get_header();
 ?>
-<style>
-    /* Brand Colors */
-    :root {
-        --az-teal: #15345a;
-        /* Updated brand color */
-        --az-teal-hover: #1f4a7c;
-        --az-bg: #f5f7fa;
-    }
-
-    /* Modal Styles */
-    .azac-modal {
-        display: none; 
-        position: fixed; 
-        z-index: 9999; 
-        left: 0;
-        top: 0;
-        width: 100%; 
-        height: 100%; 
-        overflow: auto; 
-        background-color: rgba(0,0,0,0.6); 
-        backdrop-filter: blur(5px);
-    }
-
-    .azac-modal-content {
-        background-color: #fefefe;
-        margin: 2% auto; 
-        padding: 0;
-        border: 1px solid #888;
-        width: 80%; 
-        max-width: 900px;
-        border-radius: 12px;
-        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-        display: flex;
-        flex-direction: column;
-        height: 90vh;
-    }
-
-    .azac-modal-header {
-        padding: 15px 20px;
-        background: #004E44;
-        color: white;
-        border-top-left-radius: 12px;
-        border-top-right-radius: 12px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .azac-modal-header h3 {
-        margin: 0;
-        font-size: 18px;
-        color: white;
-    }
-
-    .azac-close {
-        color: white;
-        font-size: 28px;
-        font-weight: bold;
-        cursor: pointer;
-        line-height: 1;
-    }
-
-    .azac-close:hover,
-    .azac-close:focus {
-        color: #ddd;
-        text-decoration: none;
-        cursor: pointer;
-    }
-     .azac-actions{
-        display: flex;
-        gap: 10px;
-     }
-
-    .azac-modal-body {
-        flex: 1;
-        padding: 0;
-        background: #525659; /* PDF Viewer Background */
-        overflow: hidden;
-    }
-
-    .azac-modal-body iframe {
-        width: 100%;
-        height: 100%;
-        border: none;
-    }
-
-    .azac-modal-footer {
-        padding: 15px 20px;
-        border-top: 1px solid #ddd;
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        background: #fff;
-        border-bottom-left-radius: 12px;
-        border-bottom-right-radius: 12px;
-    }
-
-    /* Layout Structure */
-    .azac-layout {
-        display: grid;
-        grid-template-columns: 3fr 1fr; /* 75% - 25% */
-        gap: 30px;
-        margin-top: 30px;
-    }
-
-    @media (max-width: 991px) {
-        .azac-layout {
-            grid-template-columns: 1fr;
-        }
-    }
-
-    /* Main Column */
-    .azac-main-col {
-        min-width: 0;
-    }
-
-    /* Timeline / Tabs (Horizontal) */
-    .azac-timeline {
-        display: flex;
-        gap: 10px;
-        overflow-x: auto;
-        padding-bottom: 10px;
-        padding-top: 10px;
-        margin-bottom: 20px;
-        border-bottom: 2px solid #eee;
-        scrollbar-width: thin;
-    }
-    
-    .azac-tab {
-        flex: 0 0 auto;
-        padding: 10px 20px;
-        background: #fff;
-        border-radius: 20px;
-        border: 1px solid #ddd;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-weight: 500;
-        white-space: nowrap;
-        color: #555;
-    }
-
-    .azac-tab:hover {
-        border-color: var(--az-teal);
-        color: var(--az-teal);
-        transform: translateY(-2px);
-    }
-</style>
 
 <div class="container">
     <main>
@@ -213,7 +66,7 @@ get_header();
                             <article <?php post_class(); ?>>
                     <h1><?php the_title(); ?></h1>
                 
-                    <div class="azac-layout">
+                    <div class="azac-layout" style="min-height: 800px !important;">
                         <!-- Main Column (75%) -->
                         <div class="azac-main-col">
                             <!-- Horizontal Timeline -->
@@ -222,13 +75,13 @@ get_header();
                                 <?php foreach ($sessions as $index => $sess): ?>
                                     <div class="azac-tab" data-target="session" data-id="<?php echo esc_attr($sess['id']); ?>"
                                         data-date="<?php echo esc_attr($sess['date']); ?>">
-                                        Buổi <?php echo $index + 1; ?>: <?php echo date('d/m', strtotime($sess['date'])); ?>
+                                        Buổi <?php echo $index + 1; ?>: <?php echo date('d/m/y', strtotime($sess['date'])); ?>
                                     </div>
                                 <?php endforeach; ?>
                             </div>
                 
                             <!-- Content Area -->
-                            <div class="azac-content-area" id="azac-pdf-content">
+                            <div class="azac-content-area" id="azac-pdf-content" style="min-height: 800px !important;">
                                 <div class="azac-content-header">
                                     <h2 id="azac-view-title">Tổng quan lớp học</h2>
                                     <div class="azac-actions">
@@ -425,6 +278,296 @@ get_header();
     </div>
 </div>
 
+<script>
+    jQuery(document).ready(function ($) {
+        // 1. Setup Variables
+        var overviewContent = $('#azac-main-content').html();
+        var overviewTitle = "Tổng quan lớp học";
+        var currentSessionId = 0;
+
+        // Define AJAX vars
+        var azac_vars = {
+            ajax_url: "<?php echo admin_url('admin-ajax.php'); ?>",
+            nonce: "<?php echo wp_create_nonce('azac_session_content'); ?>"
+        };
+
+        // 2. Tab Switching Logic
+        $('.azac-tab').on('click', function () {
+            var $t = $(this);
+            if ($t.hasClass('active')) return;
+
+            $('.azac-tab').removeClass('active');
+            $t.addClass('active');
+
+            var target = $t.data('target');
+            var id = $t.data('id');
+            currentSessionId = id;
+
+            // Reset UI
+            $('#azac-editor-container').slideUp();
+
+            // --- 1. Xác định vùng nội dung ---
+            var $container = $('#azac-main-content');
+
+            // --- 2. KHÔNG xóa nội dung cũ ngay. Hãy làm mờ nó đi và Khóa chiều cao ---
+            $container.css({
+                'opacity': '0.5',
+                'min-height': $container.height() + 'px'
+            });
+
+            if (target === 'overview') {
+                $container.html(overviewContent).css('opacity', '1');
+                $('#azac-view-title').text(overviewTitle);
+                $('#azac-attachments-section').hide();
+                $('#azac-edit-btn').hide();
+
+                // 4. Giải phóng chiều cao sau 500ms
+                setTimeout(function () {
+                    $container.css('min-height', '800px');
+                }, 500);
+
+                // Trigger Animation
+                var $view = $('#azac-display-view');
+                $view.removeClass('azac-fade-in');
+                void $view[0].offsetWidth; // trigger reflow
+                $view.addClass('azac-fade-in');
+            } else {
+                // Set Title
+                var sessionTitle = $t.text().trim();
+                $('#azac-view-title').text(sessionTitle);
+                $('#azac-attachments-section').hide();
+
+                // Fetch Data
+                $.post(azac_vars.ajax_url, {
+                    action: 'azac_get_session_details',
+                    nonce: azac_vars.nonce,
+                    session_id: id
+                }, function (res) {
+                    if (res.success) {
+                        var content = res.data.content;
+                        // Content is now pre-processed by server with correct wrapper and min-height
+
+                        // 3. Chỉ cập nhật nội dung khi dữ liệu đã sẵn sàng
+                        $container.html(content).css('opacity', '1');
+
+                        // 4. Giải phóng chiều cao sau 500ms
+                        setTimeout(function () {
+                            $container.css('min-height', '800px');
+                        }, 500);
+
+                        // Trigger Fade In Animation
+                        var $view = $('#azac-display-view');
+                        $view.removeClass('azac-fade-in');
+                        void $view[0].offsetWidth; // trigger reflow
+                        $view.addClass('azac-fade-in');
+
+                        // Show Edit Button if user has permission (button exists)
+                        $('#azac-edit-btn').show();
+
+                        // Render Attachments
+                        if (res.data.attachments && res.data.attachments.length > 0) {
+                            renderAttachments(res.data.attachments, '#azac-attachments-list');
+                            $('#azac-attachments-section').show();
+                        }
+
+                        // Update Editor Content if available
+                        if (typeof tinyMCE !== 'undefined' && tinyMCE.get('azac_session_editor')) {
+                            tinyMCE.get('azac_session_editor').setContent(res.data.raw_content);
+                        } else if ($('#azac_session_editor').length) {
+                            $('#azac_session_editor').val(res.data.raw_content);
+                        }
+
+                        // Update Editor Attachments
+                        if (res.data.attachments) {
+                            renderEditorAttachments(res.data.attachments);
+                        }
+
+                    } else {
+                        alert(res.data.message || 'Lỗi tải dữ liệu');
+                        $container.css({ 'opacity': '1', 'min-height': '800px' }); // Reset on error
+                    }
+                }).fail(function () {
+                    $container.css({ 'opacity': '1', 'min-height': '800px' }); // Reset on fail
+                });
+            }
+        });
+
+        // 3. Editor Logic
+        $('#azac-edit-btn').on('click', function () {
+            $('#azac-display-view').slideUp();
+            $('#azac-editor-container').slideDown();
+        });
+
+        $('#azac-cancel-btn').on('click', function () {
+            $('#azac-editor-container').slideUp();
+            $('#azac-display-view').slideDown();
+        });
+
+        $('#azac-save-btn').on('click', function () {
+            var $btn = $(this);
+            $btn.prop('disabled', true).text('Đang lưu...');
+
+            var content = '';
+            if (typeof tinyMCE !== 'undefined' && tinyMCE.get('azac_session_editor') && !tinyMCE.get('azac_session_editor').isHidden()) {
+                content = tinyMCE.get('azac_session_editor').getContent();
+            } else {
+                content = $('#azac_session_editor').val();
+            }
+
+            // Get Attachments IDs
+            var attIds = [];
+            // Assuming we store IDs in a hidden input or array. 
+            // For now, let's parse from the rendered editor attachments or just rely on what we have.
+            // The PHP code has: <input type="hidden" id="azac-att-ids" value="[]">
+            var val = $('#azac-att-ids').val();
+            if (val) {
+                try {
+                    attIds = JSON.parse(val);
+                } catch (e) { }
+            }
+
+            $.post(azac_vars.ajax_url, {
+                action: 'azac_save_session_content',
+                nonce: azac_vars.nonce,
+                session_id: currentSessionId,
+                content: content,
+                attachments: attIds
+            }, function (res) {
+                $btn.prop('disabled', false).text('Lưu thay đổi');
+                if (res.success) {
+                    alert('Đã lưu nội dung thành công!');
+                    // Update Display View
+                    $('#azac-main-content').html(res.data.content);
+                    $('#azac-editor-container').slideUp();
+                    $('#azac-display-view').slideDown();
+
+                    // Update Attachments View
+                    if (res.data.attachments && res.data.attachments.length > 0) {
+                        renderAttachments(res.data.attachments, '#azac-attachments-list');
+                        $('#azac-attachments-section').show();
+                    } else {
+                        $('#azac-attachments-section').hide();
+                    }
+
+                } else {
+                    alert('Lỗi: ' + (res.data.message || 'Không thể lưu'));
+                }
+            }).fail(function () {
+                $btn.prop('disabled', false).text('Lưu thay đổi');
+                alert('Lỗi kết nối server.');
+            });
+        });
+
+        // Helper: Render View Attachments
+        function renderAttachments(atts, container) {
+            var html = '';
+            $.each(atts, function (i, att) {
+                var iconClass = 'dashicons-media-default';
+                if (att.mime.indexOf('pdf') !== -1) iconClass = 'dashicons-pdf';
+                else if (att.mime.indexOf('image') !== -1) iconClass = 'dashicons-format-image';
+                else if (att.mime.indexOf('word') !== -1) iconClass = 'dashicons-media-document';
+
+                html += '<div class="azac-att-card">';
+                html += '<span class="dashicons ' + iconClass + ' azac-att-icon"></span>';
+                html += '<div class="azac-att-info"><a href="' + att.url + '" target="_blank" class="azac-att-title">' + att.title + '</a></div>';
+                // View/Download actions could go here
+                html += '</div>';
+            });
+            $(container).html(html);
+        }
+
+        // Helper: Render Editor Attachments (with delete option)
+        function renderEditorAttachments(atts) {
+            // Update hidden input
+            var ids = atts.map(function (a) { return a.id; });
+            $('#azac-att-ids').val(JSON.stringify(ids));
+
+            var html = '';
+            $.each(atts, function (i, att) {
+                var iconClass = 'dashicons-media-default';
+                if (att.mime.indexOf('pdf') !== -1) iconClass = 'dashicons-pdf';
+
+                html += '<div class="azac-att-card" data-id="' + att.id + '">';
+                html += '<span class="dashicons ' + iconClass + ' azac-att-icon"></span>';
+                html += '<div class="azac-att-info"><span class="azac-att-title">' + att.title + '</span></div>';
+                html += '<button type="button" class="button-link azac-remove-att" style="color:#a00;">Xóa</button>';
+                html += '</div>';
+            });
+            $('#azac-editor-attachments').html(html);
+        }
+
+        // Remove Attachment Logic
+        $(document).on('click', '.azac-remove-att', function () {
+            var $card = $(this).closest('.azac-att-card');
+            var id = $card.data('id');
+
+            // Update hidden input
+            var ids = JSON.parse($('#azac-att-ids').val() || '[]');
+            ids = ids.filter(function (i) { return i != id; });
+            $('#azac-att-ids').val(JSON.stringify(ids));
+
+            $card.remove();
+        });
+
+        // 4. Upload Logic (Simplified)
+        var frame;
+        $('#azac-upload-btn').on('click', function (e) {
+            e.preventDefault();
+            if (frame) {
+                frame.open();
+                return;
+            }
+            frame = wp.media({
+                title: 'Chọn tài liệu',
+                button: { text: 'Thêm vào bài học' },
+                multiple: true
+            });
+            frame.on('select', function () {
+                var selection = frame.state().get('selection');
+                var currentIds = JSON.parse($('#azac-att-ids').val() || '[]');
+                var newAtts = []; // We need full objects to render, but simple IDs for input
+
+                // We need to re-fetch full objects or just append to UI?
+                // Let's just append to UI and update ID list
+                selection.map(function (attachment) {
+                    attachment = attachment.toJSON();
+                    if (currentIds.indexOf(attachment.id) === -1) {
+                        currentIds.push(attachment.id);
+                        // Append UI
+                        var iconClass = 'dashicons-media-default';
+                        if (attachment.mime.indexOf('pdf') !== -1) iconClass = 'dashicons-pdf';
+
+                        var html = '<div class="azac-att-card" data-id="' + attachment.id + '">';
+                        html += '<span class="dashicons ' + iconClass + ' azac-att-icon"></span>';
+                        html += '<div class="azac-att-info"><span class="azac-att-title">' + attachment.title + '</span></div>';
+                        html += '<button type="button" class="button-link azac-remove-att" style="color:#a00;">Xóa</button>';
+                        html += '</div>';
+                        $('#azac-editor-attachments').append(html);
+                    }
+                });
+                $('#azac-att-ids').val(JSON.stringify(currentIds));
+            });
+            frame.open();
+        });
+
+        // PDF Modal
+        $(document).on('click', '.azac-att-title', function (e) {
+            var url = $(this).attr('href');
+            // If it's a PDF, prevent default and open modal
+            if (url && url.indexOf('.pdf') !== -1) {
+                e.preventDefault();
+                $('#azac-pdf-frame').attr('src', url);
+                $('#azac-pdf-modal').fadeIn();
+            }
+        });
+
+        $('#azac-close-modal-btn, .azac-close').on('click', function () {
+            $('#azac-pdf-modal').fadeOut();
+            $('#azac-pdf-frame').attr('src', '');
+        });
+    });
+</script>
 <?php
 get_footer();
 ?>
+
