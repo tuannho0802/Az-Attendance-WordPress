@@ -13,7 +13,7 @@ class AzAC_Core_Admin
         add_action('admin_menu', [__CLASS__, 'hide_admin_menus'], 999);
 
         // Redirect Login for Manager/Teacher
-        add_filter('login_redirect', [__CLASS__, 'custom_login_redirect'], 10, 3);
+        add_filter('login_redirect', [__CLASS__, 'custom_login_redirect'], 9999, 3);
 
         // Row Actions & Bulk Actions Filters
         add_filter('post_row_actions', [__CLASS__, 'remove_row_actions'], 10, 2);
@@ -32,6 +32,41 @@ class AzAC_Core_Admin
 
         // Hide "Delete Permanently" in Media Grid via CSS
         add_action('admin_head', [__CLASS__, 'hide_delete_ui_css']);
+
+        // Remove Welcome Panel
+        add_action('admin_init', [__CLASS__, 'remove_welcome_panel']);
+
+        // Force redirect from Dashboard to Attendance page
+        add_action('load-index.php', [__CLASS__, 'force_dashboard_redirect']);
+    }
+
+    public static function force_dashboard_redirect()
+    {
+        $user = wp_get_current_user();
+
+        // Ensure user is logged in
+        if (!$user->exists()) {
+            return;
+        }
+
+        // Target: Attendance Page
+        $target_url = admin_url('admin.php?page=azac-attendance');
+
+        // Check if user is student and lacks admin access
+        if (in_array('az_student', (array) $user->roles) && !$user->has_cap('read')) {
+            wp_safe_redirect(home_url());
+            exit;
+        }
+
+        // Redirect all users (Admin, Manager, Teacher, Student) from Dashboard to Attendance
+        // Check if we are already on the target page (load-index.php means we are on dashboard, so we are NOT on target page)
+        wp_safe_redirect($target_url);
+        exit;
+    }
+
+    public static function remove_welcome_panel()
+    {
+        remove_action('welcome_panel', 'wp_welcome_panel');
     }
 
     public static function ensure_manager_capabilities()
@@ -100,6 +135,30 @@ class AzAC_Core_Admin
         remove_menu_page('options-general.php');        // Settings
 
         // Note: Media, Users, LMS menus are KEPT visible.
+    }
+
+    public static function custom_login_redirect($redirect_to, $request, $user)
+    {
+        // Check for login errors
+        if (is_wp_error($user)) {
+            return $redirect_to;
+        }
+
+        // Ensure we have a user object
+        if (!($user instanceof WP_User)) {
+            return $redirect_to;
+        }
+
+        // Target: Attendance Page
+        $target_url = admin_url('admin.php?page=azac-attendance');
+
+        // Check if user is student and lacks admin access
+        if (in_array('az_student', (array) $user->roles) && !$user->has_cap('read')) {
+            return home_url();
+        }
+
+        // All other users (Admin, Manager, Teacher, Student with access) go to Attendance
+        return $target_url;
     }
 
     public static function hide_delete_ui_css()
