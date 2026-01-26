@@ -449,6 +449,12 @@
       );
       var todayStr = y + "-" + m + "-" + d;
 
+      // Unified Palette (from PHP) - NO FALLBACK to old hardcoded values
+      var palette =
+        AZAC_LIST && AZAC_LIST.palette
+          ? AZAC_LIST.palette
+          : ["#15345a"];
+
       var html = sessions
         .map(function (s) {
           var dateStr = s.date;
@@ -458,19 +464,18 @@
 
           // Calculate Date Status
           var dateStatusBadge = "";
-          var rowStyle = "";
+          var rowClass = "";
 
           if (dateStr === todayStr) {
             dateStatusBadge =
-              '<span style="background:#d4edda; color:#155724; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Hôm nay</span>';
-            rowStyle =
-              "background-color: #fff9c4;"; // Light yellow highlight
+              '<span class="azac-badge azac-badge-today">Hôm nay</span>';
+            rowClass = "is-today";
           } else if (dateStr < todayStr) {
             dateStatusBadge =
-              '<span style="background:#e9ecef; color:#495057; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Đã kết thúc</span>';
+              '<span class="azac-badge azac-badge-finished">Đã kết thúc</span>';
           } else {
             dateStatusBadge =
-              '<span style="background:#fff3cd; color:#856404; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Sắp diễn ra</span>';
+              '<span class="azac-badge azac-badge-pending">Sắp diễn ra</span>';
           }
 
           // Calculate Rate
@@ -495,8 +500,8 @@
           // Status Badge
           var isCheckedIn = p > 0;
           var statusBadge = isCheckedIn
-            ? '<span style="background:#d4edda; color:#155724; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Đã điểm danh</span>'
-            : '<span style="background:#fff3cd; color:#856404; padding: 2px 8px; border-radius: 4px; font-size: 12px; font-weight: 500;">Chưa điểm danh</span>';
+            ? '<span class="azac-badge azac-badge-success">Đã điểm danh</span>'
+            : '<span class="azac-badge azac-badge-warning">Chưa điểm danh</span>';
 
           // Rate Display
           var rateHtml =
@@ -525,20 +530,71 @@
               "</button>";
           }
 
+          // Color Logic (Unified Hash matching PHP's ord() bytes)
+          var hash = 0;
+          var className = s.class_title || "";
+          if (window.TextEncoder) {
+            var encoder = new TextEncoder();
+            var bytes =
+              encoder.encode(className);
+            for (
+              var i = 0;
+              i < bytes.length;
+              i++
+            ) {
+              hash += bytes[i];
+            }
+          } else {
+            // Fallback for older browsers
+            for (
+              var i = 0;
+              i < className.length;
+              i++
+            ) {
+              hash += className.charCodeAt(i);
+            }
+          }
+          // Use palette length for modulo
+          var color =
+            palette.length > 0
+              ? palette[hash % palette.length]
+              : "#15345a";
+
+          var rowStyle =
+            "border-top: 3px solid " +
+            color +
+            ";";
+
+          // Mobile Badge (Append to Session Number/Time)
+          var mobileBadge =
+            '<div class="azac-mobile-badges"><span class="azac-badge-class" style="background-color: ' +
+            color +
+            ' !important;">' +
+            s.class_title +
+            "</span></div>";
+
           return [
-            '<tr style="' + rowStyle + '">',
+            '<tr class="' +
+              rowClass +
+              '" style="' +
+              rowStyle +
+              '">',
             AZAC_LIST.isAdmin
-              ? '<td class="check-column" style="text-align:center; vertical-align:middle;"><input type="checkbox" name="session[]" value="' +
+              ? '<td class="check-column" data-label="Chọn" style="text-align:center; vertical-align:middle;"><input type="checkbox" name="session[]" value="' +
                 s.id +
                 '" class="cb-select-1"></td>'
               : "",
-            "<td><strong>" +
+            '<td data-label="Lớp"><span class="azac-badge-class" style="background-color: ' +
+              color +
+              ' !important;">' +
               s.class_title +
-              "</strong></td>",
-            '<td style="text-align:center;"><span style="background:#e9ecef;color:#495057;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;">#' +
-              s.session_number +
               "</span></td>",
-            "<td>" +
+            '<td data-label="Buổi" style="text-align:center;"><span style="background:#e9ecef;color:#495057;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;">#' +
+              s.session_number +
+              "</span>" +
+              mobileBadge +
+              "</td>",
+            '<td data-label="Thời gian">' +
               dateStr +
               (timeStr
                 ? ' <span style="color:#666">(' +
@@ -546,10 +602,16 @@
                   ")</span>"
                 : "") +
               "</td>",
-            "<td>" + dateStatusBadge + "</td>",
-            "<td>" + rateHtml + "</td>",
-            "<td>" + statusBadge + "</td>",
-            '<td><div style="display:flex; gap:8px; align-items:center;">',
+            '<td data-label="Trạng thái ngày">' +
+              dateStatusBadge +
+              "</td>",
+            '<td data-label="Tỉ lệ">' +
+              rateHtml +
+              "</td>",
+            '<td data-label="Trạng thái">' +
+              statusBadge +
+              "</td>",
+            '<td data-label="Hành động"><div style="display:flex; gap:8px; align-items:center;">',
             actionButtons,
             "</div></td>",
             "</tr>",

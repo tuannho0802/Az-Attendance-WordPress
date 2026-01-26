@@ -170,6 +170,27 @@
           }
           var html = res.data.classes
             .map(function (c) {
+              // Hash Color Logic (Unified)
+              var palette = (AZAC_LIST && AZAC_LIST.palette) ? AZAC_LIST.palette : ["#15345a"];
+              var color = "#15345a";
+              
+              if (palette.length > 0) {
+                  var hash = 0;
+                  var cName = c.title || "";
+                  if (window.TextEncoder) {
+                    var encoder = new TextEncoder();
+                    var bytes = encoder.encode(cName);
+                    for (var i = 0; i < bytes.length; i++) {
+                      hash += bytes[i];
+                    }
+                  } else {
+                    for (var i = 0; i < cName.length; i++) {
+                        hash += cName.charCodeAt(i);
+                    }
+                  }
+                  color = palette[hash % palette.length];
+              }
+
               var total = Array.isArray(c.sessions) ? c.sessions.length : 0;
               var full = 0;
               var absent = 0;
@@ -184,9 +205,11 @@
               var rate = Math.round((full / Math.max(1, total)) * 100);
               return [
                 '<div class="azac-card">',
-                '<div class="azac-card-title">',
-                c.title,
-                "</div>",
+                '<div class="azac-card-title" style="background-color: ' +
+                  color +
+                  ' !important; color: #fff;">' +
+                  c.title +
+                  "</div>",
                 '<div class="azac-card-body">',
                 '<div class="azac-metrics">',
                 "<span>Buổi: ",
@@ -217,25 +240,33 @@
                   ? c.sessions
                       .map(function (s) {
                         var ciText =
-                          s.checkin === null || typeof s.checkin === "undefined"
+                          s.checkin === null ||
+                          typeof s.checkin ===
+                            "undefined"
                             ? "Chưa có"
                             : s.checkin === 1
                               ? "Có mặt"
                               : "Vắng mặt";
                         var ciClass =
-                          s.checkin === null || typeof s.checkin === "undefined"
+                          s.checkin === null ||
+                          typeof s.checkin ===
+                            "undefined"
                             ? "azac-badge azac-badge--ci-unknown"
                             : s.checkin === 1
                               ? "azac-badge azac-badge--ci-present"
                               : "azac-badge azac-badge--ci-absent";
                         var miText =
-                          s.mid === null || typeof s.mid === "undefined"
+                          s.mid === null ||
+                          typeof s.mid ===
+                            "undefined"
                             ? "Chưa có"
                             : s.mid === 1
                               ? "Có mặt"
                               : "Vắng mặt";
                         var miClass =
-                          s.mid === null || typeof s.mid === "undefined"
+                          s.mid === null ||
+                          typeof s.mid ===
+                            "undefined"
                             ? "azac-badge azac-badge--mid-unknown"
                             : s.mid === 1
                               ? "azac-badge azac-badge--mid-present"

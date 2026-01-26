@@ -38,12 +38,13 @@ class AzAC_Admin_Assets
                 'nonce' => wp_create_nonce('azac_create_class'),
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
-                'isAdmin' => current_user_can('manage_options'),
+                'isAdmin' => in_array('administrator', $user->roles, true),
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
                 'deleteSessionNonce' => wp_create_nonce('azac_delete_session'),
-                'bulkDeleteNonce' => wp_create_nonce('az_bulk_delete_nonce'),
+                'bulkDeleteNonce' => wp_create_nonce('azac_bulk_delete_nonce'),
+                'palette' => AzAC_Core_Admin::$palette,
             ];
             wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list);
             wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list);
@@ -84,6 +85,7 @@ class AzAC_Admin_Assets
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                     'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
                     'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
+                    'palette' => AzAC_Core_Admin::$palette, // Unified Palette (Confirmed)
                 ];
                 wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list_cls);
                 wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list_cls);
@@ -134,6 +136,7 @@ class AzAC_Admin_Assets
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                     'deleteClassNonce' => wp_create_nonce('azac_delete_class'),
                     'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
+                    'palette' => AzAC_Core_Admin::$palette, // Unified Palette
                 ];
                 wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $obj);
                 wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $obj);

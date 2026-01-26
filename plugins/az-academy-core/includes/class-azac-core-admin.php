@@ -4,6 +4,44 @@ if (!defined('ABSPATH')) {
 }
 class AzAC_Core_Admin
 {
+    // Standard Pastel Palette for Unified Hash Logic
+    public static $palette = [
+        "#2ecc71",
+        "#3498db",
+        "#9b59b6",
+        "#e67e22",
+        "#1abc9c",
+        "#e74c3c",
+        "#16a085",
+        "#2980b9",
+        "#8e44ad",
+        "#d35400",
+        "#27ae60",
+        "#f39c12",
+        "#34495e",
+        "#7f8c8d",
+        "#e84393",
+        "#00cec9",
+        "#6c5ce7",
+        "#fdcb6e",
+        "#00b894",
+        "#0984e3",
+        "#d63031",
+        "#ff7675",
+        "#636e72",
+        "#55efc4",
+        "#a29bfe",
+        "#fab1a0",
+        "#74b9ff",
+        "#b2bec3",
+        "#ff6b6b",
+        "#4dabf7",
+        "#f4a261",
+        "#2a9d8f",
+        "#e76f51",
+        "#264653"
+    ];
+
     public static function register()
     {
         add_action('admin_menu', ['AzAC_Admin_Pages', 'register_admin_pages']);
@@ -367,42 +405,7 @@ class AzAC_Core_Admin
     {
         $users = get_users(['role' => 'az_teacher']);
         $rows = [];
-        $palette = [
-            "#2ecc71",
-            "#3498db",
-            "#9b59b6",
-            "#e67e22",
-            "#1abc9c",
-            "#e74c3c",
-            "#16a085",
-            "#2980b9",
-            "#8e44ad",
-            "#d35400",
-            "#27ae60",
-            "#f39c12",
-            "#34495e",
-            "#7f8c8d",
-            "#e84393",
-            "#00cec9",
-            "#6c5ce7",
-            "#fdcb6e",
-            "#00b894",
-            "#0984e3",
-            "#d63031",
-            "#ff7675",
-            "#636e72",
-            "#55efc4",
-            "#a29bfe",
-            "#fab1a0",
-            "#74b9ff",
-            "#b2bec3",
-            "#ff6b6b",
-            "#4dabf7",
-            "#f4a261",
-            "#2a9d8f",
-            "#e76f51",
-            "#264653",
-        ];
+        $palette = self::$palette;
 
         global $wpdb;
         $sess_table = $wpdb->prefix . 'az_sessions';
@@ -427,9 +430,15 @@ class AzAC_Core_Admin
                     if ($uid)
                         $user_ids[$uid] = true;
                 }
-                $n = intval($c->ID);
-                $idx = abs(($n * 9301 + 49297) % count($palette));
-                $color = $palette[$idx];
+
+                // Name-based ASCII Hash (Standardized)
+                $hash = 0;
+                $c_name = $c->post_title;
+                for ($i = 0; $i < strlen($c_name); $i++) {
+                    $hash += ord($c_name[$i]);
+                }
+                $color = $palette[$hash % count($palette)];
+
                 $cls[] = [
                     'id' => intval($c->ID),
                     'title' => $c->post_title,
@@ -543,6 +552,7 @@ class AzAC_Core_Admin
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
+                'palette' => self::$palette, // Master Palette
             ];
             wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list);
             wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list);
