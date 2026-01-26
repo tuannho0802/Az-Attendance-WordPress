@@ -2,6 +2,41 @@
   --az-primary: #15345a;
   --az-dark: #12243b;
 }
+
+/* --- GRID LAYOUT (SUPER SPECIFICITY) --- */
+@media screen and (min-width: 783px) {
+    /* Ép container chia cột đúng tỷ lệ */
+    html body.wp-admin .azac-admin-teal #azac-tab-stats #azac-stats-grid,
+    html body.wp-admin .azac-admin-teal #azac-tab-classes .azac-grid {
+        display: grid !important;
+        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
+        gap: 20px !important;
+        width: 100% !important;
+        flex-direction: unset !important;
+        align-items: stretch !important;
+    }
+
+    /* NHIỆM VỤ CỐT LÕI: Ép Card phải thu nhỏ */
+    html body.wp-admin .azac-admin-teal .azac-grid .azac-card,
+    html body.wp-admin .azac-admin-teal #azac-stats-grid .azac-card {
+        width: 100% !important;
+        max-width: 100% !important;
+        min-width: 0 !important; /* QUAN TRỌNG: Cho phép card nhỏ hơn nội dung con */
+        display: block !important;
+        margin: 0 !important;
+        overflow: hidden !important; /* Cắt bỏ phần nội dung thừa nếu biểu đồ quá to */
+        box-sizing: border-box !important;
+    }
+
+    /* Xử lý phần tử con (Biểu đồ, Table) bên trong Card */
+    .azac-card canvas,
+    .azac-card .google-visualization-container,
+    .azac-card table {
+        max-width: 100% !important;
+        width: auto !important;
+        height: auto !important;
+    }
+}
 /* Teal brand for admin management pages */
 .azac-admin-teal
   .widefat.fixed.striped
@@ -159,17 +194,28 @@
   background: #fff;
   border: 1px solid #e2e2e2;
   border-radius: 10px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
   padding: 16px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow-x: hidden;
+  margin-bottom: 20px;
+  display: block; /* Quan trọng: Giữ block để Google Charts không bị méo */
+  box-sizing: border-box;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-top: 4px solid var(--az-primary);
+}
+.azac-card:hover {
+  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+  transform: translateY(-4px);
+}
+#azac-stats-grid .azac-card {
+    padding: 12px;
 }
 .azac-card-title {
   font-weight: 700;
-  font-size: 16px;
-  color: #0b3d3b;
+  font-size: 14px;
+  color: #2c3338;
+  border-bottom: 1px solid #f0f0f1;
+  padding-bottom: 8px;
+  margin-bottom: 12px;
 }
 .azac-card-actions {
   margin-top: auto;

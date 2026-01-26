@@ -86,7 +86,7 @@ class AzAC_Admin_Pages
     }
     public static function render_attendance_list_page()
     {
-        echo '<div class="wrap"><h1>Quản lý điểm danh</h1>';
+        echo '<div class="wrap azac-admin-teal"><h1>Quản lý điểm danh</h1>';
         $user = wp_get_current_user();
         $is_teacher = in_array('az_teacher', $user->roles, true);
         $is_admin = current_user_can('manage_options');
@@ -191,7 +191,7 @@ class AzAC_Admin_Pages
             self::render_class_dashboard_page();
             return;
         }
-        echo '<div class="wrap"><h1>Lớp học</h1>';
+        echo '<div class="wrap azac-admin-teal"><h1>Lớp học</h1>';
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
         $is_manager = in_array('az_manager', (array) $user->roles);
@@ -257,7 +257,7 @@ class AzAC_Admin_Pages
             echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
             echo '</div>';
         }
-        echo '<div class="azac-grid">';
+        echo '<div id="azac-tab-classes"><div class="azac-grid">';
         $palette = AzAC_Core_Admin::$palette;
         foreach ($paged_classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
@@ -319,7 +319,7 @@ class AzAC_Admin_Pages
             echo '</div>';
             echo '</div>';
         }
-        echo '</div>';
+        echo '</div></div></div></div>';
         AzAC_Core_Helper::render_pagination($current_page, $total_pages);
         echo '<script>';
         echo 'document.addEventListener("DOMContentLoaded",function(){';
