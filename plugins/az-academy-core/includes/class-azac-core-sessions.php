@@ -174,7 +174,7 @@ class AzAC_Core_Sessions
         }
         $user = wp_get_current_user();
         // Allow Manager (manage_options) to add sessions
-        $can_add = current_user_can('manage_options');
+        $can_add = current_user_can('edit_posts') || current_user_can('manager') || current_user_can('administrator');
 
         // Only Admin/Manager can add sessions
         if (!$can_add) {
@@ -200,7 +200,7 @@ class AzAC_Core_Sessions
         }
         $user = wp_get_current_user();
         // Allow Manager (manage_options) to update sessions
-        $can_edit = current_user_can('manage_options');
+        $can_edit = current_user_can('edit_posts') || current_user_can('manager') || current_user_can('administrator');
 
         // Only Admin/Manager can update sessions
         if (!$can_edit) {
@@ -220,10 +220,12 @@ class AzAC_Core_Sessions
         global $wpdb;
         $user = wp_get_current_user();
         // Allow Manager (manage_options) to list sessions
-        $is_admin = current_user_can('manage_options');
+        $is_admin = current_user_can('manage_options'); // Keep for post_status logic
+        $can_view = current_user_can('read'); // Basic read capability
         $is_teacher = in_array('az_teacher', $user->roles, true);
         $is_student = in_array('az_student', $user->roles, true);
-        if (!$is_admin && !$is_teacher && !$is_student) {
+
+        if (!$can_view) {
             wp_send_json_error(['message' => 'Capability'], 403);
         }
 

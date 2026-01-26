@@ -155,7 +155,7 @@ class AzAC_Core_Attendance
         }
         $user = wp_get_current_user();
         $is_admin = current_user_can('manage_options');
-        $is_manager = current_user_can('az_take_attendance');
+        $is_manager = current_user_can('edit_posts') || current_user_can('manager');
         $is_teacher = in_array('az_teacher', $user->roles, true);
 
         if (!$is_admin && !$is_manager && !$is_teacher) {

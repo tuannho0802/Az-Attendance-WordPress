@@ -33,12 +33,15 @@ class AzAC_Admin_Assets
             wp_enqueue_script('jquery-ui-datepicker');
 
             $user = wp_get_current_user();
+            $can_manage = current_user_can('administrator') || current_user_can('manager') || current_user_can('edit_posts');
             $azac_list = [
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => wp_create_nonce('azac_create_class'),
                 'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
-                'isAdmin' => in_array('administrator', $user->roles, true),
+                'isAdmin' => $can_manage,
+                'isRealAdmin' => current_user_can('administrator'),
+                'canManage' => $can_manage,
                 'isStudent' => in_array('az_student', $user->roles, true),
                 'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                 'studentStatsNonce' => wp_create_nonce('azac_student_stats'),
@@ -80,7 +83,9 @@ class AzAC_Admin_Assets
                     'nonce' => wp_create_nonce('azac_create_class'),
                     'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
-                    'isAdmin' => in_array('administrator', $user->roles, true),
+                    'isAdmin' => $can_manage,
+                    'isRealAdmin' => current_user_can('administrator'),
+                    'canManage' => $can_manage,
                     'isStudent' => in_array('az_student', $user->roles, true),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                     'deleteClassNonce' => wp_create_nonce('azac_delete_class'),

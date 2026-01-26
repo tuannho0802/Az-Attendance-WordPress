@@ -47,11 +47,11 @@ class AzAC_Admin_Stats
         $user = wp_get_current_user();
         
         $is_student = in_array('az_student', $user->roles, true);
-        $is_admin = in_array('administrator', $user->roles, true);
+        $is_admin = current_user_can('manage_options');
         $is_teacher = in_array('az_teacher', $user->roles, true);
-        $is_manager = in_array('az_manager', (array) $user->roles);
+        $is_manager = current_user_can('read');
 
-        if (!$user) {
+        if (!$is_manager && !$is_admin && !$is_teacher && !$is_student) {
             wp_send_json_error(['message' => 'Unauthorized'], 401);
         }
 
