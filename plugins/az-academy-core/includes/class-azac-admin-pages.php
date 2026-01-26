@@ -1200,7 +1200,7 @@ class AzAC_Admin_Pages
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý Học viên</h1>';
 
         // Filter Form
-        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
+        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px; flex-wrap: wrap">';
         echo '<input type="hidden" name="page" value="azac-manage-students">';
         echo '<label>Lọc theo lớp: <select name="class_id">';
         echo '<option value="">Tất cả</option>';
@@ -1553,22 +1553,25 @@ class AzAC_Admin_Pages
 
                     // Color Logic
                     $hash = 0;
-                    $c_name = $r->class_name;
+                    // Ensure class_name fallback
+                    $c_name = !empty($r->class_name) ? $r->class_name : 'Lớp #' . $r->class_id;
+
                     for ($i = 0; $i < strlen($c_name); $i++) {
                         $hash += ord($c_name[$i]);
                     }
                     $color = $palette[$hash % count($palette)];
-                    $badge_html = '<span class="azac-badge-class" style="background-color: ' . $color . ' !important;">' . esc_html($r->class_name) . '</span>';
+                    $badge_html = '<span class="azac-badge-class" style="background-color: ' . $color . ' !important;">' . esc_html($c_name) . '</span>';
                     $style = ' style="border-top: 3px solid ' . $color . ';"';
 
-                    // Mobile Badge
-                    $mobile_badge = '<div class="azac-mobile-badges">' . $badge_html . '</div>';
-
                     echo '<tr' . $row_class . $style . '>';
-                    echo '<td data-label="Ngày dạy">' . date_i18n('d/m/Y', strtotime($r->session_date)) . '</td>';
+
+                    echo '<td data-label="Ngày dạy" class="azac-col-date">';
+                    echo '<span class="azac-date-display">' . date_i18n('d/m/Y', strtotime($r->session_date)) . '</span>';
+                    echo '</td>';
+
                     echo '<td data-label="Lớp học">' . $badge_html . '</td>';
-                    echo '<td data-label="Giảng viên"><strong>' . esc_html($teacher_name) . '</strong>' . $mobile_badge . '</td>';
-                    echo '<td data-label="Buổi">Buổi ' . intval($r->session_number) . '</td>';
+                    echo '<td data-label="Giảng viên" class="azac-col-teacher"><strong>' . esc_html($teacher_name) . '</strong></td>';
+                    echo '<td data-label="Buổi">Buổi ' . intval($r->session_number) . '<div class="azac-mobile-badges">' . $badge_html . '</div></td>';
                     echo '<td data-label="Thời gian">' . esc_html($r->session_time) . '</td>';
                     echo '<td data-label="Trạng thái">' . $status_html . '</td>';
                     echo '<td data-label="Thời gian chấm công">' . $checkin_time . '</td>';

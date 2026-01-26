@@ -382,6 +382,31 @@ body.folded #wpfooter { margin-left: 36px; }
     background-color: #15345a !important;
 }
 
+@media screen and (max-width: 782px) { 
+    /* Tinh chỉnh hiển thị Card Mobile cho gọn gàng */
+    
+    /* Cột Giảng viên: Đảm bảo tên không bị ngắt dòng xấu */
+    .widefat td.azac-col-teacher {
+        align-items: center !important;
+    }
+    .widefat td.azac-col-teacher strong {
+        text-align: right;
+        display: block;
+        max-width: 100%;
+    }
+
+    /* Badge Lớp học: Căn phải */
+    .widefat td[data-label="Lớp học"] {
+        align-items: center !important;
+    }
+    
+    /* Ngày dạy: Đậm */
+    .azac-date-display {
+        font-weight: 600;
+        color: #1d2327;
+    }
+}
+
 /* --- Mobile Card Layout (Optimized) --- */
 @media screen and (max-width: 768px) {
   .widefat, .wp-list-table {
@@ -494,7 +519,8 @@ body.folded #wpfooter { margin-left: 36px; }
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
     text-shadow: 0 1px 1px rgba(0,0,0,0.1);
     line-height: 1.4;
-    white-space: nowrap;
+    white-space: nowrap !important; /* Prevent text wrapping/distortion */
+    flex-shrink: 0;
 }
 
 /* Đảm bảo không làm ảnh hưởng sidebar */

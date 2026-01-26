@@ -233,14 +233,7 @@
 .widefat.fixed.striped {
   table-layout: fixed;
 }
-.widefat.fixed.striped th:nth-child(1),
-.widefat.fixed.striped td:nth-child(1) {
-  width: 60px;
-}
-.widefat.fixed.striped th:nth-child(3),
-.widefat.fixed.striped td:nth-child(3) {
-  width: 140px;
-}
+
 .widefat.fixed.striped td {
   overflow: hidden;
 }
