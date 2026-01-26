@@ -628,7 +628,7 @@ class AzAC_Core
         $ids = is_array($ids) ? array_map('absint', $ids) : [];
         return $student_post_id && in_array($student_post_id, $ids, true);
     }
-    
+
 
     private function get_attendance_stats($class_id)
     {
@@ -1111,10 +1111,10 @@ class AzAC_Core
         $i = 1;
         foreach ($students as $s) {
             echo '<tr>';
-            echo '<td>' . esc_html($i++) . '</td>';
-            echo '<td>' . esc_html($s->post_title) . '</td>';
-            echo '<td><label class="azac-switch' . ($is_student ? ' azac-disabled' : '') . '"' . ($is_student ? ' title="Đã bị vô hiệu hóa"' : '') . '><input type="checkbox" class="azac-status" data-student="' . esc_attr($s->ID) . '"' . ($is_student ? ' disabled' : '') . ' /><span class="azac-slider"></span></label></td>';
-            echo '<td><input type="text" class="regular-text azac-note" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
+            echo '<td data-label="STT">' . esc_html($i++) . '</td>';
+            echo '<td data-label="Họ và Tên">' . esc_html($s->post_title) . '</td>';
+            echo '<td data-label="Trạng thái"><label class="azac-switch' . ($is_student ? ' azac-disabled' : '') . '"' . ($is_student ? ' title="Đã bị vô hiệu hóa"' : '') . '><input type="checkbox" class="azac-status" data-student="' . esc_attr($s->ID) . '"' . ($is_student ? ' disabled' : '') . ' /><span class="azac-slider"></span></label></td>';
+            echo '<td data-label="Ghi chú"><input type="text" class="regular-text azac-note" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
@@ -1128,13 +1128,13 @@ class AzAC_Core
         $i = 1;
         foreach ($students as $s) {
             echo '<tr>';
-            echo '<td>' . esc_html($i++) . '</td>';
-            echo '<td>' . esc_html($s->post_title) . '</td>';
+            echo '<td data-label="STT">' . esc_html($i++) . '</td>';
+            echo '<td data-label="Họ và Tên">' . esc_html($s->post_title) . '</td>';
             $disable_mid = ($is_student) ? ' disabled' : '';
             $disable_cls = ($is_student) ? ' azac-disabled' : '';
             $disable_tip = ($is_student) ? ' title="Chỉ Admin/Giảng viên có thể chỉnh sửa"' : '';
-            echo '<td><label class="azac-switch' . $disable_cls . '"' . $disable_tip . '><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . $disable_mid . ' /><span class="azac-slider"></span></label></td>';
-            echo '<td><input type="text" class="regular-text azac-note-mid" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
+            echo '<td data-label="Trạng thái"><label class="azac-switch' . $disable_cls . '"' . $disable_tip . '><input type="checkbox" class="azac-status-mid" data-student="' . esc_attr($s->ID) . '"' . $disable_mid . ' /><span class="azac-slider"></span></label></td>';
+            echo '<td data-label="Ghi chú"><input type="text" class="regular-text azac-note-mid" data-student="' . esc_attr($s->ID) . '" placeholder="Nhập ghi chú"' . ($is_student ? ' readonly' : '') . ' /></td>';
             echo '</tr>';
         }
         echo '</tbody></table>';
@@ -1175,7 +1175,7 @@ class AzAC_Core
 
         echo '</div>';
     }
-    
+
 
     public function map_meta_cap_for_class($caps, $cap, $user_id, $args)
     {
