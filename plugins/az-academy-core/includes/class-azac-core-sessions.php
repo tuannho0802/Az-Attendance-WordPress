@@ -174,7 +174,7 @@ class AzAC_Core_Sessions
         }
         $user = wp_get_current_user();
         // Allow Manager (manage_options) to add sessions
-        $can_add = current_user_can('edit_posts') || current_user_can('manager') || current_user_can('administrator');
+        $can_add = current_user_can('edit_posts');
 
         // Only Admin/Manager can add sessions
         if (!$can_add) {
@@ -674,7 +674,7 @@ class AzAC_Core_Sessions
     public static function ajax_delete_session()
     {
         check_ajax_referer('azac_delete_session', '_ajax_nonce');
-        if (!current_user_can('administrator')) {
+        if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 
@@ -717,8 +717,8 @@ class AzAC_Core_Sessions
 
     public static function ajax_bulk_delete_sessions()
     {
-        check_ajax_referer('az_bulk_delete_nonce', '_ajax_nonce');
-        if (!current_user_can('administrator')) {
+        check_ajax_referer('azac_bulk_delete_nonce', '_ajax_nonce');
+        if (!current_user_can('manage_options')) {
             wp_send_json_error(['message' => 'Forbidden'], 403);
         }
 

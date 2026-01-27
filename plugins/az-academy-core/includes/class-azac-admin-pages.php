@@ -107,7 +107,7 @@ class AzAC_Admin_Pages
             echo '<div class="azac-session-filters-toolbar" style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px;">';
 
             // Bulk Actions
-            if (current_user_can('delete_users')) {
+            if (current_user_can('manage_options')) {
                 echo '<div style="display:flex; gap:5px; align-items:center;">';
                 echo '<select id="azac-bulk-action-selector-top">';
                 echo '<option value="-1">Hành động hàng loạt</option>';
@@ -152,7 +152,7 @@ class AzAC_Admin_Pages
             echo '<table class="wp-list-table widefat fixed striped table-view-list">';
             echo '<thead>';
             echo '<tr>';
-            if ( current_user_can( 'administrator' ) ) {
+            if (current_user_can('administrator')) {
                 echo '<th class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-1"></th>';
             }
             echo '<th>Lớp</th>';
