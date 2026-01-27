@@ -604,9 +604,26 @@ class AzAC_Admin_Pages
                 $registered_date = $u->user_registered;
 
                 // Get Class Status
-                $class_status = '<span style="color:#e74c3c">Chưa tham gia lớp học</span>';
+                $class_status = '<span class="azac-badge azac-badge-error azac-badge-gap">Chưa tham gia lớp học</span>';
                 if ($cpt_id && isset($student_classes_map[$cpt_id]) && !empty($student_classes_map[$cpt_id])) {
-                    $class_status = implode(', ', $student_classes_map[$cpt_id]);
+                    $badges = [];
+                    foreach ($student_classes_map[$cpt_id] as $class_name) {
+                        $lower_name = strtolower($class_name);
+                        $badge_color_class = 'badge-azac-gray';
+                        if (strpos($lower_name, 'facebook') !== false) {
+                            $badge_color_class = 'badge-azac-cyan';
+                        } elseif (strpos($lower_name, 'google') !== false) {
+                            $badge_color_class = 'badge-azac-purple';
+                        } elseif (strpos($lower_name, 'zalo') !== false) {
+                            $badge_color_class = 'badge-azac-blue';
+                        } elseif (strpos($lower_name, 'tiktok') !== false || strpos($lower_name, 'tik tok') !== false) {
+                            $badge_color_class = 'badge-azac-orange';
+                        }
+
+                        $classes = 'azac-badge azac-badge-class azac-badge-gap ' . $badge_color_class;
+                        $badges[] = '<span class="' . esc_attr($classes) . '">' . esc_html($class_name) . '</span>';
+                    }
+                    $class_status = implode('', $badges);
                 }
 
                 $modal_data = htmlspecialchars(json_encode([
