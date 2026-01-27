@@ -439,6 +439,81 @@ body.folded #wpfooter { margin-left: 36px; }
     background-color: #15345a !important;
 }
 
+/* --- COMPACT MOBILE UI & SPACING OPTIMIZATION --- */
+@media screen and (max-width: 768px) {
+    /* 1. CSS Spacing & Size */
+    .azac-card, .azac-container {
+        padding: 10px !important;
+        margin-bottom: 10px !important;
+    }
+    .azac-stats, .azac-grid {
+        gap: 10px !important;
+        margin-bottom: 10px !important;
+    }
+    .wrap {
+        margin-right: 5px !important;
+        margin-left: 0 !important;
+    }
+
+    /* Font Size Reduction */
+    h1, h2, h3, .azac-stat-title {
+        font-size: 16px !important;
+        line-height: 1.3 !important;
+    }
+    .azac-info-item .az-info-label {
+        font-size: 12px !important;
+    }
+    .azac-info-item .az-info-value {
+        font-size: 13px !important;
+    }
+    .widefat td, .widefat th, .widefat {
+        font-size: 13px !important;
+    }
+
+    /* 2. Responsive Grid (Forced 1 Column) */
+    .azac-stats,
+    .azac-grid,
+    #azac-stats-grid {
+        grid-template-columns: 1fr !important;
+        display: grid !important;
+    }
+
+    /* 3. Chart & Table Constraints */
+    .azac-chart-box canvas,
+    .azac-chart-box {
+        max-height: 250px !important;
+    }
+    .azac-chart-row {
+        flex-direction: column !important;
+    }
+
+    /* Negative margin for table wrapper to utilize full width */
+    .azac-table-wrapper {
+        margin: 0 -10px !important;
+        width: calc(100% + 20px) !important;
+        border-radius: 0 !important;
+    }
+    /* Remove borders on mobile for cleaner look in wrapper */
+    .azac-table-wrapper table.widefat {
+        box-shadow: none !important;
+        border: none !important;
+    }
+
+    /* 4. Remove elements (Hide less important columns) */
+    /* Hide STT (Sequence Number) on mobile as it takes vertical space in card view */
+    .widefat td[data-label="STT"] {
+        display: none !important;
+    }
+    
+    /* Compact the "Ghi chú" input */
+    .widefat td[data-label="Ghi chú"] input.azac-note,
+    .widefat td[data-label="Ghi chú"] input.azac-note-mid {
+        width: 100% !important;
+        font-size: 13px !important;
+        padding: 4px 8px !important;
+    }
+}
+
 @media screen and (max-width: 782px) { 
     /* Tinh chỉnh hiển thị Card Mobile cho gọn gàng */
     
