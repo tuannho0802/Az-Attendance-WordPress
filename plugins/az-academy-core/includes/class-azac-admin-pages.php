@@ -152,7 +152,7 @@ class AzAC_Admin_Pages
             echo '<table class="wp-list-table widefat fixed striped table-view-list">';
             echo '<thead>';
             echo '<tr>';
-            if ($is_admin) {
+            if ( current_user_can( 'administrator' ) ) {
                 echo '<th class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-1"></th>';
             }
             echo '<th>Lớp</th>';
@@ -161,7 +161,7 @@ class AzAC_Admin_Pages
             echo '<th style="width: 15%;">Trạng thái ngày dạy</th>';
             echo '<th style="width: 15%;">Tỷ lệ có mặt</th>';
             echo '<th style="width: 10%;">Trạng thái</th>';
-            echo '<th style="width: 10%;">Hành động</th>';
+            echo '<th class="azac-col-action" style="width: 10%;">Hành động</th>';
             echo '</tr>';
             echo '</thead>';
             echo '<tbody id="azac-sessions-table-body">';

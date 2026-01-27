@@ -439,6 +439,10 @@ body.folded #wpfooter { margin-left: 36px; }
     background-color: #15345a !important;
 }
 
+/* --- FINAL TABLE SYNC --- */ 
+.azac-table-responsive table { table-layout: auto !important; width: 100% !important; border-collapse: collapse; } 
+.azac-col-action { width: 165px !important; text-align: center !important; white-space: nowrap; }
+
 /* --- COMPACT MOBILE UI & SPACING OPTIMIZATION --- */
 @media screen and (max-width: 768px) {
     /* 1. CSS Spacing & Size */

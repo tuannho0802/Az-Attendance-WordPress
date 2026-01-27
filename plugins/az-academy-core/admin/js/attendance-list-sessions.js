@@ -647,7 +647,7 @@
               '" style="' +
               rowStyle +
               '">',
-            AZAC_LIST.isAdmin
+            AZAC_LIST.isRealAdmin
               ? '<td class="check-column" data-label="Chọn" style="text-align:center; vertical-align:middle;"><input type="checkbox" name="session[]" value="' +
                 s.id +
                 '" class="cb-select-1"></td>'
@@ -679,7 +679,7 @@
             '<td data-label="Trạng thái">' +
               statusBadge +
               "</td>",
-            '<td data-label="Hành động"><div style="display:flex; gap:8px; align-items:center;">',
+            '<td class="azac-col-action" data-label="Hành động"><div style="display:flex; gap:8px; align-items:center;">',
             actionButtons,
             "</div></td>",
             "</tr>",
