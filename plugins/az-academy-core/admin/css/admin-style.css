@@ -190,6 +190,17 @@
 }
 
 /* --- Layout Components --- */
+.azac-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 20px;
+  margin-bottom: 20px;
+}
+.azac-table-wrapper {
+  overflow-x: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
 .azac-card {
   background: #fff;
   border: 1px solid #e2e2e2;

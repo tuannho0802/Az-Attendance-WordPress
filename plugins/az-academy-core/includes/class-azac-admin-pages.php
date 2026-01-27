@@ -947,6 +947,17 @@ class AzAC_Admin_Pages
         $is_manager = in_array('az_manager', (array) $user->roles);
         $assigned_teacher = intval(get_post_meta($class_id, 'az_teacher_user', true));
         $can_access = current_user_can('edit_post', $class_id) || $is_student || ($is_teacher && $assigned_teacher === intval($user->ID));
+
+        // Strict Check for Student Enrollment
+        if ($is_student) {
+            $student_post_id = AzAC_Core_Helper::get_current_student_post_id();
+            $class_students = get_post_meta($class_id, 'az_students', true);
+            $class_students = is_array($class_students) ? array_map('absint', $class_students) : [];
+            if (!in_array($student_post_id, $class_students, true)) {
+                $can_access = false;
+            }
+        }
+
         if (!$can_access) {
             echo '<div class="wrap"><h1>Chi tiết lớp</h1><p>Không đủ quyền.</p></div>';
             return;
@@ -1038,6 +1049,7 @@ class AzAC_Admin_Pages
         echo '</div>';
         $can_edit = $is_admin || $is_manager || ($is_teacher && $selected_date === $today);
         echo '<div id="azac-checkin" class="azac-tab active">';
+        echo '<div class="azac-table-wrapper">';
         echo '<table class="widefat fixed striped"><thead><tr><th>STT</th><th>Họ và Tên</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>';
         $i = 1;
         foreach ($students as $s) {
@@ -1052,6 +1064,7 @@ class AzAC_Admin_Pages
             echo '</tr>';
         }
         echo '</tbody></table>';
+        echo '</div>';
         if (!$is_student) {
             $btn_style = $can_edit ? '' : ' style="display:none"';
             echo '<p><button class="button button-primary" id="azac-submit-checkin" data-type="check-in"' . $btn_style . '>Xác nhận điểm danh đầu giờ</button></p>';

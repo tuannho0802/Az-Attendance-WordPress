@@ -432,6 +432,18 @@ class AzAC_Core_Sessions
             wp_send_json_error(['message' => 'Session not found'], 404);
         }
 
+        // Security Check: Student must be enrolled
+        $user = wp_get_current_user();
+        if (in_array('az_student', $user->roles, true) && !current_user_can('manage_options') && !in_array('az_teacher', $user->roles, true)) {
+            $class_id = intval($row->class_id);
+            $student_post_id = AzAC_Core_Helper::get_current_student_post_id();
+            $ids = get_post_meta($class_id, 'az_students', true);
+            $ids = is_array($ids) ? array_map('absint', $ids) : [];
+            if (!in_array($student_post_id, $ids, true)) {
+                wp_send_json_error(['message' => 'Unauthorized access to this session'], 403);
+            }
+        }
+
         // Attachments
         $att_ids = json_decode($row->session_attachments, true);
         if (!is_array($att_ids)) {

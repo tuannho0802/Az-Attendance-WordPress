@@ -566,19 +566,26 @@
           // Action Buttons
           var actionButtons = "";
 
-          // Show "Vào điểm danh" (Edit) only if user can manage (Manager/Admin/Editor) or is Teacher (logic might vary for Teacher but usually they can edit their classes)
-          // Assuming Teacher can always edit their sessions? The PHP check allows Teacher.
-          // AZAC_LIST.isTeacher is separate. Teachers usually use this button.
-          // So condition: isTeacher OR canManage.
+          // Show "Vào điểm danh" (Edit) for Teacher/Manager, or "Xem lớp" for Student
           if (
             AZAC_LIST.isTeacher ||
-            AZAC_LIST.canManage
+            AZAC_LIST.canManage ||
+            AZAC_LIST.isStudent
           ) {
+            var btnText = AZAC_LIST.isStudent
+              ? "Xem lớp"
+              : "Vào điểm danh";
+            var btnIcon = AZAC_LIST.isStudent
+              ? "dashicons-visibility"
+              : "dashicons-edit";
             actionButtons +=
               '<a href="' +
               editUrl +
               '" class="button button-small" style="display:inline-flex;align-items:center;gap:3px">' +
-              '<span class="dashicons dashicons-edit" style="font-size:14px;width:14px;height:14px;padding-top:2px;"></span> Vào điểm danh' +
+              '<span class="dashicons ' +
+              btnIcon +
+              '" style="font-size:14px;width:14px;height:14px;padding-top:2px;"></span> ' +
+              btnText +
               "</a>";
           }
 
