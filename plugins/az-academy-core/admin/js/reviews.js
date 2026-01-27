@@ -25,13 +25,10 @@
     ];
   }
   function buildClassConfig(counts) {
-    var labels = [
-      "5 sao",
-      "4 sao",
-      "3 sao",
-      "2 sao",
-      "1 sao",
-    ];
+    var isMobile = window.innerWidth < 768;
+    var labels = isMobile
+      ? ["5s", "4s", "3s", "2s", "1s"]
+      : ["5 sao", "4 sao", "3 sao", "2 sao", "1 sao"];
     var data = [5, 4, 3, 2, 1].map(
       function (k) {
         return counts && counts[k]

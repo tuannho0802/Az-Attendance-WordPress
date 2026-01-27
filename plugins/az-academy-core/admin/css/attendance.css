@@ -386,3 +386,91 @@
   color: #f39c12;
   border-color: #f39c12;
 }
+
+/* Mobile Responsive Optimization for Reviews Page */
+@media (max-width: 767px) {
+  /* 1. Layout Structure */
+  .azac-reviews-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+  
+  /* Ensure Visual (Overview) is on top - Default order is correct */
+  
+  /* 2. Chart & Stats */
+  .azac-reviews-visual .azac-chart-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .azac-reviews-visual .azac-chart-box {
+    width: 100% !important;
+    height: 250px !important;
+    min-width: 0 !important;
+  }
+  
+  .azac-info-card .az-info-grid {
+    grid-template-columns: 1fr; /* Stack stats vertically */
+    gap: 10px;
+  }
+  
+  /* 3. Filters (Session Bar) */
+  .azac-session-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+  }
+  
+  .azac-session-bar label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    font-weight: 600;
+    color: #444;
+  }
+  
+  .azac-session-bar select,
+  .azac-session-bar input[type="text"],
+  .azac-session-bar input[type="search"] {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: 0 !important;
+    box-sizing: border-box;
+    height: 40px; /* Taller for touch */
+  }
+  
+  /* 4. Review Cards */
+  .azac-review-item {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px;
+  }
+  
+  .azac-review-top {
+    flex-wrap: wrap;
+  }
+  
+  .azac-review-comment {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  
+  .azac-review-date {
+    font-size: 11px;
+  }
+  
+  /* Toggle Buttons */
+  .azac-toggle {
+    display: flex;
+    width: 100%;
+    margin-bottom: 12px;
+  }
+  
+  .azac-toggle .button {
+    flex: 1;
+    justify-content: center;
+    padding: 6px 0;
+  }
+}
