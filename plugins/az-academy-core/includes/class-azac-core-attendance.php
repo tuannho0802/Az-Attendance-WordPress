@@ -212,6 +212,57 @@ class AzAC_Core_Attendance
         }
         global $wpdb;
         $table = $wpdb->prefix . 'az_attendance';
+
+        // --- AUTO-FILL ABSENT FOR PAST SESSIONS ---
+        $today = current_time('Y-m-d');
+        // Robust Date Parsing
+        $d_formatted = '9999-99-99';
+        if (strpos($session_date, '/') !== false) {
+            $d_obj = DateTime::createFromFormat('d/m/Y', $session_date);
+            if ($d_obj)
+                $d_formatted = $d_obj->format('Y-m-d');
+        } else {
+            $d_obj = DateTime::createFromFormat('Y-m-d', $session_date);
+            if ($d_obj)
+                $d_formatted = $d_obj->format('Y-m-d');
+        }
+
+        if ($d_formatted < $today) {
+            $student_ids = get_post_meta($class_id, 'az_students', true);
+            if (is_array($student_ids) && !empty($student_ids)) {
+                $student_ids = array_map('absint', $student_ids);
+                // Get existing records for this session & type
+                $existing_ids = $wpdb->get_col($wpdb->prepare(
+                    "SELECT student_id FROM {$table} WHERE class_id=%d AND session_date=%s AND attendance_type=%s",
+                    $class_id,
+                    $session_date,
+                    $type
+                ));
+                $existing_ids = array_map('absint', (array) $existing_ids);
+
+                // Identify missing students
+                $missing_ids = array_diff($student_ids, $existing_ids);
+
+                if (!empty($missing_ids)) {
+                    foreach ($missing_ids as $sid) {
+                        $wpdb->insert(
+                            $table,
+                            [
+                                'class_id' => $class_id,
+                                'student_id' => $sid,
+                                'session_date' => $session_date,
+                                'attendance_type' => $type,
+                                'status' => 0, // Absent
+                                'note' => ''
+                            ],
+                            ['%d', '%d', '%s', '%s', '%d', '%s']
+                        );
+                    }
+                }
+            }
+        }
+        // ------------------------------------------
+
         $rows = $wpdb->get_results($wpdb->prepare("SELECT student_id, status, note FROM {$table} WHERE class_id=%d AND session_date=%s AND attendance_type=%s", $class_id, $session_date, $type), ARRAY_A);
         $map = [];
         foreach ($rows as $r) {

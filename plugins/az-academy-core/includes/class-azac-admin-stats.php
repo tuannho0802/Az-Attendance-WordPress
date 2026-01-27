@@ -69,6 +69,10 @@ class AzAC_Admin_Stats
         if (!$student_post_id) {
             wp_send_json_success(['classes' => []]);
         }
+
+        // Ensure past attendance is marked before calculating stats
+        self::ensure_past_attendance_is_marked($student_post_id);
+
         global $wpdb;
         $att_table = $wpdb->prefix . 'az_attendance';
         $rows = $wpdb->get_results($wpdb->prepare("SELECT class_id, attendance_type, status, COUNT(*) as c FROM {$att_table} WHERE student_id=%d GROUP BY class_id, attendance_type, status", $student_post_id), ARRAY_A);
@@ -240,5 +244,104 @@ class AzAC_Admin_Stats
             'items' => $list,
             'sessions' => array_map('sanitize_text_field', (array) $sess_rows),
         ]);
+    }
+
+    /**
+     * Ensure past sessions without attendance are marked as absent (status=0) in DB.
+     * This fixes the issue where "forgotten" sessions don't count towards stats.
+     */
+    private static function ensure_past_attendance_is_marked($student_id)
+    {
+        global $wpdb;
+        $today = current_time('Y-m-d');
+
+        // 1. Get all classes
+        $classes = get_posts([
+            'post_type' => 'az_class',
+            'post_status' => 'publish',
+            'numberposts' => -1,
+            'fields' => 'ids'
+        ]);
+
+        foreach ($classes as $cid) {
+            // Check enrollment
+            if (!class_exists('AzAC_Core_Helper') || !AzAC_Core_Helper::is_student_in_class($student_id, $cid)) {
+                continue;
+            }
+
+            // 2. Get sessions for this class
+            $sess_table = $wpdb->prefix . 'az_sessions';
+            $sessions = $wpdb->get_results($wpdb->prepare("SELECT session_date FROM {$sess_table} WHERE class_id=%d", $cid), ARRAY_A);
+
+            if (empty($sessions))
+                continue;
+
+            $att_table = $wpdb->prefix . 'az_attendance';
+
+            // 3. Check/Insert for each past session
+            foreach ($sessions as $sess) {
+                $d = $sess['session_date'];
+
+                // Robust Date Parsing
+                $d_formatted = '9999-99-99';
+                if (strpos($d, '/') !== false) {
+                    $d_obj = DateTime::createFromFormat('d/m/Y', $d);
+                    if ($d_obj)
+                        $d_formatted = $d_obj->format('Y-m-d');
+                } else {
+                    $d_obj = DateTime::createFromFormat('Y-m-d', $d);
+                    if ($d_obj)
+                        $d_formatted = $d_obj->format('Y-m-d');
+                }
+
+                if ($d_formatted < $today) {
+                    // Check 'check-in'
+                    $exists_ci = $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM {$att_table} WHERE class_id=%d AND student_id=%d AND session_date=%s AND attendance_type='check-in'",
+                        $cid,
+                        $student_id,
+                        $d
+                    ));
+
+                    if (!$exists_ci) {
+                        $wpdb->insert(
+                            $att_table,
+                            [
+                                'class_id' => $cid,
+                                'student_id' => $student_id,
+                                'session_date' => $d,
+                                'attendance_type' => 'check-in',
+                                'status' => 0, // Absent
+                                'note' => ''
+                            ],
+                            ['%d', '%d', '%s', '%s', '%d', '%s']
+                        );
+                    }
+
+                    // Check 'mid-session'
+                    $exists_mid = $wpdb->get_var($wpdb->prepare(
+                        "SELECT COUNT(*) FROM {$att_table} WHERE class_id=%d AND student_id=%d AND session_date=%s AND attendance_type='mid-session'",
+                        $cid,
+                        $student_id,
+                        $d
+                    ));
+
+                    if (!$exists_mid) {
+                        $wpdb->insert(
+                            $att_table,
+                            [
+                                'class_id' => $cid,
+                                'student_id' => $student_id,
+                                'session_date' => $d,
+                                'attendance_type' => 'mid-session',
+                                'status' => 0, // Absent
+                                'note' => ''
+                            ],
+                            ['%d', '%d', '%s', '%s', '%d', '%s']
+                        );
+                    }
+                }
+            }
+        }
     }
 }
