@@ -654,7 +654,7 @@ class AzAC_Admin_Pages
                 echo '<td data-label="Lĩnh vực kinh doanh">' . esc_html($business_field) . '</td>';
 
                 // Class Status
-                echo '<td data-label="Trạng thái lớp">' . $class_status . '</td>';
+                echo '<td class="azac-badge-container" data-label="Trạng thái lớp">' . $class_status . '</td>';
 
                 // Attendance Badge
                 $percent = (isset($attendance_map) && isset($attendance_map[$cpt_id])) ? $attendance_map[$cpt_id] : 0;

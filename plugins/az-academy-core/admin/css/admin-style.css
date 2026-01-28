@@ -646,20 +646,38 @@ body.folded #wpfooter { margin-left: 36px; }
   }
 }
 
-/* Badge tên lớp học (Dynamic Color Base) */
+/* Badge tên lớp học (Dynamic Color Base) - Updated for Overflow Handling */
+/* Sửa triệt để lỗi tràn Badge */
 .azac-badge-class {
     color: #fff !important;
     padding: 4px 12px !important;
     border-radius: 12px !important;
-    font-size: 12px !important;
+    font-size: 11px !important; /* Giảm nhẹ font để dễ nhìn hơn */
     font-weight: 600;
-    display: inline-block;
-    margin-bottom: 0;
+    
+    /* CHÌA KHÓA: Phải dùng inline-block để ellipsis hoạt động ổn định */
+    display: inline-block !important;
+    vertical-align: middle;
+    
+    /* Xử lý cắt chữ */
+    max-width: 150px !important; /* Giới hạn ngắn hơn để cột không bị phình */
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    
+    /* Layout */
+    margin: 0 !important;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
-    text-shadow: 0 1px 1px rgba(0,0,0,0.1);
-    line-height: 1.4;
-    white-space: nowrap !important; /* Prevent text wrapping/distortion */
-    flex-shrink: 0;
+}
+
+/* Container bao quanh */
+.azac-badge-container {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 4px !important;
+    align-items: center !important;
+    width: 100% !important;
+    padding: 5px 0 !important;
 }
 
 .azac-badge-gap {
