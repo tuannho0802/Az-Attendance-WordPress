@@ -306,10 +306,20 @@ class AzAC_Core_Attendance
                     $i++;
                 }
                 $password = wp_generate_password(12, false);
+
+                // Security: Only Admin/Manager can create new users
+                if (!$is_admin && !$is_manager) {
+                    wp_send_json_error(['message' => 'Bạn không có quyền tạo tài khoản mới.'], 403);
+                }
+
                 $user_id = wp_create_user($username, $password, $email);
                 if (!is_wp_error($user_id)) {
                     $u = new WP_User($user_id);
                     $u->set_role('az_student');
+
+                    // Send notification email
+                    wp_new_user_notification($user_id, null, 'both');
+
                     $student_post_id = wp_insert_post([
                         'post_type' => 'az_student',
                         'post_title' => $name,

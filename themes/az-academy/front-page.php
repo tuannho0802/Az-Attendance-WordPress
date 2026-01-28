@@ -34,10 +34,9 @@ if (in_array('az_student', (array) $current_user->roles)) {
             <p class="az-hero-subtitle">Học Để Làm Được - Áp dụng ngay vào thực tế công việc kinh doanh. Case study thực
                 tế, thực hành trên tài khoản thật.</p>
             <div class="az-hero-actions">
-                <a href="#az-latest-classes" class="az-btn az-btn-primary az-btn-lg">Xem Khóa Học</a>
-                <?php if (!is_user_logged_in()): ?>
-                    <a href="<?php echo esc_url(home_url('/register')); ?>" class="az-btn az-btn-outline az-btn-lg">Đăng ký
-                        ngay</a>
+                <?php do_action('azac_home_buttons'); ?>
+                <?php if (!has_action('azac_home_buttons')) : // Fallback if plugin is disabled ?>
+                    <a href="#az-latest-classes" class="az-btn az-btn-primary az-btn-lg">Xem Khóa Học</a>
                 <?php endif; ?>
             </div>
         </div>

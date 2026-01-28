@@ -103,6 +103,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
                 </form>
 
                 <div style="text-align: center; margin-top: 20px;">
+                    <a href="<?php echo home_url(); ?>"
+                        style="color: #64748b; text-decoration: none; font-size: 0.9rem; margin-right: 15px;">← Quay lại Trang chủ</a>
                     <a href="<?php echo wp_lostpassword_url(); ?>"
                         style="color: #64748b; text-decoration: none; font-size: 0.9rem;">Quên mật khẩu?</a>
                 </div>
