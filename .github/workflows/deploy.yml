@@ -35,7 +35,7 @@ jobs:
           # Local-dir là root repo (chứa plugins và themes)
           local-dir: ./
           # Server-dir trỏ thẳng vào wp-content trên FastPanel
-          server-dir: ./wp-content/
+          server-dir: ./
           dangerous-clean-slate: false
           # Giảm parallel để tránh lỗi FIN packet do quá tải kết nối
           parallel: 2
