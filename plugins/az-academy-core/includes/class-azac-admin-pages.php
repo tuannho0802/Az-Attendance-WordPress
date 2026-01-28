@@ -93,6 +93,9 @@ class AzAC_Admin_Pages
             'dashicons-admin-home',
             2
         );
+
+        // Remove Dashboard for everyone
+        remove_menu_page('index.php');
     }
     public static function back_to_home_redirect()
     {
