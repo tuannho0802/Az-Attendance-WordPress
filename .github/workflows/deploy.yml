@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - main
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -10,6 +11,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # BƯỚC QUAN TRỌNG: Cài đặt PHP và Composer trên GitHub Runner
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2' # Khớp với phiên bản PHP ở máy local của bạn
+          extensions: mbstring, xml, ctype, iconv, intl, gd, zip
+          tools: composer:v2
+
+      # BƯỚC QUAN TRỌNG: Tải thư viện về môi trường tạm của GitHub
+      - name: Install Dependencies
+        working-directory: ./plugins/az-academy-core
+        run: |
+          composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
+
+      # Sync lên server qua FTP (Bao gồm cả folder vendor vừa tạo)
       - name: Sync via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -18,11 +34,14 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
           server-dir: ./
-          # Dùng lệnh này thay cho delete-removed để tránh lỗi vàng
           dangerous-clean-slate: false
+          # Loại bỏ các file rác, NHƯNG PHẢI GIỮ LẠI vendor
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
             README.md
             .gitignore
+            composer.json
+            composer.lock
+            .github/**

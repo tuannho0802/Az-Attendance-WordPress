@@ -108,6 +108,231 @@ class AzAC_Admin_Pages
             exit;
         }
     }
+    public static function handle_export_students_csv()
+    {
+        $action = isset($_REQUEST['action']) ? sanitize_text_field($_REQUEST['action']) : '';
+        if ($action !== 'export_students_excel' && $action !== 'export_students_xlsx') {
+            return;
+        }
+        $nonce = isset($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
+        $valid_nonce = ($nonce && (wp_verify_nonce($nonce, 'export_students_nonce') || wp_verify_nonce($nonce, 'azac_export_students')));
+        if (!$valid_nonce) {
+            wp_die('Invalid nonce');
+        }
+        if (!current_user_can('read')) {
+            wp_die('Unauthorized');
+        }
+
+        // Check library
+        if (!class_exists('PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+            wp_die('Thư viện PhpSpreadsheet chưa được cài đặt. Vui lòng chạy "composer require phpoffice/phpspreadsheet" trong thư mục plugin.');
+        }
+
+        global $wpdb;
+        $users = get_users(['role' => 'az_student', 'fields' => ['ID', 'display_name', 'user_email']]);
+        $student_uids = wp_list_pluck($users, 'ID');
+        $cpt_map = [];
+        if (!empty($student_uids)) {
+            $placeholders = implode(',', array_fill(0, count($student_uids), '%d'));
+            $sql = "SELECT pm.meta_value as user_id, p.ID as cpt_id FROM $wpdb->postmeta pm JOIN $wpdb->posts p ON pm.post_id = p.ID WHERE p.post_type = 'az_student' AND p.post_status = 'publish' AND pm.meta_key = 'az_user_id' AND pm.meta_value IN ($placeholders)";
+            $rows = $wpdb->get_results($wpdb->prepare($sql, $student_uids));
+            foreach ($rows as $r) {
+                $cpt_map[intval($r->user_id)] = intval($r->cpt_id);
+            }
+        }
+        $cpt_ids = array_values($cpt_map);
+        $class_map = [];
+        if (!empty($cpt_ids)) {
+            $class_rows = $wpdb->get_results("SELECT p.ID, p.post_title, pm.meta_value FROM $wpdb->posts p LEFT JOIN $wpdb->postmeta pm ON p.ID = pm.post_id AND pm.meta_key = 'az_students' WHERE p.post_type = 'az_class' AND p.post_status IN ('publish','pending')");
+            foreach ($class_rows as $cr) {
+                $sids = maybe_unserialize($cr->meta_value);
+                if (is_array($sids)) {
+                    foreach ($sids as $sid) {
+                        $sid = intval($sid);
+                        if (!isset($class_map[$sid])) {
+                            $class_map[$sid] = [];
+                        }
+                        $class_map[$sid][] = $cr->post_title;
+                    }
+                }
+            }
+        }
+        $attendance_map = [];
+        $att_table = $wpdb->prefix . 'az_attendance';
+        if (!empty($cpt_ids)) {
+            $ph = implode(',', array_fill(0, count($cpt_ids), '%d'));
+            $sql_stats = "SELECT student_id, COUNT(*) as total, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) as present FROM {$att_table} WHERE student_id IN ($ph) GROUP BY student_id";
+            $stats = $wpdb->get_results($wpdb->prepare($sql_stats, $cpt_ids));
+            foreach ($stats as $s) {
+                $total = intval($s->total);
+                $present = intval($s->present);
+                $attendance_map[intval($s->student_id)] = $total > 0 ? round(($present / $total) * 100) : 0;
+            }
+        }
+        $last_note_map = [];
+        if (!empty($cpt_ids)) {
+            $ph = implode(',', array_fill(0, count($cpt_ids), '%d'));
+            $sql_last = "SELECT t.student_id, t.note FROM {$att_table} t INNER JOIN (SELECT student_id, MAX(session_date) as md FROM {$att_table} WHERE student_id IN ($ph) AND note <> '' GROUP BY student_id) m ON t.student_id = m.student_id AND t.session_date = m.md";
+            $lasts = $wpdb->get_results($wpdb->prepare($sql_last, $cpt_ids));
+            foreach ($lasts as $ln) {
+                $last_note_map[intval($ln->student_id)] = $ln->note;
+            }
+        }
+        // Aggregated session summaries & joined counts for manage-students
+        $session_summaries_map = [];
+        $joined_count_map = [];
+        if (!empty($cpt_ids)) {
+            $ph = implode(',', array_fill(0, count($cpt_ids), '%d'));
+            $sql_det = "
+                SELECT student_id, session_date,
+                    MAX(CASE WHEN attendance_type='check-in' AND status=1 THEN 1 ELSE 0 END) AS ch_present,
+                    MAX(CASE WHEN attendance_type!='check-in' AND status=1 THEN 1 ELSE 0 END) AS mid_present,
+                    GROUP_CONCAT(CASE WHEN note <> '' THEN note END SEPARATOR ' | ') AS notes
+                FROM {$att_table}
+                WHERE student_id IN ($ph)
+                GROUP BY student_id, session_date
+                ORDER BY session_date ASC
+            ";
+            $rows = $wpdb->get_results($wpdb->prepare($sql_det, $cpt_ids));
+            foreach ($rows as $r) {
+                $sid = intval($r->student_id);
+                if (!isset($session_summaries_map[$sid]))
+                    $session_summaries_map[$sid] = [];
+                if (!isset($joined_count_map[$sid]))
+                    $joined_count_map[$sid] = 0;
+                $ch = intval($r->ch_present);
+                $mid = intval($r->mid_present);
+                $symbol = ($ch === 1 && $mid === 1) ? '✔' : (($ch + $mid) === 0 ? '✖' : '!');
+                $dstr = $r->session_date ? date_i18n('d/m/Y', strtotime($r->session_date)) : '';
+                $line = trim($symbol . ' ' . $dstr . (isset($r->notes) && $r->notes ? ' - ' . $r->notes : ''));
+                if ($line !== '') {
+                    $session_summaries_map[$sid][] = $line;
+                }
+                if ($ch || $mid)
+                    $joined_count_map[$sid]++;
+            }
+        }
+
+        // PhpSpreadsheet Generation
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Danh sách Học viên');
+
+        // Dynamic headers based on page
+        $page_slug = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        if ($page_slug === 'azac-manage-students') {
+            $headers = ['STT', 'Tên học viên', 'Lớp đang học', 'Số buổi đã tham gia', 'Chuyên cần %', 'Ghi chú điểm danh'];
+        } else {
+            // Default to students list
+            $headers = ['STT', 'Tên học viên', 'Email', 'Số điện thoại', 'Lĩnh vực kinh doanh', 'Trạng thái lớp', 'Chuyên cần %'];
+        }
+        $sheet->fromArray($headers, NULL, 'A1');
+        $lastCol = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers));
+
+        // Styling Headers
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'size' => 12,
+                'color' => ['rgb' => 'FFFFFF'],
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '0073AA'], // WordPress Blue
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
+            'borders' => [
+                'allBorders' => [
+                    'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                ],
+            ],
+        ];
+        $sheet->getStyle('A1:' . $lastCol . '1')->applyFromArray($headerStyle);
+        $sheet->getRowDimension(1)->setRowHeight(25);
+
+        $row = 2;
+        $stt = 1;
+        foreach ($users as $u) {
+            $uid = $u->ID;
+            $cpt_id = isset($cpt_map[$uid]) ? $cpt_map[$uid] : 0;
+            $email = $u->user_email;
+            $phone = get_user_meta($uid, 'az_phone', true);
+            if (!$phone)
+                $phone = get_user_meta($uid, 'billing_phone', true);
+            if (!$phone)
+                $phone = get_user_meta($uid, 'phone', true);
+            $biz = get_user_meta($uid, 'az_business_field', true);
+            $classes = $cpt_id && isset($class_map[$cpt_id]) ? implode(PHP_EOL, $class_map[$cpt_id]) : 'Chưa tham gia lớp học';
+            $percent = $cpt_id && isset($attendance_map[$cpt_id]) ? $attendance_map[$cpt_id] : '';
+
+            $sheet->setCellValue('A' . $row, $stt++);
+            $sheet->setCellValue('B' . $row, $u->display_name);
+
+            if ($page_slug === 'azac-manage-students') {
+                $joined = $cpt_id && isset($joined_count_map[$cpt_id]) ? intval($joined_count_map[$cpt_id]) : 0;
+                $details = $cpt_id && isset($session_summaries_map[$cpt_id]) ? implode(PHP_EOL, $session_summaries_map[$cpt_id]) : '';
+                $sheet->setCellValue('C' . $row, $classes);
+                $sheet->setCellValue('D' . $row, $joined);
+                $sheet->setCellValue('E' . $row, ($percent !== '' ? $percent . '%' : ''));
+                $sheet->setCellValue('F' . $row, $details);
+            } else {
+                // students-list
+                $sheet->setCellValue('C' . $row, $email);
+                $sheet->setCellValueExplicit('D' . $row, $phone, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
+                $sheet->setCellValue('E' . $row, $biz);
+                $sheet->setCellValue('F' . $row, $classes);
+                $sheet->setCellValue('G' . $row, ($percent !== '' ? $percent . '%' : ''));
+            }
+            $row++;
+        }
+
+        $lastRow = max($row - 1, 2);
+
+        // Apply Borders to all data
+        $sheet->getStyle('A1:' . $lastCol . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+        // Alignment
+        $sheet->getStyle('A2:A' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // STT
+        if ($page_slug === 'azac-manage-students') {
+            $sheet->getStyle('D2:D' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // Joined
+            $sheet->getStyle('E2:E' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // Percent
+            $sheet->getStyle('C2:C' . $lastRow)->getAlignment()->setWrapText(true); // Classes
+            $sheet->getStyle('F2:F' . $lastRow)->getAlignment()->setWrapText(true); // Notes
+        } else {
+            $sheet->getStyle('D2:D' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // Phone
+            $sheet->getStyle('G2:G' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // Percent
+            $sheet->getStyle('F2:F' . $lastRow)->getAlignment()->setWrapText(true); // Classes
+        }
+
+        // AutoSize Columns
+        for ($i = 1; $i <= count($headers); $i++) {
+            $col = \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex($i);
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        // Wider notes column for manage page
+        if ($page_slug === 'azac-manage-students') {
+            $sheet->getColumnDimension('F')->setWidth(70);
+        }
+
+        // Output Headers
+        $filename = 'Danh-sach-hoc-vien-' . date_i18n('d-m-Y') . '.xlsx';
+
+        nocache_headers();
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $filename . '"');
+        header('Cache-Control: max-age=0');
+
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->save('php://output');
+        exit;
+    }
+    public static function handle_export_students_xlsx()
+    {
+        return self::handle_export_students_csv();
+    }
     public static function render_attendance_list_page()
     {
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý điểm danh</h1>';
@@ -233,6 +458,17 @@ class AzAC_Admin_Pages
             echo '<a href="' . admin_url('admin.php?page=azac-classes-list') . '" class="button">Xóa lọc</a>';
         }
         echo '</form>';
+
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_manager = in_array('az_manager', (array) $user->roles);
+        if ($is_admin || $is_manager) {
+            $nonce = wp_create_nonce('azac_export_students');
+            echo '<form method="post" style="display:inline-block;margin-left:10px;">';
+            echo '<input type="hidden" name="action" value="export_students_excel">';
+            echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce) . '">';
+            echo '<button type="submit" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất file Excel</button>';
+            echo '</form>';
+        }
 
         $args = [
             'post_type' => 'az_class',
@@ -377,6 +613,8 @@ class AzAC_Admin_Pages
             echo '<a href="' . admin_url('admin.php?page=azac-students-list') . '" class="button">Xóa lọc</a>';
         }
         echo '</form>';
+        $export_url = admin_url('admin.php?page=azac-students-list&action=export_students_xlsx&_wpnonce=' . wp_create_nonce('export_students_nonce'));
+        echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất file Excel</a>';
 
         // Allowed Users Logic (Teacher Restriction)
         $allowed_user_ids = null;
@@ -1269,6 +1507,17 @@ class AzAC_Admin_Pages
             echo '<a href="' . admin_url('admin.php?page=azac-manage-students') . '" class="button">Xóa lọc</a>';
         }
         echo '</form>';
+
+        $is_admin = in_array('administrator', $user->roles, true);
+        $is_manager = in_array('az_manager', (array) $user->roles);
+        if ($is_admin || $is_manager) {
+            $nonce = wp_create_nonce('azac_export_students');
+            echo '<form method="post" style="display:inline-block;margin-left:10px;">';
+            echo '<input type="hidden" name="action" value="export_students_excel">';
+            echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce) . '">';
+            echo '<button type="submit" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất file Excel</button>';
+            echo '</form>';
+        }
 
         echo '<div class="azac-issue-legend">';
         echo '<span class="legend-badge legend-safe"><span class="dashicons dashicons-yes"></span> Đủ 2 lần</span>';

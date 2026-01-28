@@ -19,3 +19,4 @@
 # 5. Rác hệ thống
 .DS_Store
 Thumbs.db
+vendor/

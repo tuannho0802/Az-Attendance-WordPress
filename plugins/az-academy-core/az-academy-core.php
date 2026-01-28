@@ -14,6 +14,10 @@ define('AZAC_CORE_VERSION', '0.1.4');
 define('AZAC_CORE_DIR', plugin_dir_path(__FILE__));
 define('AZAC_CORE_URL', plugin_dir_url(__FILE__));
 
+if (file_exists(AZAC_CORE_DIR . 'vendor/autoload.php')) {
+    require_once AZAC_CORE_DIR . 'vendor/autoload.php';
+}
+
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-activator.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-deactivator.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-helper.php';
@@ -61,3 +65,11 @@ add_action('init', function () {
     }
 }, 20);
 
+if (file_exists(plugin_dir_path(__FILE__) . 'vendor/autoload.php')) {
+    require_once plugin_dir_path(__FILE__) . 'vendor/autoload.php';
+} else {
+    // Thông báo lỗi nếu thiếu thư viện để dễ debug
+    add_action('admin_notices', function () {
+        echo '<div class="error"><p><strong>Az Academy Core:</strong> Thư viện vendor không tồn tại. Vui lòng kiểm tra lại quá trình deploy hoặc chạy composer install.</p></div>';
+    });
+}
