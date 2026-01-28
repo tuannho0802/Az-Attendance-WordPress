@@ -11,37 +11,44 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # BƯỚC QUAN TRỌNG: Cài đặt PHP và Composer trên GitHub Runner
+      # 1. Cài đặt PHP & Composer trên GitHub Runner
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.2' # Khớp với phiên bản PHP ở máy local của bạn
+          php-version: '8.2'
           extensions: mbstring, xml, ctype, iconv, intl, gd, zip
           tools: composer:v2
 
-      # BƯỚC QUAN TRỌNG: Tải thư viện về môi trường tạm của GitHub
-      - name: Install Dependencies
+      # 2. Cài thư viện vào đúng thư mục plugin
+      - name: Install Dependencies (Plugin)
         working-directory: ./plugins/az-academy-core
         run: |
           composer install --no-dev --prefer-dist --optimize-autoloader --no-interaction
 
-      # Sync lên server qua FTP (Bao gồm cả folder vendor vừa tạo)
+      # 3. Đồng bộ lên thư mục wp-content của server
       - name: Sync via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
+          # Local-dir là root repo (chứa plugins và themes)
           local-dir: ./
-          server-dir: ./
+          # Server-dir trỏ thẳng vào wp-content trên FastPanel
+          server-dir: ./wp-content/
           dangerous-clean-slate: false
-          # Loại bỏ các file rác, NHƯNG PHẢI GIỮ LẠI vendor
+          # Giảm parallel để tránh lỗi FIN packet do quá tải kết nối
+          parallel: 2
+          # Ghi nhớ trạng thái để không upload lại hàng nghìn file vendor cũ
+          state-name: .ftp-deploy-sync-state.json
           exclude: |
             **/.git*
             **/.git*/**
             **/node_modules/**
+            **/vendor/**/tests/**
+            **/vendor/**/Tests/**
+            **/vendor/**/docs/**
+            **/vendor/**/*.md
             README.md
-            .gitignore
-            composer.json
-            composer.lock
             .github/**
+            .gitignore
