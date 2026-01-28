@@ -77,6 +77,11 @@ class AzAC_Admin_Assets
                 if (!wp_script_is('chartjs', 'enqueued')) {
                     wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
                 }
+
+                // Enqueue jQuery UI Datepicker & CSS
+                wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css', [], '1.13.2');
+                wp_enqueue_script('jquery-ui-datepicker');
+
                 wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-charts-js', AZAC_CORE_URL . 'admin/js/attendance-charts.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
@@ -130,6 +135,11 @@ class AzAC_Admin_Assets
                 if (!wp_script_is('chartjs', 'enqueued')) {
                     wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js', [], '4.4.1', true);
                 }
+
+                // Enqueue jQuery UI Datepicker & CSS
+                wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css', [], '1.13.2');
+                wp_enqueue_script('jquery-ui-datepicker');
+
                 wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-charts-js', AZAC_CORE_URL . 'admin/js/attendance-charts.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);

@@ -1296,17 +1296,19 @@ class AzAC_Admin_Pages
         echo '<div class="az-info-item"><span class="az-info-label">Giảng viên</span><span class="az-info-value">' . esc_html($teacher_name ?: 'Chưa gán') . '</span></div>';
         echo '<div class="az-info-item"><span class="az-info-label">Sĩ số</span><span class="az-info-value">' . esc_html(count($students)) . '</span></div>';
         echo '<div class="az-info-item"><span class="az-info-label">Tổng buổi</span><span class="az-info-value">' . esc_html(get_post_meta($class_id, 'az_tong_so_buoi', true)) . '</span></div>';
-        echo '</div>';
-        // Moved dropdown chọn buổi vào trong Card thông tin lớp
-        echo '<div class="az-info-row" style="margin-top:10px; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">';
-        echo '<label for="azac_session_select" style="font-weight:600; margin-right:4px;">Chọn buổi</label>';
-        echo '<select id="azac_session_select" class="regular-text" style="min-width:240px;">';
+
+        // Dropdown chọn buổi - Integrated into card grid (Full width)
+        echo '<div class="az-info-item" style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:flex-start; gap:4px;">';
+        echo '<span class="az-info-label" style="width:100%">Chọn buổi học</span>';
+        echo '<select id="azac_session_select" class="regular-text" style="width:100%; max-width:100%;">';
         foreach ($sessions_meta as $s) {
             $label = ($s['date'] ?? '') . (($s['time'] ?? '') ? (' ' . $s['time']) : '');
             $sel = (($s['date'] ?? '') === $selected_date) ? ' selected' : '';
             echo '<option value="' . esc_attr($s['date'] ?? '') . '"' . $sel . '>' . esc_html($label) . '</option>';
         }
         echo '</select>';
+        echo '</div>';
+
         echo '</div>';
         echo '</div>';
         $checkin_total = max(1, $stats['checkin_present'] + $stats['checkin_absent']);
@@ -1316,13 +1318,14 @@ class AzAC_Admin_Pages
         echo '<div class="azac-stat"><div class="azac-chart-row"><div class="azac-chart-box"><canvas id="azacChartCheckin"></canvas></div><div class="azac-chart-box"><canvas id="azacChartMid"></canvas></div></div></div>';
         echo '</div>';
         // Thanh hành động bên dưới Card thông tin lớp
-        echo '<div class="azac-session-bar" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:12px 0 10px;">';
+        echo '<div class="azac-session-bar" style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin:12px 0 10px; background:#fff; padding:10px; border:1px solid #e2e2e2; border-radius:8px;">';
         if (!$is_student) {
             if ($is_admin || $is_manager) {
-                echo '<input type="date" id="azac_session_date" value="' . esc_attr($selected_date) . '" />';
+                // Changed type="date" to type="text" with class "azac-datepicker" for jQuery UI support
+                echo '<input type="text" class="azac-datepicker" id="azac_session_date" value="' . esc_attr($selected_date) . '" placeholder="YYYY-MM-DD" style="max-width:140px;" autocomplete="off" />';
                 echo '<input type="time" id="azac_session_time" value="" />';
                 echo '<button class="button" id="azac_add_session_btn">Thêm buổi</button>';
-                echo '<button class="button" id="azac_update_session_btn">Cập nhật buổi</button>';
+                echo '<button class="button" id="azac_update_session_btn" style="display:none;">Cập nhật buổi</button>';
             }
             echo '<button class="button button-success" id="azac_start_mid_btn">Hiện mã QR Review</button>';
         }
@@ -1394,6 +1397,7 @@ class AzAC_Admin_Pages
             'sessionDate' => $selected_date,
             'sessionNonce' => wp_create_nonce('azac_session'),
             'sessions' => $sessions_meta,
+            'existingDates' => is_array($sessions_meta) ? array_column($sessions_meta, 'date') : [],
             'stats' => [
                 'checkin' => [
                     'present' => $stats['checkin_present'],
