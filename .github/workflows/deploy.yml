@@ -52,3 +52,4 @@ jobs:
             README.md
             .github/**
             .gitignore
+            plugins/az-academy-core/vendor/**
