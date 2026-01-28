@@ -17,10 +17,45 @@ class AzAC_Core_CPT
         add_action('save_post_az_class', [__CLASS__, 'save_class_meta'], 10, 2);
         add_action('save_post_az_class', [__CLASS__, 'save_class_students_meta'], 10, 2);
         add_filter('manage_az_class_posts_columns', [__CLASS__, 'columns_az_class']);
+        add_action('wp_ajax_azac_remove_student_from_class', [__CLASS__, 'ajax_remove_student_from_class']);
         add_action('manage_az_class_posts_custom_column', [__CLASS__, 'column_content_az_class'], 10, 2);
         add_filter('manage_az_student_posts_columns', [__CLASS__, 'columns_az_student']);
         add_action('manage_az_student_posts_custom_column', [__CLASS__, 'column_content_az_student'], 10, 2);
     }
+    public static function ajax_remove_student_from_class()
+    {
+        check_ajax_referer('azac_remove_student_from_class', 'nonce');
+
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $student_id = isset($_POST['student_id']) ? absint($_POST['student_id']) : 0;
+
+        if (!$class_id || !$student_id) {
+            wp_send_json_error(['message' => 'Invalid parameters'], 400);
+        }
+
+        if (!current_user_can('edit_post', $class_id)) {
+            wp_send_json_error(['message' => 'Permission denied'], 403);
+        }
+
+        // Update meta
+        $current_students = get_post_meta($class_id, 'az_students', true);
+        if (!is_array($current_students)) {
+            $current_students = [];
+        }
+
+        // Filter out the student
+        $new_students = array_diff($current_students, [$student_id]);
+
+        // Re-index array
+        $new_students = array_values($new_students);
+
+        // Update DB
+        update_post_meta($class_id, 'az_students', $new_students);
+        update_post_meta($class_id, 'az_so_hoc_vien', count($new_students));
+
+        wp_send_json_success(['count' => count($new_students)]);
+    }
+
     public static function register_cpt_class()
     {
         $labels = [
@@ -318,6 +353,8 @@ class AzAC_Core_CPT
         $selected = is_array($selected) ? array_map('absint', $selected) : [];
         $user = wp_get_current_user();
         $is_admin = in_array('administrator', $user->roles, true);
+        $is_manager = in_array('az_manager', $user->roles, true);
+        $can_manage = $is_admin || $is_manager;
 
         // Prepare student data for the table
         $student_data = [];
@@ -352,7 +389,7 @@ class AzAC_Core_CPT
             }
         }
 
-        if ($is_admin) {
+        if ($can_manage) {
             // Search UI
             echo '<div class="azac-search-box">';
             echo '<h4 style="margin:0 0 10px 0;">Tìm kiếm & Thêm học viên</h4>';
@@ -500,10 +537,13 @@ class AzAC_Core_CPT
 
             $nonce = wp_create_nonce('azac_add_student');
             $search_nonce = wp_create_nonce('azac_search_students');
+            $remove_nonce = wp_create_nonce('azac_remove_student_from_class');
             echo '<script>window.azacClassEditData=' . wp_json_encode([
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => $nonce,
                 'searchNonce' => $search_nonce,
+                'removeNonce' => $remove_nonce,
+                'classId' => $post->ID,
             ]) . ';</script>';
         }
 
@@ -514,7 +554,7 @@ class AzAC_Core_CPT
         echo '<th class="manage-column">Email</th>';
         echo '<th class="manage-column">Số điện thoại</th>';
         echo '<th class="manage-column">Lĩnh vực KD</th>';
-        if ($is_admin)
+        if ($can_manage)
             echo '<th class="manage-column column-action" style="width:60px;">Xóa</th>';
         echo '</tr></thead>';
         echo '<tbody id="azac_students_tbody">';
@@ -528,7 +568,7 @@ class AzAC_Core_CPT
                 echo '<td>' . esc_html($s['email']) . '</td>';
                 echo '<td>' . esc_html($s['phone']) . '</td>';
                 echo '<td>' . esc_html($s['biz']) . '</td>';
-                if ($is_admin) {
+                if ($can_manage) {
                     echo '<td><button type="button" class="button-link azac-remove-student-btn" style="color:#b32d2e;">Xóa</button></td>';
                 }
                 echo '</tr>';

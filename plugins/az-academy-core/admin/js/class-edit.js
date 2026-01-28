@@ -235,13 +235,48 @@
       ".azac-remove-student-btn",
       function (e) {
         e.preventDefault();
+        
+        var btn = $(this);
+        var tr = btn.closest("tr");
+        var studentId = tr.data("id");
+        
+        if (!window.azacClassEditData) {
+            alert("Lỗi: Không tìm thấy dữ liệu cấu hình (window.azacClassEditData missing).");
+            return;
+        }
+
         if (
           confirm(
-            "Bạn có chắc chắn muốn xóa học viên này khỏi lớp?",
+            "Bạn có chắc chắn muốn xóa học viên này khỏi lớp? (Hành động này sẽ được lưu ngay lập tức)"
           )
         ) {
-          $(this).closest("tr").remove();
-          recalcStudentCount();
+          // Change button state
+          btn.prop("disabled", true).text("Đang xóa...");
+
+          // Ajax request
+          $.post(
+            window.azacClassEditData.ajaxUrl,
+            {
+                action: 'azac_remove_student_from_class',
+                nonce: window.azacClassEditData.removeNonce,
+                class_id: window.azacClassEditData.classId,
+                student_id: studentId
+            },
+            function(res) {
+                if (res.success) {
+                    tr.fadeOut(300, function(){
+                        tr.remove();
+                        recalcStudentCount();
+                    });
+                } else {
+                    alert("Lỗi: " + (res.data.message || "Không thể xóa học viên."));
+                    btn.prop("disabled", false).text("Xóa");
+                }
+            }
+          ).fail(function() {
+              alert("Lỗi kết nối server.");
+              btn.prop("disabled", false).text("Xóa");
+          });
         }
       },
     );

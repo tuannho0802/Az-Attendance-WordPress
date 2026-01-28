@@ -10,6 +10,7 @@ class AzAC_Core_RBAC
         add_filter('map_meta_cap', [__CLASS__, 'map_meta_cap_for_class'], 10, 4);
         add_action('admin_init', [__CLASS__, 'redirect_cpt_list_to_custom']);
         add_action('init', [__CLASS__, 'ensure_teacher_caps'], 2);
+        add_action('init', [__CLASS__, 'ensure_manager_caps'], 2);
         add_filter('wp_insert_post_data', [__CLASS__, 'prevent_teacher_pending'], 10, 2);
         add_action('admin_menu', [__CLASS__, 'remove_default_menus'], 99);
     }
@@ -81,6 +82,42 @@ class AzAC_Core_RBAC
             }
             if (!$role->has_cap('edit_published_posts')) {
                 $role->add_cap('edit_published_posts');
+            }
+        }
+    }
+    public static function ensure_manager_caps()
+    {
+        $role = get_role('az_manager');
+        if (!$role) {
+            add_role('az_manager', 'Quản lý đào tạo', [
+                'read' => true,
+                'level_7' => true,
+            ]);
+            $role = get_role('az_manager');
+        }
+
+        if ($role) {
+            $caps = [
+                'edit_posts',
+                'edit_others_posts',
+                'publish_posts',
+                'read_private_posts',
+                'delete_posts',
+                'delete_others_posts',
+                'delete_published_posts',
+                'edit_published_posts',
+                'manage_categories',
+                'upload_files',
+                'list_users',
+                'create_users',
+                'edit_users',
+                'delete_users',
+                'promote_users'
+            ];
+            foreach ($caps as $cap) {
+                if (!$role->has_cap($cap)) {
+                    $role->add_cap($cap);
+                }
             }
         }
     }
