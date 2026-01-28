@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
                 <h1>Chào mừng bạn quay lại!</h1>
                 <p>Kết nối với hệ thống quản lý học tập chuyên nghiệp của Az Academy để theo dõi tiến độ và tham gia lớp
                     học.</p>
-                <a href="<?php echo home_url('/register'); ?>" class="btn-outline">Tạo tài khoản mới</a>
+                <!-- Register button removed -->
             </div>
         </div>
 

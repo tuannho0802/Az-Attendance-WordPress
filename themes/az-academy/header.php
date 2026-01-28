@@ -51,8 +51,7 @@ if (strpos($_SERVER['REQUEST_URI'], '/register') !== false) {
                 // Task 1: Only show Register link for Admin/Manager
                 if (current_user_can('administrator') || current_user_can('az_manager')):
                     ?>
-                    <a href="<?php echo esc_url(home_url('/register')); ?>" class="az-btn az-btn-primary az-btn-sm header-btn-register">Đăng
-                    ký</a>
+                    <a href="<?php echo esc_url(home_url('/register')); ?>" class="az-btn az-btn-primary az-btn-sm header-btn-register">Đăng ký học viên mới</a>
                 <?php endif; ?>
             </div>
         </div>

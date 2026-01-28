@@ -37,9 +37,7 @@ class AzAC_Core_Security
     {
         if (is_user_logged_in()) {
             echo '<a href="' . admin_url() . '" class="az-btn az-btn-primary az-btn-lg">Vào trang quản lý</a> ';
-            if (current_user_can('edit_users')) {
-                echo '<a href="' . admin_url('admin.php?page=azac-classes-list') . '" class="az-btn az-btn-outline az-btn-lg" style="margin-left: 10px;">Thêm học viên</a>';
-            }
+            // Removed "Thêm học viên" button as requested
         } else {
             echo '<a href="' . wp_login_url() . '" class="az-btn az-btn-primary az-btn-lg">Đăng nhập</a>';
         }
@@ -86,16 +84,14 @@ class AzAC_Core_Security
         // Check if URL contains /register/ or action=register
         if (strpos($request_uri, '/register') !== false || (isset($_GET['action']) && $_GET['action'] === 'register')) {
 
-            // Debug: Force stop to verify execution
-            // wp_die('Da vao ham block: ' . esc_html($request_uri));
-
-            error_log('AzAC Security: Blocking attempt to access ' . $request_uri);
-
-            // Strict Check
-            if (!is_user_logged_in() || (!current_user_can('administrator') && !current_user_can('az_manager'))) {
-                wp_redirect(home_url());
-                exit;
+            // Mở quyền cho Nội bộ: Admin hoặc Manager
+            if (is_user_logged_in() && (current_user_can('administrator') || current_user_can('az_manager'))) {
+                return; // Cho phép truy cập
             }
+
+            // Chặn các đối tượng khác (Khách, Học viên...) -> Về trang chủ
+            wp_redirect(home_url());
+            exit;
         }
     }
 
@@ -110,13 +106,7 @@ class AzAC_Core_Security
             $dashboard_url = admin_url(); // Or specific custom dashboard
             $output .= '<a href="' . esc_url($dashboard_url) . '" class="button button-primary button-large" style="margin-right: 10px;">Vào trang quản lý</a>';
 
-            // Button: Thêm học viên (Admin/Manager only)
-            if (current_user_can('edit_users') || in_array('az_manager', (array) $user->roles)) {
-                // Assuming link to Class List or a dedicated Add Student page. 
-                // Since there isn't a dedicated "Add Student" page mentioned, we'll link to Class List where they can manage students.
-                $add_student_url = admin_url('admin.php?page=azac-classes-list');
-                $output .= '<a href="' . esc_url($add_student_url) . '" class="button button-secondary button-large">Thêm học viên mới</a>';
-            }
+            // Button: Thêm học viên (Removed per request)
         } else {
             // Button: Đăng nhập
             $login_url = wp_login_url();

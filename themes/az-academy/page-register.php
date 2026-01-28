@@ -3,11 +3,8 @@
  * Template Name: Register Page
  */
 
-// Redirect if already logged in
-if (is_user_logged_in()) {
-    wp_redirect(admin_url());
-    exit;
-}
+// Auto-redirect removed to allow Admin/Manager access
+// Controlled by AzAC_Core_Security::block_register_page_access
 
 // Handle Registration Submission
 $reg_error = '';
