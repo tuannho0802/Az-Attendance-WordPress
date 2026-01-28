@@ -1390,6 +1390,7 @@ class AzAC_Admin_Pages
         echo '</div>';
         echo '<script>window.azacData=' . wp_json_encode([
             'classId' => $class_id,
+            'className' => get_the_title($class_id),
             'isAdmin' => $is_admin || $is_manager,
             'nonce' => $nonce,
             'ajaxUrl' => admin_url('admin-ajax.php'),

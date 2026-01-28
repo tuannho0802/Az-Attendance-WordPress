@@ -80,6 +80,10 @@
           payload,
           function (res) {
             $btn.prop("disabled", false);
+            console.log(
+              "AJAX Response Data:",
+              res,
+            );
             if (
               res &&
               res.success &&
@@ -131,6 +135,23 @@
                     "mid-session",
                   );
                 }
+              }
+              if (
+                typeof window.showAzacToast ===
+                "function"
+              ) {
+                var msg =
+                  "Đã tạo thành công Buổi " +
+                  res.data.sessions.length +
+                  " ngày " +
+                  d +
+                  " cho lớp " +
+                  (window.azacData.className ||
+                    "...");
+                window.showAzacToast(
+                  msg,
+                  "success",
+                );
               }
             } else {
               alert("Lỗi thêm buổi học");
@@ -252,8 +273,59 @@
                   );
                 }
               }
+              if (
+                typeof window.showAzacToast ===
+                "function"
+              ) {
+                var idx = -1;
+                if (
+                  res.data.sessions &&
+                  res.data.sessions.length
+                ) {
+                  for (
+                    var i = 0;
+                    i <
+                    res.data.sessions.length;
+                    i++
+                  ) {
+                    if (
+                      res.data.sessions[i]
+                        .date ===
+                      res.data.selected
+                    ) {
+                      idx = i;
+                      break;
+                    }
+                  }
+                }
+                var sNum =
+                  idx >= 0 ? idx + 1 : "?";
+                window.showAzacToast(
+                  "<div><strong>Đã lưu:</strong> Cập nhật Buổi " +
+                    sNum +
+                    " - Lớp " +
+                    (window.azacData
+                      .className || "...") +
+                    "</div>",
+                  "success",
+                );
+              }
             } else {
-              alert("Lỗi cập nhật buổi học");
+              if (
+                typeof window.showAzacToast ===
+                "function"
+              ) {
+                window.showAzacToast(
+                  res.data.message ||
+                    "Lỗi cập nhật buổi học",
+                  "error",
+                );
+              } else {
+                alert(
+                  res.data.message ||
+                    "Lỗi cập nhật buổi học",
+                );
+              }
             }
           },
         );

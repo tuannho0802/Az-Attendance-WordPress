@@ -82,6 +82,10 @@ class AzAC_Admin_Assets
                 wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css', [], '1.13.2');
                 wp_enqueue_script('jquery-ui-datepicker');
 
+                // Toast Modules (Independent)
+                wp_enqueue_style('azac-toast-style', plugins_url('../admin/css/azac-toast.css', __FILE__), [], time());
+                wp_enqueue_script('azac-toast-js', plugins_url('../admin/js/azac-toast.js', __FILE__), [], time(), true);
+
                 wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-charts-js', AZAC_CORE_URL . 'admin/js/attendance-charts.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
@@ -139,6 +143,12 @@ class AzAC_Admin_Assets
                 // Enqueue jQuery UI Datepicker & CSS
                 wp_enqueue_style('jquery-ui-css', 'https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css', [], '1.13.2');
                 wp_enqueue_script('jquery-ui-datepicker');
+
+                // Toast Modules (Independent) - Added here also for safety
+                if (!wp_script_is('azac-toast-js', 'enqueued')) {
+                    wp_enqueue_style('azac-toast-style', AZAC_CORE_URL . 'admin/css/azac-toast.css', [], time());
+                    wp_enqueue_script('azac-toast-js', AZAC_CORE_URL . 'admin/js/azac-toast.js', [], time(), true);
+                }
 
                 wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
                 wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
