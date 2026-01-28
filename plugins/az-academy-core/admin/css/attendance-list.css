@@ -196,6 +196,7 @@
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 8px;
   align-items: stretch;
+  margin-top: 1.5em;
 }
 .azac-actions--classes .button {
   display: flex;
