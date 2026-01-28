@@ -83,6 +83,27 @@ class AzAC_Admin_Pages
         );
         remove_menu_page('edit.php?post_type=az_class');
         remove_menu_page('edit.php?post_type=az_student');
+
+        add_menu_page(
+            'Quay lại Trang chủ',
+            'Quay lại Trang chủ',
+            'read',
+            'back-to-home-redirect',
+            [__CLASS__, 'back_to_home_redirect'],
+            'dashicons-admin-home',
+            2
+        );
+    }
+    public static function back_to_home_redirect()
+    {
+        // Intentionally empty: early redirect is handled via admin_init
+    }
+    public static function early_redirect_back_to_home()
+    {
+        if (isset($_GET['page']) && $_GET['page'] === 'back-to-home-redirect') {
+            wp_redirect(home_url());
+            exit;
+        }
     }
     public static function render_attendance_list_page()
     {

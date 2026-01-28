@@ -67,6 +67,7 @@ class AzAC_Core_Admin
 
         // Hotfix: Ensure Manager Role is updated (Run once)
         add_action('admin_init', [__CLASS__, 'ensure_manager_capabilities']);
+        add_action('admin_init', ['AzAC_Admin_Pages', 'early_redirect_back_to_home']);
 
         // Hide "Delete Permanently" in Media Grid via CSS
         add_action('admin_head', [__CLASS__, 'hide_delete_ui_css']);
