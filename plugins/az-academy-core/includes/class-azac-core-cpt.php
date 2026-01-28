@@ -18,13 +18,14 @@ class AzAC_Core_CPT
         add_action('save_post_az_class', [__CLASS__, 'save_class_students_meta'], 10, 2);
         add_filter('manage_az_class_posts_columns', [__CLASS__, 'columns_az_class']);
         add_action('wp_ajax_azac_remove_student_from_class', [__CLASS__, 'ajax_remove_student_from_class']);
+        add_action('wp_ajax_azac_add_students_to_class', [__CLASS__, 'ajax_add_students_to_class']);
         add_action('manage_az_class_posts_custom_column', [__CLASS__, 'column_content_az_class'], 10, 2);
         add_filter('manage_az_student_posts_columns', [__CLASS__, 'columns_az_student']);
         add_action('manage_az_student_posts_custom_column', [__CLASS__, 'column_content_az_student'], 10, 2);
     }
     public static function ajax_remove_student_from_class()
     {
-        check_ajax_referer('azac_remove_student_from_class', 'nonce');
+        check_ajax_referer('azac_ajax_nonce', 'security');
 
         $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
         $student_id = isset($_POST['student_id']) ? absint($_POST['student_id']) : 0;
@@ -47,6 +48,42 @@ class AzAC_Core_CPT
         $new_students = array_diff($current_students, [$student_id]);
 
         // Re-index array
+        $new_students = array_values($new_students);
+
+        // Update DB
+        update_post_meta($class_id, 'az_students', $new_students);
+        update_post_meta($class_id, 'az_so_hoc_vien', count($new_students));
+
+        wp_send_json_success(['count' => count($new_students)]);
+    }
+
+    public static function ajax_add_students_to_class()
+    {
+        check_ajax_referer('azac_ajax_nonce', 'security');
+
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $student_ids = isset($_POST['student_ids']) ? (array) $_POST['student_ids'] : [];
+        $student_ids = array_map('absint', $student_ids);
+        $student_ids = array_filter($student_ids);
+
+        if (!$class_id || empty($student_ids)) {
+            wp_send_json_error(['message' => 'Invalid parameters'], 400);
+        }
+
+        // Use edit_posts to allow Managers as requested, but also verify context
+        if (!current_user_can('edit_posts') || !current_user_can('edit_post', $class_id)) {
+            wp_send_json_error(['message' => 'Permission denied'], 403);
+        }
+
+        // Update meta
+        $current_students = get_post_meta($class_id, 'az_students', true);
+        if (!is_array($current_students)) {
+            $current_students = [];
+        }
+
+        // Merge and Unique
+        $new_students = array_merge($current_students, $student_ids);
+        $new_students = array_unique($new_students);
         $new_students = array_values($new_students);
 
         // Update DB
@@ -535,16 +572,6 @@ class AzAC_Core_CPT
             }
             echo '</div>';
 
-            $nonce = wp_create_nonce('azac_add_student');
-            $search_nonce = wp_create_nonce('azac_search_students');
-            $remove_nonce = wp_create_nonce('azac_remove_student_from_class');
-            echo '<script>window.azacClassEditData=' . wp_json_encode([
-                'ajaxUrl' => admin_url('admin-ajax.php'),
-                'nonce' => $nonce,
-                'searchNonce' => $search_nonce,
-                'removeNonce' => $remove_nonce,
-                'classId' => $post->ID,
-            ]) . ';</script>';
         }
 
         // List Table

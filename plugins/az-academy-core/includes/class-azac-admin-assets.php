@@ -10,12 +10,30 @@ class AzAC_Admin_Assets
         wp_enqueue_script('azac-admin-js', AZAC_CORE_URL . 'admin/js/admin.js', ['jquery'], AZAC_CORE_VERSION, true);
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
         if ($screen && $screen->post_type === 'az_class' && in_array($hook, ['post.php', 'post-new.php'], true)) {
-            wp_enqueue_script('azac-class-edit-js', AZAC_CORE_URL . 'admin/js/class-edit.js', ['jquery'], AZAC_CORE_VERSION, true);
+            $handle = 'azac-class-edit-js';
+            wp_enqueue_script($handle, AZAC_CORE_URL . 'admin/js/class-edit.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_style('azac-class-edit-style', AZAC_CORE_URL . 'admin/css/class-edit.css', [], AZAC_CORE_VERSION);
+            
             $user = wp_get_current_user();
-            wp_localize_script('azac-class-edit-js', 'AZAC_CLASS_EDIT', [
+            $class_id = get_the_ID();
+            if (!$class_id && isset($_GET['post'])) {
+                $class_id = absint($_GET['post']);
+            }
+
+            $azac_params = [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_ajax_nonce'),
+                'classId' => $class_id,
                 'isTeacher' => in_array('az_teacher', $user->roles, true),
-            ]);
+                'isManager' => current_user_can('edit_posts'),
+            ];
+
+            // Primary method
+            wp_localize_script($handle, 'azac_params', $azac_params);
+
+            // Fallback method: Inline Script
+            $inline_script = 'window.azac_params = ' . json_encode($azac_params) . ';';
+            wp_add_inline_script($handle, $inline_script, 'before');
         }
         if ($hook === 'toplevel_page_azac-attendance') {
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);

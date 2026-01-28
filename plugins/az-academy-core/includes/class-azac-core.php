@@ -263,9 +263,16 @@ class AzAC_Core
             }
             echo '</div>';
             $nonce = wp_create_nonce('azac_add_student');
+            $search_nonce = wp_create_nonce('azac_search_students');
+            $remove_nonce = wp_create_nonce('azac_remove_student_from_class');
+            $add_students_nonce = wp_create_nonce('azac_add_students_to_class');
             echo '<script>window.azacClassEditData=' . wp_json_encode([
                 'ajaxUrl' => admin_url('admin-ajax.php'),
                 'nonce' => $nonce,
+                'searchNonce' => $search_nonce,
+                'removeNonce' => $remove_nonce,
+                'addStudentsNonce' => $add_students_nonce,
+                'classId' => $post->ID,
             ]) . ';</script>';
         } else {
             echo '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;">';

@@ -13,7 +13,7 @@ class AzAC_Core_Attendance
     }
     public static function ajax_search_students()
     {
-        check_ajax_referer('azac_search_students', 'nonce');
+        check_ajax_referer('azac_ajax_nonce', 'security');
         $name = isset($_POST['name']) ? sanitize_text_field($_POST['name']) : '';
         $email = isset($_POST['email']) ? sanitize_text_field($_POST['email']) : '';
         $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
