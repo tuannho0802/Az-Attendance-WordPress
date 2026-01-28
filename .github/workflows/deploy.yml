@@ -17,8 +17,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
-          # Đường dẫn tuyệt đối đến thư mục wp-content trên host
-          server-dir: /var/www/hv_azacademy_usr/data/www/hv.azacademy.vn/wp-content/
+          server-dir: ./
           # Dùng lệnh này thay cho delete-removed để tránh lỗi vàng
           dangerous-clean-slate: false
           exclude: |
