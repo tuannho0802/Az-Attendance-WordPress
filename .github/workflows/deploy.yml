@@ -1,0 +1,32 @@
+name: Deploy Az-Attendance (Plugins & Themes)
+on:
+  push:
+    branches:
+      - main # Tự động chạy khi bạn push lên branch main
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Sync to wp-content
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          # Local-dir: Gốc của Repository (chứa plugins/ và themes/)
+          local-dir: ./
+          # Server-dir: Đường dẫn tuyệt đối đến wp-content trên hosting
+          server-dir: /var/www/hv_azacademy_usr/data/www/hv.azacademy.vn/wp-content/
+          # CỰC KỲ QUAN TRỌNG:
+          # Chế độ false giúp giữ lại các folder khác trên host như uploads, languages
+          delete-removed: false
+          # Loại bỏ các file rác không cần thiết khi sync
+          exclude: |
+            **/.git*
+            **/.git*/**
+            **/node_modules/**
+            README.md
+            .gitignore

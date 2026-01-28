@@ -2,6 +2,7 @@
 /*
 !/plugins/
 !/themes/
+!/.github/
 
 # 2. Chặn mọi thứ bên trong plugins/ trừ az-academy-core
 /plugins/*
