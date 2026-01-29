@@ -231,7 +231,11 @@
       "click",
       ".azac-status-btn",
       function () {
-        if (!AZAC_LIST || !AZAC_LIST.isAdmin)
+        if (
+          !AZAC_LIST ||
+          (!AZAC_LIST.isAdmin &&
+            !AZAC_LIST.isManager)
+        )
           return;
         var $btn = $(this);
         var id =
@@ -262,7 +266,47 @@
                 azacToast.success(
                   "Đã cập nhật trạng thái lớp",
                 );
-              location.reload();
+
+              // Update UI without reload
+              var $card =
+                $btn.closest(".azac-card");
+              var $badge = $card.find(
+                ".azac-badge",
+              );
+
+              if (status === "pending") {
+                // Switch to Closed state
+                $btn
+                  .data("status", "publish")
+                  .removeClass("button-warning")
+                  .addClass("button-secondary")
+                  .text("Mở lớp");
+                $badge
+                  .removeClass(
+                    "azac-badge-publish",
+                  )
+                  .addClass(
+                    "azac-badge-pending",
+                  )
+                  .text("Đã đóng");
+              } else {
+                // Switch to Open state
+                $btn
+                  .data("status", "pending")
+                  .removeClass(
+                    "button-secondary",
+                  )
+                  .addClass("button-warning")
+                  .text("Đóng lớp");
+                $badge
+                  .removeClass(
+                    "azac-badge-pending",
+                  )
+                  .addClass(
+                    "azac-badge-publish",
+                  )
+                  .text("Đang mở");
+              }
             } else {
               var emsg =
                 "Không thể cập nhật trạng thái lớp";
@@ -271,7 +315,11 @@
               else alert(emsg);
             }
           },
-        );
+        ).fail(function () {
+          $btn.prop("disabled", false);
+          if (window.azacToast)
+            azacToast.error("Lỗi kết nối");
+        });
       },
     );
 

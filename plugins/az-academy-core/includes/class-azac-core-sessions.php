@@ -233,6 +233,7 @@ class AzAC_Core_Sessions
         $user = wp_get_current_user();
         // Allow Manager (manage_options) to list sessions
         $is_admin = current_user_can('manage_options'); // Keep for post_status logic
+        $is_manager = in_array('az_manager', (array) $user->roles);
         $can_view = current_user_can('read'); // Basic read capability
         $is_teacher = in_array('az_teacher', $user->roles, true);
         $is_student = in_array('az_student', $user->roles, true);
@@ -255,7 +256,7 @@ class AzAC_Core_Sessions
             'post_type' => 'az_class',
             'numberposts' => -1,
             'fields' => 'ids',
-            'post_status' => $is_admin ? ['publish', 'pending'] : ['publish'],
+            'post_status' => ($is_admin || $is_manager) ? ['publish', 'pending'] : ['publish'],
         ];
 
         if (!empty($search) && mb_strlen($search) >= 2) {

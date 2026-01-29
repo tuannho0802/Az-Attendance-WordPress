@@ -180,6 +180,7 @@ class AzAC_Admin_Assets
                     'listSessionsNonce' => wp_create_nonce('azac_list_sessions'),
                     'isTeacher' => in_array('az_teacher', $user->roles, true),
                     'isAdmin' => in_array('administrator', $user->roles, true),
+                    'isManager' => in_array('az_manager', (array) $user->roles),
                     'isStudent' => in_array('az_student', $user->roles, true),
                     'updateStatusNonce' => wp_create_nonce('azac_update_class_status'),
                     'deleteClassNonce' => wp_create_nonce('azac_delete_class'),

@@ -637,7 +637,7 @@ class AzAC_Admin_Pages
             'order' => 'DESC',
             's' => $search, // WP_Query supports 's'
         ];
-        if ($is_admin || $is_teacher) {
+        if ($is_admin || $is_teacher || $is_manager) {
             $args['post_status'] = ['publish', 'pending'];
         }
         $classes = get_posts($args);
