@@ -508,9 +508,16 @@
       var html = sessions
         .map(function (s) {
           var dateStr = s.date;
-          var timeStr = s.time
-            ? s.time.substring(0, 5)
-            : ""; // HH:mm
+          // Thay đổi logic format giờ sang 12h AM/PM
+          var timeStr = "";
+          if (s.time) {
+            var timeParts = s.time.split(':');
+            var hours = parseInt(timeParts[0], 10);
+            var minutes = timeParts[1];
+            var ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12 || 12;
+            timeStr = hours + ':' + minutes + ' ' + ampm;
+          }
 
           // Calculate Date Status
           var dateStatusBadge = "";

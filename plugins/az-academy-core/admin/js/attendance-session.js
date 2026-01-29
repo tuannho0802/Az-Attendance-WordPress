@@ -41,13 +41,56 @@
         return fullLabel;
 
       var displayLabel = fullLabel;
-      // Fix: Ensure d/m/Y display if source is Y-m-d
-      var m = String(fullLabel).match(
+
+      var mYMD = String(fullLabel).match(
         /^(\d{4})-(\d{2})-(\d{2})(.*)/,
       );
-      if (m) {
-        displayLabel =
-          m[3] + "/" + m[2] + "/" + m[1] + m[4];
+      var mDMY = String(fullLabel).match(
+        /^(\d{2})\/(\d{2})\/(\d{4})(.*)/,
+      );
+
+      var datePart = "";
+      var timePart = "";
+
+      if (mYMD) {
+        datePart =
+          mYMD[3] +
+          "/" +
+          mYMD[2] +
+          "/" +
+          mYMD[1];
+        timePart = mYMD[4];
+      } else if (mDMY) {
+        datePart =
+          mDMY[1] +
+          "/" +
+          mDMY[2] +
+          "/" +
+          mDMY[3];
+        timePart = mDMY[4];
+      }
+
+      if (datePart) {
+        if (timePart) {
+          var tm = timePart.match(
+            /(\d{1,2}):(\d{2})(?::(\d{2}))?/,
+          );
+          if (tm) {
+            var h = parseInt(tm[1], 10);
+            var mi = tm[2];
+            var ampm = h >= 12 ? "PM" : "AM";
+            h = h % 12 || 12;
+            var hStr = h < 10 ? "0" + h : h;
+            timePart =
+              " " +
+              hStr +
+              ":" +
+              mi +
+              " " +
+              ampm;
+          }
+        }
+        displayLabel = datePart + timePart;
       }
 
       return (
@@ -366,11 +409,28 @@
                 res.data.sessions;
               res.data.sessions.forEach(
                 function (s) {
+                  var timeDisplay = "";
+                  if (s.time) {
+                    var timeParts =
+                      s.time.split(":");
+                    var hours = parseInt(
+                      timeParts[0],
+                      10,
+                    );
+                    var minutes = timeParts[1];
+                    var ampm =
+                      hours >= 12 ? "PM" : "AM";
+                    hours = hours % 12 || 12;
+                    timeDisplay =
+                      " " +
+                      hours +
+                      ":" +
+                      minutes +
+                      " " +
+                      ampm;
+                  }
                   var label =
-                    s.date +
-                    (s.time
-                      ? " " + s.time
-                      : "");
+                    s.date + timeDisplay;
                   // Native select keeps simple text
                   $("<option/>")
                     .val(s.date)
@@ -378,6 +438,44 @@
                     .appendTo($sel);
                 },
               );
+
+              if (window.azacData) {
+                if (
+                  Array.isArray(
+                    window.azacData
+                      .existingDates,
+                  )
+                ) {
+                  res.data.sessions.forEach(
+                    function (s) {
+                      if (
+                        !window.azacData.existingDates.includes(
+                          s.date,
+                        )
+                      ) {
+                        window.azacData.existingDates.push(
+                          s.date,
+                        );
+                      }
+                    },
+                  );
+                } else {
+                  window.azacData.existingDates =
+                    res.data.sessions.map(
+                      function (s) {
+                        return s.date;
+                      },
+                    );
+                }
+                var $dpRefresh = $(
+                  ".azac-datepicker",
+                );
+                if ($dpRefresh.length) {
+                  $dpRefresh.datepicker(
+                    "refresh",
+                  );
+                }
+              }
 
               // Rebuild Custom Select
               initCustomSelect();
@@ -519,6 +617,23 @@
                     .appendTo($sel);
                 },
               );
+
+              if (window.azacData) {
+                window.azacData.existingDates =
+                  res.data.sessions.map(
+                    function (s) {
+                      return s.date;
+                    },
+                  );
+                var $dpRefresh2 = $(
+                  ".azac-datepicker",
+                );
+                if ($dpRefresh2.length) {
+                  $dpRefresh2.datepicker(
+                    "refresh",
+                  );
+                }
+              }
 
               // Rebuild Custom Select
               initCustomSelect();
@@ -789,6 +904,9 @@
             ];
           }
           return [true, ""];
+        },
+        onChangeMonthYear: function () {
+          $(this).datepicker("refresh");
         },
         onSelect: function (dateText) {
           toggleSessionButtons(dateText);

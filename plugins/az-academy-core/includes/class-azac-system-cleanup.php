@@ -458,7 +458,7 @@ class AzAC_System_Cleanup
                                                                                                     <th scope="row" class="check-column">
                                                                                                         <input type="checkbox" class="cb-select-log" value="<?php echo esc_attr($val); ?>">
                                                                                                     </th>
-                                                                                                    <td><?php echo esc_html($log->created_at); ?></td>
+                                                                                                    <td><?php echo date('d/m/Y h:i A', strtotime($log->created_at)); ?></td>
                                                                                                     <td><?php echo esc_html($log->user_login); ?></td>
                                                                                                     <td>
                                                                                                         <?php
