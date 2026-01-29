@@ -635,3 +635,24 @@
 .azac-date {
   font-weight: 500;
 }
+
+/* --- Session Button States (Appended) --- */
+.btn-session-update {
+    background: #2271b1 !important; /* WP Primary Blue */
+    border-color: #2271b1 !important;
+    color: #fff !important;
+}
+.btn-session-update:hover {
+    background: #135e96 !important;
+    border-color: #135e96 !important;
+}
+
+.btn-session-add {
+    background: #27ae60 !important; /* Green */
+    border-color: #27ae60 !important;
+    color: #fff !important;
+}
+.btn-session-add:hover {
+    background: #219150 !important;
+    border-color: #219150 !important;
+}

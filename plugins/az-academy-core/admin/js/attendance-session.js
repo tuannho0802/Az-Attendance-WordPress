@@ -655,23 +655,39 @@
       },
     );
 
-    // Dynamic Button Logic Helper
+    // Dynamic Button Logic Helper (Enhanced)
     function toggleSessionButtons(date) {
-      if (
-        !window.azacData ||
-        !window.azacData.existingDates
-      )
-        return;
-      var exists =
-        window.azacData.existingDates.includes(
-          date,
-        );
+      if (!window.azacData) return;
+      
+      // Check in sessions array (updated via AJAX) first, fallback to existingDates
+      var exists = false;
+      if (window.azacData.sessions && Array.isArray(window.azacData.sessions)) {
+          exists = window.azacData.sessions.some(function(s) {
+              return s.date === date;
+          });
+      } else if (window.azacData.existingDates) {
+          exists = window.azacData.existingDates.includes(date);
+      }
+
+      var $btnAdd = $("#azac_add_session_btn");
+      var $btnUpdate = $("#azac_update_session_btn");
+
       if (exists) {
-        $("#azac_add_session_btn").hide();
-        $("#azac_update_session_btn").show();
+        // State: Update
+        $btnAdd.hide();
+        $btnUpdate
+          .show()
+          .text("Cập nhật buổi")
+          .addClass("btn-session-update")
+          .removeClass("btn-session-add");
       } else {
-        $("#azac_add_session_btn").show();
-        $("#azac_update_session_btn").hide();
+        // State: Add
+        $btnUpdate.hide();
+        $btnAdd
+          .show()
+          .text("Thêm buổi")
+          .addClass("btn-session-add")
+          .removeClass("btn-session-update");
       }
     }
 
