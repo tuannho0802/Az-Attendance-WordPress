@@ -13,6 +13,11 @@ class AzAC_Admin_Assets
             wp_enqueue_style('azac-toast-style', AZAC_CORE_URL . 'admin/css/azac-toast.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-toast-js', AZAC_CORE_URL . 'admin/js/azac-toast.js', [], AZAC_CORE_VERSION, true);
         }
+        // Global Modal assets on all admin pages
+        if (!wp_script_is('azac-modal-js', 'enqueued')) {
+            wp_enqueue_style('azac-modal-style', AZAC_CORE_URL . 'admin/css/azac-modal.css', [], AZAC_CORE_VERSION);
+            wp_enqueue_script('azac-modal-js', AZAC_CORE_URL . 'admin/js/azac-modal.js', ['jquery'], AZAC_CORE_VERSION, true);
+        }
         $screen = function_exists('get_current_screen') ? get_current_screen() : null;
         if ($screen && $screen->post_type === 'az_class' && in_array($hook, ['post.php', 'post-new.php'], true)) {
             $handle = 'azac-class-edit-js';

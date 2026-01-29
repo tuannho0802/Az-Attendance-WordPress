@@ -182,48 +182,53 @@
         var id =
           parseInt($btn.data("id"), 10) || 0;
         if (!id) return;
-        if (
-          !confirm(
-            "Bạn chắc chắn muốn xóa lớp này? Hành động không thể hoàn tác.",
-          )
-        ) {
-          return;
-        }
-        var payload = {
-          action: "azac_delete_class",
-          nonce: AZAC_LIST.deleteClassNonce,
-          class_id: id,
-        };
-        $btn.prop("disabled", true);
-        $.post(
-          AZAC_LIST.ajaxUrl,
-          payload,
-          function (res) {
-            $btn.prop("disabled", false);
-            if (res && res.success) {
-              if (window.azacToast)
-                azacToast.success(
-                  "Đã xóa lớp thành công",
-                );
-              var $card =
-                $btn.closest(".azac-card");
-              $card.fadeOut(300, function () {
-                $(this).remove();
-                if (
-                  $(".azac-card").length === 0
-                ) {
-                  location.reload();
-                }
-              });
-            } else {
-              if (window.azacToast)
-                azacToast.error(
-                  "Không thể xóa lớp",
-                );
-              else alert("Không thể xóa lớp");
-            }
+
+        azacConfirm(
+          "Xóa lớp học",
+          "Bạn chắc chắn muốn xóa lớp này? Hành động không thể hoàn tác.",
+          {
+            confirmText: "Xóa vĩnh viễn",
+            isDanger: true,
           },
-        );
+        ).then(function (confirmed) {
+          if (!confirmed) return;
+
+          var payload = {
+            action: "azac_delete_class",
+            nonce: AZAC_LIST.deleteClassNonce,
+            class_id: id,
+          };
+          $btn.prop("disabled", true);
+          $.post(
+            AZAC_LIST.ajaxUrl,
+            payload,
+            function (res) {
+              $btn.prop("disabled", false);
+              if (res && res.success) {
+                if (window.azacToast)
+                  azacToast.success(
+                    "Đã xóa lớp thành công",
+                  );
+                var $card =
+                  $btn.closest(".azac-card");
+                $card.fadeOut(300, function () {
+                  $(this).remove();
+                  if (
+                    $(".azac-card").length === 0
+                  ) {
+                    location.reload();
+                  }
+                });
+              } else {
+                if (window.azacToast)
+                  azacToast.error(
+                    "Không thể xóa lớp",
+                  );
+                else alert("Không thể xóa lớp");
+              }
+            },
+          );
+        });
       },
     );
 
@@ -248,77 +253,98 @@
           status === "pending"
             ? "Bạn muốn đóng lớp này? Giáo viên/học viên sẽ không thao tác."
             : "Bạn muốn mở lớp này?";
-        if (!confirm(msg)) return;
-        var payload = {
-          action: "azac_update_class_status",
-          nonce: AZAC_LIST.updateStatusNonce,
-          class_id: id,
-          status: status,
-        };
-        $btn.prop("disabled", true);
-        $.post(
-          AZAC_LIST.ajaxUrl,
-          payload,
-          function (res) {
-            $btn.prop("disabled", false);
-            if (res && res.success) {
-              if (window.azacToast)
-                azacToast.success(
-                  "Đã cập nhật trạng thái lớp",
+
+        var title =
+          status === "pending"
+            ? "Đóng lớp học"
+            : "Mở lớp học";
+        var isDanger = status === "pending";
+        var confirmText =
+          status === "pending"
+            ? "Đóng lớp"
+            : "Mở lớp";
+
+        azacConfirm(title, msg, {
+          confirmText: confirmText,
+          isDanger: isDanger,
+        }).then(function (confirmed) {
+          if (!confirmed) return;
+
+          var payload = {
+            action: "azac_update_class_status",
+            nonce: AZAC_LIST.updateStatusNonce,
+            class_id: id,
+            status: status,
+          };
+          $btn.prop("disabled", true);
+          $.post(
+            AZAC_LIST.ajaxUrl,
+            payload,
+            function (res) {
+              $btn.prop("disabled", false);
+              if (res && res.success) {
+                if (window.azacToast)
+                  azacToast.success(
+                    "Đã cập nhật trạng thái lớp",
+                  );
+
+                // Update UI without reload
+                var $card =
+                  $btn.closest(".azac-card");
+                var $badge = $card.find(
+                  ".azac-badge",
                 );
 
-              // Update UI without reload
-              var $card =
-                $btn.closest(".azac-card");
-              var $badge = $card.find(
-                ".azac-badge",
-              );
-
-              if (status === "pending") {
-                // Switch to Closed state
-                $btn
-                  .data("status", "publish")
-                  .removeClass("button-warning")
-                  .addClass("button-secondary")
-                  .text("Mở lớp");
-                $badge
-                  .removeClass(
-                    "azac-badge-publish",
-                  )
-                  .addClass(
-                    "azac-badge-pending",
-                  )
-                  .text("Đã đóng");
+                if (status === "pending") {
+                  // Switch to Closed state
+                  $btn
+                    .data("status", "publish")
+                    .removeClass(
+                      "button-warning",
+                    )
+                    .addClass(
+                      "button-secondary",
+                    )
+                    .text("Mở lớp");
+                  $badge
+                    .removeClass(
+                      "azac-badge-publish",
+                    )
+                    .addClass(
+                      "azac-badge-pending",
+                    )
+                    .text("Đã đóng");
+                } else {
+                  // Switch to Open state
+                  $btn
+                    .data("status", "pending")
+                    .removeClass(
+                      "button-secondary",
+                    )
+                    .addClass("button-warning")
+                    .text("Đóng lớp");
+                  $badge
+                    .removeClass(
+                      "azac-badge-pending",
+                    )
+                    .addClass(
+                      "azac-badge-publish",
+                    )
+                    .text("Đang mở");
+                }
               } else {
-                // Switch to Open state
-                $btn
-                  .data("status", "pending")
-                  .removeClass(
-                    "button-secondary",
-                  )
-                  .addClass("button-warning")
-                  .text("Đóng lớp");
-                $badge
-                  .removeClass(
-                    "azac-badge-pending",
-                  )
-                  .addClass(
-                    "azac-badge-publish",
-                  )
-                  .text("Đang mở");
+                var emsg =
+                  "Không thể cập nhật trạng thái lớp";
+                if (window.azacToast)
+                  azacToast.error(emsg);
+                else alert(emsg);
               }
-            } else {
-              var emsg =
-                "Không thể cập nhật trạng thái lớp";
-              if (window.azacToast)
-                azacToast.error(emsg);
-              else alert(emsg);
-            }
-          },
-        ).fail(function () {
-          $btn.prop("disabled", false);
-          if (window.azacToast)
-            azacToast.error("Lỗi kết nối");
+            },
+          ).fail(function () {
+            $btn.prop("disabled", false);
+            if (window.azacToast)
+              azacToast.error("Lỗi kết nối");
+          });
         });
       },
     );
@@ -457,65 +483,73 @@
           return;
         }
 
-        if (
-          !confirm(
-            "Bạn có chắc chắn muốn xóa " +
-              selected.length +
-              " buổi học đã chọn?",
-          )
-        ) {
-          return;
-        }
-
-        var btn = $(this);
-        btn.prop("disabled", true);
-
-        var data = {
-          action: "azac_bulk_delete_sessions",
-          _ajax_nonce:
-            AZAC_LIST.bulkDeleteNonce,
-          session_ids: selected,
-        };
-
-        console.log("Bulk Delete Data:", data);
-
-        $.post(
-          AZAC_LIST.ajaxUrl,
-          data,
-          function (res) {
-            btn.prop("disabled", false);
-            if (res.success) {
-              if (window.azacToast)
-                azacToast.success(
-                  "Đã xóa các buổi học đã chọn",
-                );
-              location.reload();
-            } else {
-              var msg =
-                "Lỗi: " +
-                (res.data
-                  ? res.data.message || res.data
-                  : "Không thể xóa");
-              if (window.azacToast)
-                azacToast.error(msg);
-              else alert(msg);
-            }
+        var $thisBtn = $(this);
+        azacConfirm(
+          "Xóa nhiều buổi học",
+          "Bạn có chắc chắn muốn xóa " +
+            selected.length +
+            " buổi học đã chọn?",
+          {
+            confirmText: "Xóa tất cả",
+            isDanger: true,
           },
-        ).fail(function (xhr) {
-          btn.prop("disabled", false);
-          var msg =
-            "Lỗi kết nối hoặc server error (400/500).";
-          if (
-            xhr.responseJSON &&
-            xhr.responseJSON.data
-          ) {
-            msg =
-              xhr.responseJSON.data.message ||
-              xhr.responseJSON.data;
-          }
-          if (window.azacToast)
-            azacToast.error(msg);
-          else alert(msg);
+        ).then(function (confirmed) {
+          if (!confirmed) return;
+
+          var btn = $thisBtn;
+          btn.prop("disabled", true);
+
+          var data = {
+            action: "azac_bulk_delete_sessions",
+            _ajax_nonce:
+              AZAC_LIST.bulkDeleteNonce,
+            session_ids: selected,
+          };
+
+          console.log(
+            "Bulk Delete Data:",
+            data,
+          );
+
+          $.post(
+            AZAC_LIST.ajaxUrl,
+            data,
+            function (res) {
+              btn.prop("disabled", false);
+              if (res.success) {
+                if (window.azacToast)
+                  azacToast.success(
+                    "Đã xóa các buổi học đã chọn",
+                  );
+                location.reload();
+              } else {
+                var msg =
+                  "Lỗi: " +
+                  (res.data
+                    ? res.data.message ||
+                      res.data
+                    : "Không thể xóa");
+                if (window.azacToast)
+                  azacToast.error(msg);
+                else alert(msg);
+              }
+            },
+          ).fail(function (xhr) {
+            btn.prop("disabled", false);
+            var msg =
+              "Lỗi kết nối hoặc server error (400/500).";
+            if (
+              xhr.responseJSON &&
+              xhr.responseJSON.data
+            ) {
+              msg =
+                xhr.responseJSON.data.message ||
+                xhr.responseJSON.data;
+            }
+            if (window.azacToast)
+              azacToast.error(msg);
+            else alert(msg);
+          });
         });
       },
     );
@@ -528,64 +562,67 @@
         e.preventDefault();
         var $btn = $(this);
         var id = $btn.data("id");
-        if (
-          !confirm(
-            "Bạn có chắc chắn muốn xóa buổi học này?",
-          )
-        ) {
-          return;
-        }
-
-        $btn.prop("disabled", true);
-
-        $.post(
-          AZAC_LIST.ajaxUrl,
+        azacConfirm(
+          "Xóa buổi học",
+          "Bạn có chắc chắn muốn xóa buổi học này?",
           {
-            action: "azac_delete_session",
-            _ajax_nonce:
-              AZAC_LIST.deleteSessionNonce,
-            id: id,
+            confirmText: "Xóa",
+            isDanger: true,
           },
-          function (res) {
-            $btn.prop("disabled", false);
-            if (res.success) {
-              // DOM Removal with FadeOut
-              var $row = $btn.closest("tr");
-              $row.fadeOut(300, function () {
-                $(this).remove();
-                // Optional: Update counters if present
-                // Simple recalculate rows
-                if (
-                  $(
-                    "#azac-sessions-table-body tr",
-                  ).length === 0
-                ) {
-                  // Reload if empty to show "No items" message or handle pagination
-                  location.reload();
-                }
-              });
+        ).then(function (confirmed) {
+          if (!confirmed) return;
 
-              if (window.azacToast)
-                azacToast.success(
-                  "Đã xóa buổi học thành công!",
-                );
-            } else {
-              var em =
-                "Lỗi: " +
-                (res.data
-                  ? res.data.message
-                  : "Không thể xóa buổi học, vui lòng thử lại.");
-              if (window.azacToast)
-                azacToast.error(em);
-              else alert(em);
-            }
-          },
-        ).fail(function () {
-          $btn.prop("disabled", false);
-          if (window.azacToast)
-            azacToast.error(
-              "Lỗi kết nối, vui lòng thử lại.",
-            );
+          $btn.prop("disabled", true);
+
+          $.post(
+            AZAC_LIST.ajaxUrl,
+            {
+              action: "azac_delete_session",
+              _ajax_nonce:
+                AZAC_LIST.deleteSessionNonce,
+              id: id,
+            },
+            function (res) {
+              $btn.prop("disabled", false);
+              if (res.success) {
+                // DOM Removal with FadeOut
+                var $row = $btn.closest("tr");
+                $row.fadeOut(300, function () {
+                  $(this).remove();
+                  // Optional: Update counters if present
+                  // Simple recalculate rows
+                  if (
+                    $(
+                      "#azac-sessions-table-body tr",
+                    ).length === 0
+                  ) {
+                    // Reload if empty to show "No items" message or handle pagination
+                    location.reload();
+                  }
+                });
+
+                if (window.azacToast)
+                  azacToast.success(
+                    "Đã xóa buổi học thành công!",
+                  );
+              } else {
+                var em =
+                  "Lỗi: " +
+                  (res.data
+                    ? res.data.message
+                    : "Không thể xóa buổi học, vui lòng thử lại.");
+                if (window.azacToast)
+                  azacToast.error(em);
+                else alert(em);
+              }
+            },
+          ).fail(function () {
+            $btn.prop("disabled", false);
+            if (window.azacToast)
+              azacToast.error(
+                "Lỗi kết nối, vui lòng thử lại.",
+              );
+          });
         });
       },
     );

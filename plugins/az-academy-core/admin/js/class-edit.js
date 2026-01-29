@@ -319,50 +319,46 @@
           return;
         }
 
-        if (
-          confirm(
-            "Bạn có chắc chắn muốn xóa học viên này khỏi lớp? (Hành động này sẽ được lưu ngay lập tức)",
-          )
-        ) {
-          // Change button state
-          btn
-            .prop("disabled", true)
-            .text("Đang xóa...");
+        azacConfirm("Xóa học viên", "Bạn có chắc chắn muốn xóa học viên này khỏi lớp? (Hành động này sẽ được lưu ngay lập tức)", { confirmText: "Xóa", isDanger: true }).then(function(confirmed) {
+            if (!confirmed) return;
 
-          // Ajax request
-          $.post(
-            azac_params.ajaxUrl,
-            {
-              action:
-                "azac_remove_student_from_class",
-              security: azac_params.nonce,
-              class_id: azac_params.classId,
-              student_id: studentId,
-            },
-            function (res) {
-              if (res.success) {
-                tr.fadeOut(300, function () {
+            // Change button state
+            btn
+              .prop("disabled", true)
+              .text("Đang xóa...");
+  
+            // Ajax request
+            $.post(
+              azac_params.ajaxUrl,
+              {
+                action:
+                  "azac_remove_student_from_class",
+                security: azac_params.nonce,
+                class_id: azac_params.classId,
+                student_id: studentId,
+              },
+            )
+              .done(function (res) {
+                if (res.success) {
                   tr.remove();
                   recalcStudentCount();
-                });
-              } else {
-                alert(
-                  "Lỗi: " +
-                    (res.data.message ||
-                      "Không thể xóa học viên."),
-                );
+                } else {
+                  alert(
+                    res.data ||
+                      "Không thể xóa học viên.",
+                  );
+                  btn
+                    .prop("disabled", false)
+                    .text("Xóa");
+                }
+              })
+              .fail(function () {
+                alert("Lỗi kết nối server.");
                 btn
                   .prop("disabled", false)
                   .text("Xóa");
-              }
-            },
-          ).fail(function () {
-            alert("Lỗi kết nối server.");
-            btn
-              .prop("disabled", false)
-              .text("Xóa");
-          });
-        }
+              });
+        });
       },
     );
 
