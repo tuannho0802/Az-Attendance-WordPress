@@ -13,7 +13,9 @@
             10,
           ) || 0;
         if (!title) {
-          alert("Nhập tên lớp");
+          if (window.azacToast)
+            azacToast.error("Nhập tên lớp");
+          else alert("Nhập tên lớp");
           return;
         }
         var payload = {
@@ -32,9 +34,17 @@
           function (res) {
             btn.prop("disabled", false);
             if (res && res.success) {
+              if (window.azacToast)
+                azacToast.success(
+                  "Đã tạo lớp thành công",
+                );
               location.reload();
             } else {
-              alert("Không thể tạo lớp");
+              if (window.azacToast)
+                azacToast.error(
+                  "Không thể tạo lớp",
+                );
+              else alert("Không thể tạo lớp");
             }
           },
         );
@@ -70,9 +80,17 @@
           function (res) {
             $btn.prop("disabled", false);
             if (res && res.success) {
+              if (window.azacToast)
+                azacToast.success(
+                  "Đã xóa lớp thành công",
+                );
               location.reload();
             } else {
-              alert("Không thể xóa lớp");
+              if (window.azacToast)
+                azacToast.error(
+                  "Không thể xóa lớp",
+                );
+              else alert("Không thể xóa lớp");
             }
           },
         );
@@ -110,11 +128,17 @@
           function (res) {
             $btn.prop("disabled", false);
             if (res && res.success) {
+              if (window.azacToast)
+                azacToast.success(
+                  "Đã cập nhật trạng thái lớp",
+                );
               location.reload();
             } else {
-              alert(
-                "Không thể cập nhật trạng thái lớp",
-              );
+              var emsg =
+                "Không thể cập nhật trạng thái lớp";
+              if (window.azacToast)
+                azacToast.error(emsg);
+              else alert(emsg);
             }
           },
         );
@@ -247,9 +271,11 @@
         );
 
         if (selected.length === 0) {
-          alert(
-            "Vui lòng chọn ít nhất một buổi học.",
-          );
+          var msgNone =
+            "Vui lòng chọn ít nhất một buổi học.";
+          if (window.azacToast)
+            azacToast.info(msgNone);
+          else alert(msgNone);
           return;
         }
 
@@ -281,15 +307,20 @@
           function (res) {
             btn.prop("disabled", false);
             if (res.success) {
+              if (window.azacToast)
+                azacToast.success(
+                  "Đã xóa các buổi học đã chọn",
+                );
               location.reload();
             } else {
-              alert(
+              var msg =
                 "Lỗi: " +
-                  (res.data
-                    ? res.data.message ||
-                      res.data
-                    : "Không thể xóa"),
-              );
+                (res.data
+                  ? res.data.message || res.data
+                  : "Không thể xóa");
+              if (window.azacToast)
+                azacToast.error(msg);
+              else alert(msg);
             }
           },
         ).fail(function (xhr) {
@@ -304,7 +335,9 @@
               xhr.responseJSON.data.message ||
               xhr.responseJSON.data;
           }
-          alert(msg);
+          if (window.azacToast)
+            azacToast.error(msg);
+          else alert(msg);
         });
       },
     );
@@ -315,7 +348,8 @@
       ".azac-delete-session-btn",
       function (e) {
         e.preventDefault();
-        var id = $(this).data("id");
+        var $btn = $(this);
+        var id = $btn.data("id");
         if (
           !confirm(
             "Bạn có chắc chắn muốn xóa buổi học này?",
@@ -323,6 +357,8 @@
         ) {
           return;
         }
+
+        $btn.prop("disabled", true);
 
         $.post(
           AZAC_LIST.ajaxUrl,
@@ -333,18 +369,46 @@
             id: id,
           },
           function (res) {
+            $btn.prop("disabled", false);
             if (res.success) {
-              location.reload();
+              // DOM Removal with FadeOut
+              var $row = $btn.closest("tr");
+              $row.fadeOut(300, function () {
+                $(this).remove();
+                // Optional: Update counters if present
+                // Simple recalculate rows
+                if (
+                  $(
+                    "#azac-sessions-table-body tr",
+                  ).length === 0
+                ) {
+                  // Reload if empty to show "No items" message or handle pagination
+                  location.reload();
+                }
+              });
+
+              if (window.azacToast)
+                azacToast.success(
+                  "Đã xóa buổi học thành công!",
+                );
             } else {
-              alert(
+              var em =
                 "Lỗi: " +
-                  (res.data
-                    ? res.data.message
-                    : "Không thể xóa"),
-              );
+                (res.data
+                  ? res.data.message
+                  : "Không thể xóa buổi học, vui lòng thử lại.");
+              if (window.azacToast)
+                azacToast.error(em);
+              else alert(em);
             }
           },
-        );
+        ).fail(function () {
+          $btn.prop("disabled", false);
+          if (window.azacToast)
+            azacToast.error(
+              "Lỗi kết nối, vui lòng thử lại.",
+            );
+        });
       },
     );
 

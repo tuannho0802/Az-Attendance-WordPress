@@ -74,6 +74,12 @@ class AzAC_Loading
             </div>
         </div>
         <?php
+        $flash = function_exists('AzAC_Core_Helper::get_flash_toast') ? AzAC_Core_Helper::get_flash_toast() : null;
+        if ($flash) {
+            $msg = isset($flash['message']) ? $flash['message'] : '';
+            $type = isset($flash['type']) ? $flash['type'] : 'info';
+            echo '<script>window.AZAC_FLASH_TOAST={message:' . json_encode($msg) . ',type:' . json_encode($type) . '};(function(){function fire(){if(window.azacToast){azacToast.show(window.AZAC_FLASH_TOAST.message,window.AZAC_FLASH_TOAST.type);window.AZAC_FLASH_TOAST=null;}}if(document.body.classList.contains("azac-loaded")){setTimeout(fire,50);}else{var iv=setInterval(function(){if(document.body.classList.contains("azac-loaded")){clearInterval(iv);setTimeout(fire,50);}},50);}})();</script>';
+        }
     }
 
     /**

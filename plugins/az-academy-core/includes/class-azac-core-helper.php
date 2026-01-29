@@ -4,6 +4,19 @@ if (!defined('ABSPATH')) {
 }
 class AzAC_Core_Helper
 {
+    public static function set_flash_toast($message, $type = 'info')
+    {
+        if (!is_string($message)) return;
+        set_transient('azac_flash_toast', ['message' => $message, 'type' => $type], 60);
+    }
+    public static function get_flash_toast()
+    {
+        $data = get_transient('azac_flash_toast');
+        if ($data) {
+            delete_transient('azac_flash_toast');
+        }
+        return is_array($data) ? $data : null;
+    }
     public static function get_class_students($class_id)
     {
         $ids = get_post_meta($class_id, 'az_students', true);

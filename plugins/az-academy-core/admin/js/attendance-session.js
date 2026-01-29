@@ -373,7 +373,13 @@
         var d = $("#azac_session_date").val();
         var t = $("#azac_session_time").val();
         if (!d) {
-          alert("Chọn ngày buổi học");
+          if (window.azacToast) {
+            azacToast.error(
+              "Chọn ngày buổi học",
+            );
+          } else {
+            alert("Chọn ngày buổi học");
+          }
           return;
         }
         var payload = {
@@ -508,8 +514,9 @@
                 }
               }
               if (
-                typeof window.showAzacToast ===
-                "function"
+                window.azacToast &&
+                typeof window.azacToast.show ===
+                  "function"
               ) {
                 var msg =
                   "Đã tạo thành công Buổi " +
@@ -519,13 +526,16 @@
                   " cho lớp " +
                   (window.azacData.className ||
                     "...");
-                window.showAzacToast(
-                  msg,
-                  "success",
-                );
+                window.azacToast.success(msg);
               }
             } else {
-              alert("Lỗi thêm buổi học");
+              if (window.azacToast) {
+                azacToast.error(
+                  "Lỗi thêm buổi học",
+                );
+              } else {
+                alert("Lỗi thêm buổi học");
+              }
             }
           },
         );
@@ -572,7 +582,13 @@
         var d = $("#azac_session_date").val();
         var t = $("#azac_session_time").val();
         if (!old || !d) {
-          alert("Chọn buổi và ngày");
+          if (window.azacToast) {
+            azacToast.error(
+              "Chọn buổi và ngày",
+            );
+          } else {
+            alert("Chọn buổi và ngày");
+          }
           return;
         }
         var payload = {
@@ -665,10 +681,7 @@
                   );
                 }
               }
-              if (
-                typeof window.showAzacToast ===
-                "function"
-              ) {
+              if (window.azacToast) {
                 var idx = -1;
                 if (
                   res.data.sessions &&
@@ -692,31 +705,26 @@
                 }
                 var sNum =
                   idx >= 0 ? idx + 1 : "?";
-                window.showAzacToast(
+                window.azacToast.success(
                   "<div><strong>Đã lưu:</strong> Cập nhật Buổi " +
                     sNum +
                     " - Lớp " +
                     (window.azacData
                       .className || "...") +
                     "</div>",
-                  "success",
                 );
               }
             } else {
-              if (
-                typeof window.showAzacToast ===
-                "function"
-              ) {
-                window.showAzacToast(
-                  res.data.message ||
-                    "Lỗi cập nhật buổi học",
-                  "error",
-                );
+              var emsg =
+                res &&
+                res.data &&
+                res.data.message
+                  ? res.data.message
+                  : "Lỗi cập nhật buổi học";
+              if (window.azacToast) {
+                azacToast.error(emsg);
               } else {
-                alert(
-                  res.data.message ||
-                    "Lỗi cập nhật buổi học",
-                );
+                alert(emsg);
               }
             }
           },
@@ -729,7 +737,11 @@
       function () {
         var d = $("#azac_session_select").val();
         if (!d) {
-          alert("Chọn buổi học");
+          if (window.azacToast) {
+            azacToast.error("Chọn buổi học");
+          } else {
+            alert("Chọn buổi học");
+          }
           return;
         }
         if (
@@ -752,10 +764,22 @@
           function (res) {
             $btn.prop("disabled", false);
             if (res && res.success) {
-              alert("Xóa thành công");
+              if (window.azacToast) {
+                azacToast.success(
+                  "Đã xóa buổi học thành công!",
+                );
+              } else {
+                alert("Xóa thành công");
+              }
               location.reload();
             } else {
-              alert("Lỗi xóa buổi học");
+              if (window.azacToast) {
+                azacToast.error(
+                  "Lỗi xóa buổi học",
+                );
+              } else {
+                alert("Lỗi xóa buổi học");
+              }
             }
           },
         );
@@ -813,13 +837,27 @@
                   .text("Chưa dạy");
               }
             } else {
-              alert(res.data.message || "Lỗi");
+              var m =
+                res &&
+                res.data &&
+                res.data.message
+                  ? res.data.message
+                  : "Lỗi";
+              if (window.azacToast) {
+                azacToast.error(m);
+              } else {
+                alert(m);
+              }
               $cb.prop("checked", !isCheckin);
             }
           },
         ).fail(function () {
           $cb.prop("disabled", false);
-          alert("Lỗi kết nối");
+          if (window.azacToast) {
+            azacToast.error("Lỗi kết nối");
+          } else {
+            alert("Lỗi kết nối");
+          }
           $cb.prop("checked", !isCheckin);
         });
       },

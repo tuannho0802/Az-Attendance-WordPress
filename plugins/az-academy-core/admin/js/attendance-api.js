@@ -45,10 +45,10 @@
     };
     $.post(window.azacData.ajaxUrl, payload, function (res) {
       if (res && res.success) {
-        alert("Đã lưu " + res.data.inserted + " bản ghi");
+        if (window.azacToast) { azacToast.success("Đã lưu " + res.data.inserted + " bản ghi"); } else { alert("Đã lưu " + res.data.inserted + " bản ghi"); }
         fetchExisting(type);
       } else {
-        alert("Lỗi lưu");
+        if (window.azacToast) { azacToast.error("Lỗi lưu"); } else { alert("Lỗi lưu"); }
       }
     });
   }
