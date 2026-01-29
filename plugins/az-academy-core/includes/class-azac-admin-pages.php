@@ -947,11 +947,18 @@ class AzAC_Admin_Pages
         } else {
             // 1. Prepare Class Map (Get classes for students)
             $student_classes_map = [];
+
+            // Filter classes for Teacher
+            $teacher_condition = "";
+            if (in_array('az_teacher', $user->roles) && !in_array('administrator', $user->roles) && !in_array('az_manager', (array) $user->roles)) {
+                $teacher_condition = $wpdb->prepare(" AND p.ID IN (SELECT post_id FROM $wpdb->postmeta WHERE meta_key = 'az_teacher_user' AND meta_value = %d)", $user->ID);
+            }
+
             $class_rows = $wpdb->get_results("
                 SELECT p.ID, p.post_title, pm.meta_value 
                 FROM $wpdb->posts p 
                 LEFT JOIN $wpdb->postmeta pm ON p.ID = pm.post_id AND pm.meta_key = 'az_students'
-                WHERE p.post_type = 'az_class' AND p.post_status = 'publish'
+                WHERE p.post_type = 'az_class' AND p.post_status = 'publish' $teacher_condition
             ");
 
             if ($class_rows) {
@@ -995,7 +1002,19 @@ class AzAC_Admin_Pages
                 // Fetch Stats for current page students
                 if ($cpt_ids_for_stats) {
                     $cpt_placeholders = implode(',', array_fill(0, count($cpt_ids_for_stats), '%d'));
-                    $sql_stats = "SELECT student_id, COUNT(*) as total, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) as present FROM {$wpdb->prefix}az_attendance WHERE student_id IN ($cpt_placeholders) GROUP BY student_id";
+
+                    // Filter stats for Teacher
+                    $class_filter_sql = "";
+                    if (in_array('az_teacher', $user->roles) && !in_array('administrator', $user->roles) && !in_array('az_manager', (array) $user->roles)) {
+                        $t_classes = get_posts(['post_type' => 'az_class', 'numberposts' => -1, 'meta_key' => 'az_teacher_user', 'meta_value' => $user->ID, 'fields' => 'ids']);
+                        if (!empty($t_classes)) {
+                            $class_filter_sql = " AND class_id IN (" . implode(',', array_map('absint', $t_classes)) . ")";
+                        } else {
+                            $class_filter_sql = " AND 1=0";
+                        }
+                    }
+
+                    $sql_stats = "SELECT student_id, COUNT(*) as total, SUM(CASE WHEN status=1 THEN 1 ELSE 0 END) as present FROM {$wpdb->prefix}az_attendance WHERE student_id IN ($cpt_placeholders) $class_filter_sql GROUP BY student_id";
                     $stats_results = $wpdb->get_results($wpdb->prepare($sql_stats, $cpt_ids_for_stats));
                     foreach ($stats_results as $r) {
                         $attendance_map[$r->student_id] = ($r->total > 0) ? round(($r->present / $r->total) * 100) : 0;

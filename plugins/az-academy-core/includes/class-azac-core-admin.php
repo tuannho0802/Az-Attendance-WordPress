@@ -321,14 +321,16 @@ class AzAC_Core_Admin
         }
         $users = get_users(['role' => 'az_student']);
         $current_user = wp_get_current_user();
+        $allowed_class_ids = null;
         if (in_array('az_teacher', $current_user->roles, true) && !in_array('administrator', $current_user->roles, true)) {
-            $teacher_classes = get_posts([
+            $allowed_class_ids = get_posts([
                 'post_type' => 'az_class',
                 'numberposts' => -1,
                 'meta_key' => 'az_teacher_user',
                 'meta_value' => $current_user->ID,
                 'fields' => 'ids'
             ]);
+            $teacher_classes = $allowed_class_ids;
             $student_post_ids = [];
             foreach ($teacher_classes as $cid) {
                 $s_ids = get_post_meta($cid, 'az_students', true);
@@ -376,6 +378,9 @@ class AzAC_Core_Admin
                 $mid = intval($a['mid_present']);
                 $cid = intval($a['class_id']);
                 if ($cid) {
+                    if (is_array($allowed_class_ids) && !in_array($cid, $allowed_class_ids)) {
+                        continue;
+                    }
                     $classes[$cid] = get_the_title($cid);
                     if ($ch || $mid)
                         $joined++;
