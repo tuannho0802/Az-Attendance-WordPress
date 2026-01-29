@@ -677,7 +677,7 @@ class AzAC_System_Cleanup
                                     </td>
                                     <td><?php echo isset($item['size']) ? esc_html($item['size']) : '-'; ?></td>
                                     <td><?php echo $item['desc']; ?></td>
-                                    <td><?php echo esc_html($item['date']); ?></td>
+                                    <td><?php echo esc_html(date_i18n('d/m/Y', strtotime($item['date']))); ?></td>
                                     <?php if ($can_delete): ?>
                                     <td style="text-align:right;">
                                                                     <button type="button" class="button button-small button-link-delete azac-delete-system-item"

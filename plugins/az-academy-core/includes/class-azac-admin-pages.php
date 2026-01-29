@@ -1462,7 +1462,7 @@ class AzAC_Admin_Pages
         echo '<span class="az-info-label" style="width:100%">Chọn buổi học</span>';
         echo '<select id="azac_session_select" class="regular-text" style="width:100%; max-width:100%;">';
         foreach ($sessions_meta as $s) {
-            $label = ($s['date'] ?? '') . (($s['time'] ?? '') ? (' ' . $s['time']) : '');
+            $label = (isset($s['date']) ? date_i18n('d/m/Y', strtotime($s['date'])) : '') . (($s['time'] ?? '') ? (' ' . $s['time']) : '');
             $sel = (($s['date'] ?? '') === $selected_date) ? ' selected' : '';
             echo '<option value="' . esc_attr($s['date'] ?? '') . '"' . $sel . '>' . esc_html($label) . '</option>';
         }

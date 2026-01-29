@@ -28,7 +28,13 @@
     var isMobile = window.innerWidth < 768;
     var labels = isMobile
       ? ["5s", "4s", "3s", "2s", "1s"]
-      : ["5 sao", "4 sao", "3 sao", "2 sao", "1 sao"];
+      : [
+          "5 sao",
+          "4 sao",
+          "3 sao",
+          "2 sao",
+          "1 sao",
+        ];
     var data = [5, 4, 3, 2, 1].map(
       function (k) {
         return counts && counts[k]
@@ -80,7 +86,11 @@
     return {
       type: "bar",
       data: {
-        labels: labels,
+        labels: labels.map(function (d) {
+          return d
+            ? d.split("-").reverse().join("/")
+            : "";
+        }),
         datasets: [
           {
             label: "Số lượt đánh giá",
@@ -206,7 +216,11 @@
     return {
       type: "bar",
       data: {
-        labels: labels,
+        labels: labels.map(function (d) {
+          return d
+            ? d.split("-").reverse().join("/")
+            : "";
+        }),
         datasets: [
           {
             label: "Điểm TB",
@@ -317,7 +331,9 @@
   }
   function draw(view) {
     ensure(function () {
-      var el = document.getElementById("azacReviewsMixedChart");
+      var el = document.getElementById(
+        "azacReviewsMixedChart",
+      );
       if (!el) return;
       var cfg =
         view === "class"
@@ -335,8 +351,12 @@
   }
   function render(data) {
     DATA = data || { counts: {}, items: [] };
-    var avg = document.getElementById("azacReviewsAvg");
-    var tot = document.getElementById("azacReviewsTotal");
+    var avg = document.getElementById(
+      "azacReviewsAvg",
+    );
+    var tot = document.getElementById(
+      "azacReviewsTotal",
+    );
     if (avg) {
       var v = Number(DATA.average) || 0;
       avg.textContent = v.toFixed(1) + "/5.0";
@@ -351,9 +371,12 @@
         avg.classList.add("azac-grade-mid");
       else avg.classList.add("azac-grade-bad");
     }
-    if (tot) tot.textContent = String(DATA.total || 0);
+    if (tot)
+      tot.textContent = String(DATA.total || 0);
     draw(MODE);
-    var list = document.getElementById("azacReviewsList");
+    var list = document.getElementById(
+      "azacReviewsList",
+    );
     if (list) {
       var sess = Array.isArray(DATA.sessions)
         ? DATA.sessions
@@ -361,7 +384,9 @@
       var html = (DATA.items || [])
         .map(function (it) {
           var stars = Array(it.rating || 0)
-            .fill('<span class="dashicons dashicons-star-filled" style="color:#f5b301"></span>')
+            .fill(
+              '<span class="dashicons dashicons-star-filled" style="color:#f5b301"></span>',
+            )
             .join("");
           var initial =
             (it.name || "")
@@ -399,13 +424,19 @@
             '</span></div><div class="azac-review-comment">' +
             (it.comment || "") +
             '</div><div class="azac-review-date"><span class="azac-badge azac-badge-date">' +
-            (it.date || "") +
+            (it.date
+              ? String(it.date)
+                  .split("-")
+                  .reverse()
+                  .join("/")
+              : "") +
             "</span>" +
             "</div></div>"
           );
         })
         .join("");
-      list.innerHTML = html || "<div>Chưa có đánh giá</div>";
+      list.innerHTML =
+        html || "<div>Chưa có đánh giá</div>";
       try {
         var cid =
           parseInt(

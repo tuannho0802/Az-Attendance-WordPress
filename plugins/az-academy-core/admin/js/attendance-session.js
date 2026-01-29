@@ -29,11 +29,26 @@
     // Helper: Render Option HTML
     // NOTE: This now prepares HTML for the CUSTOM DIV-based select.
     // The native <option> will keep simple text.
-    function renderCustomOptionHtml(val, fullLabel, isListItem) {
+    function renderCustomOptionHtml(
+      val,
+      fullLabel,
+      isListItem,
+    ) {
       if (!val) return fullLabel; // Placeholder "Chọn buổi học"
 
       var status = getStatusInfo(val);
-      if (!status || !status.label) return fullLabel;
+      if (!status || !status.label)
+        return fullLabel;
+
+      var displayLabel = fullLabel;
+      // Fix: Ensure d/m/Y display if source is Y-m-d
+      var m = String(fullLabel).match(
+        /^(\d{4})-(\d{2})-(\d{2})(.*)/,
+      );
+      if (m) {
+        displayLabel =
+          m[3] + "/" + m[2] + "/" + m[1] + m[4];
+      }
 
       return (
         '<span class="azac-tag ' +
@@ -42,7 +57,7 @@
         status.label +
         "</span> " +
         '<span class="azac-date">' +
-        fullLabel +
+        displayLabel +
         "</span>"
       );
     }
@@ -78,8 +93,9 @@
       $wrapper.empty(); // Rebuild content
 
       // 3. Build Trigger
-      var $selectedOption =
-        $nativeSelect.find("option:selected");
+      var $selectedOption = $nativeSelect.find(
+        "option:selected",
+      );
       var selectedText =
         $selectedOption.text() ||
         "Chọn buổi học";
@@ -116,11 +132,12 @@
             "",
           );
 
-          var optionHtml = renderCustomOptionHtml(
-            val,
-            text,
-            true,
-          );
+          var optionHtml =
+            renderCustomOptionHtml(
+              val,
+              text,
+              true,
+            );
           var $optDiv = $(
             '<div class="azac-custom-option" data-value="' +
               val +
@@ -202,17 +219,22 @@
     }
 
     // Initialize existing options - Revert to simple text but init Custom Select
-    $("#azac_session_select option").each(function () {
-      var val = $(this).val();
-      var text = $(this).text();
-      if (val) {
-         // Clean up old prefix if present in text
-         var cleanText = text.replace(/^\[(Đã qua|Hiện tại|Sắp tới)\]\s*/, "");
-         if (cleanText !== text) {
-             $(this).text(cleanText);
-         }
-      }
-    });
+    $("#azac_session_select option").each(
+      function () {
+        var val = $(this).val();
+        var text = $(this).text();
+        if (val) {
+          // Clean up old prefix if present in text
+          var cleanText = text.replace(
+            /^\[(Đã qua|Hiện tại|Sắp tới)\]\s*/,
+            "",
+          );
+          if (cleanText !== text) {
+            $(this).text(cleanText);
+          }
+        }
+      },
+    );
 
     // Initial Build
     initCustomSelect();
@@ -262,13 +284,46 @@
         // Sync datepicker with dropdown selection
         var $dp = $("#azac_session_date");
         if ($dp.hasClass("hasDatepicker")) {
-          $dp.datepicker("setDate", val);
+          // Fix: Parse Y-m-d from dropdown and set as Date object to match dd/mm/yy format
+          if (
+            val &&
+            val.match(/^\d{4}-\d{2}-\d{2}$/)
+          ) {
+            var parts = val.split("-");
+            var dObj = new Date(
+              parseInt(parts[0], 10),
+              parseInt(parts[1], 10) - 1,
+              parseInt(parts[2], 10),
+            );
+            $dp.datepicker("setDate", dObj);
+          } else {
+            $dp.datepicker("setDate", val);
+          }
         } else {
           $dp.val(val);
         }
         $dp.trigger("change");
       },
     );
+    // Helper: Convert d/m/Y to Y-m-d for Server
+    function toServerDate(dStr) {
+      if (!dStr) return "";
+      // Check if already Y-m-d
+      if (dStr.match(/^\d{4}-\d{2}-\d{2}$/))
+        return dStr;
+      var parts = dStr.split("/");
+      if (parts.length === 3) {
+        return (
+          parts[2] +
+          "-" +
+          parts[1] +
+          "-" +
+          parts[0]
+        );
+      }
+      return dStr;
+    }
+
     $("#azac_add_session_btn").on(
       "click",
       function () {
@@ -282,7 +337,7 @@
           action: "azac_add_session",
           nonce: window.azacData.sessionNonce,
           class_id: window.azacData.classId,
-          date: d,
+          date: toServerDate(d),
           time: t,
         };
         var $btn = $(this).prop(
@@ -427,7 +482,7 @@
           nonce: window.azacData.sessionNonce,
           class_id: window.azacData.classId,
           date: old,
-          new_date: d,
+          new_date: toServerDate(d),
           new_time: t,
         };
         var $btn = $(this).prop(
@@ -658,19 +713,34 @@
     // Dynamic Button Logic Helper (Enhanced)
     function toggleSessionButtons(date) {
       if (!window.azacData) return;
-      
+
+      // Convert input date (d/m/Y) to Y-m-d for comparison
+      var compareDate = toServerDate(date);
+
       // Check in sessions array (updated via AJAX) first, fallback to existingDates
       var exists = false;
-      if (window.azacData.sessions && Array.isArray(window.azacData.sessions)) {
-          exists = window.azacData.sessions.some(function(s) {
-              return s.date === date;
-          });
-      } else if (window.azacData.existingDates) {
-          exists = window.azacData.existingDates.includes(date);
+      if (
+        window.azacData.sessions &&
+        Array.isArray(window.azacData.sessions)
+      ) {
+        exists = window.azacData.sessions.some(
+          function (s) {
+            return s.date === compareDate;
+          },
+        );
+      } else if (
+        window.azacData.existingDates
+      ) {
+        exists =
+          window.azacData.existingDates.includes(
+            compareDate,
+          );
       }
 
       var $btnAdd = $("#azac_add_session_btn");
-      var $btnUpdate = $("#azac_update_session_btn");
+      var $btnUpdate = $(
+        "#azac_update_session_btn",
+      );
 
       if (exists) {
         // State: Update
@@ -705,7 +775,7 @@
       );
 
       $dp.datepicker({
-        dateFormat: "yy-mm-dd",
+        dateFormat: "dd/mm/yy",
         beforeShowDay: function (date) {
           var string = $.datepicker.formatDate(
             "yy-mm-dd",

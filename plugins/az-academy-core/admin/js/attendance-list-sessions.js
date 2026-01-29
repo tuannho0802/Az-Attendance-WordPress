@@ -663,7 +663,12 @@
               mobileBadge +
               "</td>",
             '<td data-label="Thời gian">' +
-              dateStr +
+              (dateStr
+                ? dateStr
+                    .split("-")
+                    .reverse()
+                    .join("/")
+                : "") +
               (timeStr
                 ? ' <span style="color:#666">(' +
                   timeStr +

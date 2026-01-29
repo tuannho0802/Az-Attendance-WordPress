@@ -168,6 +168,12 @@ class AzAC_Core_Sessions
         check_ajax_referer('azac_session', 'nonce');
         $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
         $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
+        // Fix: Ensure Y-m-d if d/m/Y provided
+        if (strpos($date, '/') !== false) {
+            $dt = DateTime::createFromFormat('d/m/Y', $date);
+            if ($dt)
+                $date = $dt->format('Y-m-d');
+        }
         $time = isset($_POST['time']) ? sanitize_text_field($_POST['time']) : '';
         if (!$class_id || !$date) {
             wp_send_json_error(['message' => 'Invalid'], 400);
@@ -194,6 +200,12 @@ class AzAC_Core_Sessions
         $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
         $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
         $new_date = isset($_POST['new_date']) ? sanitize_text_field($_POST['new_date']) : '';
+        // Fix: Ensure Y-m-d for new_date
+        if (strpos($new_date, '/') !== false) {
+            $dt = DateTime::createFromFormat('d/m/Y', $new_date);
+            if ($dt)
+                $new_date = $dt->format('Y-m-d');
+        }
         $new_time = isset($_POST['new_time']) ? sanitize_text_field($_POST['new_time']) : '';
         if (!$class_id || !$date || !$new_date) {
             wp_send_json_error(['message' => 'Invalid'], 400);
