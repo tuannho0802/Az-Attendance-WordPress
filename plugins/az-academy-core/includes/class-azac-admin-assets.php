@@ -7,6 +7,13 @@ class AzAC_Admin_Assets
     public static function enqueue_admin_assets($hook)
     {
         wp_enqueue_style('azac-admin-style', AZAC_CORE_URL . 'admin/css/admin-style.css', [], AZAC_CORE_VERSION);
+
+        // Teacher View Independent Styles
+        $user = wp_get_current_user();
+        if (in_array('az_teacher', $user->roles, true)) {
+            wp_enqueue_style('azac-teacher-view', AZAC_CORE_URL . 'admin/css/azac-teacher-view.css', [], AZAC_CORE_VERSION);
+        }
+
         wp_enqueue_script('azac-admin-js', AZAC_CORE_URL . 'admin/js/admin.js', ['jquery'], AZAC_CORE_VERSION, true);
         // Global Toast assets on all admin pages
         if (!wp_script_is('azac-toast-js', 'enqueued')) {
@@ -143,6 +150,12 @@ class AzAC_Admin_Assets
         }
         $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
         if ($page === 'azac-classes-list') {
+            // Enqueue Teacher View CSS if user is teacher
+            $user = wp_get_current_user();
+            if (in_array('az_teacher', (array) $user->roles, true)) {
+                wp_enqueue_style('azac-teacher-view-style', AZAC_CORE_URL . 'admin/css/azac-teacher-view.css', [], AZAC_CORE_VERSION);
+            }
+
             $cid = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
             if ($cid) {
                 wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
@@ -206,6 +219,11 @@ class AzAC_Admin_Assets
                 wp_enqueue_script('azac-reviews-js', AZAC_CORE_URL . 'admin/js/reviews.js', ['jquery', 'chartjs'], AZAC_CORE_VERSION, true);
             }
         } elseif ($page === 'azac-teacher-attendance') {
+            // Enqueue Teacher View CSS
+            $user = wp_get_current_user();
+            if (in_array('az_teacher', (array) $user->roles, true)) {
+                wp_enqueue_style('azac-teacher-view-style', AZAC_CORE_URL . 'admin/css/azac-teacher-view.css', [], AZAC_CORE_VERSION);
+            }
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);

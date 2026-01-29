@@ -1,0 +1,369 @@
+/* =========================================
+   Teacher View Independent Styles
+   Prefix: .azac-tv-
+   Scope: Teacher Role Only
+   ========================================= */
+
+/* --- Grid Layout for Classes --- */
+.azac-tv-grid {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fill,
+    minmax(300px, 1fr)
+  );
+  gap: 24px;
+  margin-top: 20px;
+}
+
+/* Force 3 columns on large screens */
+@media (min-width: 1200px) {
+  .azac-tv-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* --- Card Component --- */
+.azac-tv-card {
+  background: #fff;
+  border: 1px solid #e2e4e7;
+  border-radius: 12px; /* Soft radius */
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05); /* Modern soft shadow */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.azac-tv-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.azac-tv-card-header {
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.azac-tv-card-title {
+  margin: 0;
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #1d2327;
+}
+
+.azac-tv-card-body {
+  padding: 16px;
+  flex-grow: 1;
+}
+
+.azac-tv-stat-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: #50575e;
+  margin-bottom: 8px;
+}
+
+.azac-tv-stat-row strong {
+  color: #1d2327;
+}
+
+/* Progress Bar */
+.azac-tv-progress {
+  height: 6px;
+  background-color: #f0f0f1;
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 12px;
+}
+
+.azac-tv-progress-bar {
+  height: 100%;
+  background-color: #2271b1;
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+/* Card Actions */
+.azac-tv-card-actions {
+  padding: 16px;
+  background-color: #f8f9fa;
+  border-top: 1px solid #f0f0f1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+}
+
+/* --- Badges (Pastel Colors) --- */
+.azac-tv-badge-class {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  border-radius: 12px; /* Capsule shape */
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+
+.azac-tv-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: 4px;
+  color: #fff;
+  text-transform: uppercase;
+}
+
+/* Status Badges - Rounded */
+.azac-tv-badge-success {
+  background-color: #46b450;
+  border-radius: 20px; /* Fully rounded */
+}
+.azac-tv-badge-warning {
+  background-color: #ffb900;
+  color: #1d2327;
+  border-radius: 20px; /* Fully rounded */
+}
+.azac-tv-badge-secondary {
+  background-color: #646970;
+  border-radius: 20px;
+}
+
+/* --- Table Styles (Teacher Attendance) --- */
+.azac-tv-table-container {
+  overflow-x: auto;
+  border: 1px solid #e2e4e7;
+  border-radius: 8px;
+  background: #fff;
+  margin-top: 20px;
+}
+
+.azac-tv-attendance-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  font-size: 13px;
+}
+
+.azac-tv-attendance-table th,
+.azac-tv-attendance-table td {
+  padding: 8px 12px; /* Reduced padding for slimmer rows */
+  text-align: left;
+  border-bottom: 1px solid #f0f0f1;
+  color: #50575e;
+  vertical-align: middle;
+}
+
+.azac-tv-attendance-table th {
+  background-color: #f8f9fa;
+  color: #1d2327;
+  font-weight: 600;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  border-bottom: 2px solid #e2e4e7;
+}
+
+/* Zebra Striping */
+.azac-tv-attendance-table
+  tbody
+  tr:nth-child(even) {
+  background-color: #fcfcfc;
+}
+
+/* Hover Effect */
+.azac-tv-attendance-table tbody tr:hover {
+  background-color: #f0f6fc;
+}
+
+/* Column Optimization */
+.azac-tv-col-shrink {
+  width: 1%;
+  white-space: nowrap;
+}
+
+/* Buttons in Teacher View */
+.azac-tv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 4px;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.2s;
+  line-height: 1.4;
+}
+
+.azac-tv-btn-primary {
+  background-color: #2271b1;
+  color: #fff;
+  border-color: #2271b1;
+}
+.azac-tv-btn-primary:hover {
+  background-color: #135e96;
+  color: #fff;
+}
+
+.azac-tv-btn-secondary {
+  background-color: #f6f7f7;
+  color: #2c3338;
+  border-color: #dcdcde;
+}
+.azac-tv-btn-secondary:hover {
+  background-color: #f0f0f1;
+  border-color: #c3c4c7;
+  color: #1d2327;
+}
+
+.azac-tv-btn-info {
+  background-color: #e5f5fa; /* Very light blue */
+  color: #2271b1; /* WP Blue */
+  border-color: #2271b1; /* WP Blue border */
+}
+.azac-tv-btn-info:hover {
+  background-color: #2271b1;
+  color: #fff;
+}
+
+/* --- Switch Toggle (Check-in) --- */
+.azac-tv-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.azac-tv-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.azac-tv-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #e74c3c;
+  transition: 0.2s;
+  border-radius: 34px;
+}
+
+.azac-tv-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+.azac-tv-switch
+  input:checked
+  + .azac-tv-slider {
+  background: #2ecc71;
+}
+
+.azac-tv-switch
+  input:checked
+  + .azac-tv-slider:before {
+  transform: translateX(22px);
+}
+
+.azac-tv-switch.azac-tv-disabled
+  .azac-tv-slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.azac-tv-switch.azac-tv-disabled {
+  cursor: not-allowed;
+}
+
+.azac-tv-switch
+  input[disabled]
+  + .azac-tv-slider {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- Filter Form --- */
+.azac-tv-filter-form {
+  background: #fff;
+  padding: 15px 20px;
+  border: 1px solid #e2e4e7;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.azac-tv-select {
+  padding: 6px 12px;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  color: #2c3338;
+  font-size: 14px;
+  min-width: 250px;
+  max-width: 100%;
+}
+
+.azac-tv-select:focus {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: none;
+}
+
+/* --- Month Filter Input --- */
+.azac-tv-input {
+  padding: 6px 12px;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  color: #2c3338;
+  font-size: 14px;
+  line-height: normal; /* Fix alignment */
+}
+
+.azac-tv-input:focus {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+  outline: none;
+}
+
+/* --- Today Highlight --- */
+.azac-tv-attendance-table tbody tr.is-today {
+  background-color: #fff9c4 !important; /* Light yellow */
+  border-left: 4px solid #f1c40f;
+}
+
+.azac-tv-attendance-table
+  tbody
+  tr.is-today
+  td:first-child {
+  border-left: none; /* Reset if needed */
+}
+
+.azac-tv-attendance-table
+  tbody
+  tr.is-today:hover {
+  background-color: #fff59d !important; /* Slightly darker yellow on hover */
+}

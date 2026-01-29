@@ -548,26 +548,24 @@
       var today = window.azacData.today;
       var canEdit = isAdmin || date === today;
 
-      $(".azac-status, .azac-status-mid").prop(
-        "disabled",
-        !canEdit,
-      );
-      $(".azac-note, .azac-note-mid").prop(
-        "readonly",
-        !canEdit,
-      );
+      $(
+        ".azac-status, .azac-status-mid, .azac-tv-status, .azac-tv-status-mid",
+      ).prop("disabled", !canEdit);
+      $(
+        ".azac-note, .azac-note-mid, .azac-tv-note, .azac-tv-note-mid",
+      ).prop("readonly", !canEdit);
 
       if (canEdit) {
-        $(".azac-switch").removeClass(
-          "azac-disabled",
-        );
+        $(
+          ".azac-switch, .azac-tv-switch",
+        ).removeClass("azac-disabled");
         $(
           "#azac-submit-checkin, #azac-submit-mid",
         ).show();
       } else {
-        $(".azac-switch").addClass(
-          "azac-disabled",
-        );
+        $(
+          ".azac-switch, .azac-tv-switch",
+        ).addClass("azac-disabled");
         $(
           "#azac-submit-checkin, #azac-submit-mid",
         ).hide();
@@ -788,7 +786,7 @@
 
     $(document).on(
       "change",
-      ".azac-teacher-checkin-cb",
+      ".azac-teacher-checkin-cb, .azac-tv-checkin-cb",
       function () {
         var $cb = $(this);
         var classId = $cb.data("class");
@@ -814,27 +812,58 @@
           function (res) {
             $cb.prop("disabled", false);
             if (res.success) {
-              var $badge = $cb
-                .closest("tr")
-                .find(".azac-badge");
-              if (isCheckin) {
-                $badge
-                  .removeClass(
-                    "azac-badge-pending",
-                  )
-                  .addClass(
-                    "azac-badge-publish",
-                  )
-                  .text("Đã dạy");
-              } else {
-                $badge
-                  .removeClass(
-                    "azac-badge-publish",
-                  )
-                  .addClass(
-                    "azac-badge-pending",
-                  )
-                  .text("Chưa dạy");
+              var $row = $cb.closest("tr");
+
+              // Admin View Badge
+              var $badge = $row.find(
+                ".azac-badge",
+              );
+              if ($badge.length) {
+                if (isCheckin) {
+                  $badge
+                    .removeClass(
+                      "azac-badge-pending",
+                    )
+                    .addClass(
+                      "azac-badge-publish",
+                    )
+                    .text("Đã dạy");
+                } else {
+                  $badge
+                    .removeClass(
+                      "azac-badge-publish",
+                    )
+                    .addClass(
+                      "azac-badge-pending",
+                    )
+                    .text("Chưa dạy");
+                }
+              }
+
+              // Teacher View Badge
+              var $badgeTv = $row.find(
+                ".azac-tv-badge",
+              );
+              if ($badgeTv.length) {
+                if (isCheckin) {
+                  $badgeTv
+                    .removeClass(
+                      "azac-tv-badge-warning",
+                    )
+                    .addClass(
+                      "azac-tv-badge-success",
+                    )
+                    .text("Đã dạy");
+                } else {
+                  $badgeTv
+                    .removeClass(
+                      "azac-tv-badge-success",
+                    )
+                    .addClass(
+                      "azac-tv-badge-warning",
+                    )
+                    .text("Chưa dạy");
+                }
               }
             } else {
               var m =

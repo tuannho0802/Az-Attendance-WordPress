@@ -621,12 +621,14 @@ class AzAC_Admin_Pages
         echo '</form>';
 
         // Export Classes Button
-        $nonce_export_classes = wp_create_nonce('azac_export_classes_report');
-        echo '<form method="post" style="display:inline-block;margin-left:10px;">';
-        echo '<input type="hidden" name="action" value="export_classes_excel">';
-        echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce_export_classes) . '">';
-        echo '<button type="submit" id="btn-export-classes-excel" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Báo Cáo Lớp</button>';
-        echo '</form>';
+        if ($is_admin || $is_manager) {
+            $nonce_export_classes = wp_create_nonce('azac_export_classes_report');
+            echo '<form method="post" style="display:inline-block;margin-left:10px;">';
+            echo '<input type="hidden" name="action" value="export_classes_excel">';
+            echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce_export_classes) . '">';
+            echo '<button type="submit" id="btn-export-classes-excel" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Báo Cáo Lớp</button>';
+            echo '</form>';
+        }
 
         
 
@@ -677,7 +679,7 @@ class AzAC_Admin_Pages
             echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
             echo '</div>';
         }
-        echo '<div id="azac-tab-classes"><div class="azac-grid">';
+        echo '<div id="azac-tab-classes"><div class="' . ($is_teacher ? 'azac-tv-grid' : 'azac-grid') . '">';
         $palette = AzAC_Core_Admin::$palette;
         foreach ($paged_classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
@@ -701,43 +703,64 @@ class AzAC_Admin_Pages
             }
             $color = $palette[$hash % count($palette)];
 
-            echo '<div class="azac-card">';
-            echo '<div class="azac-card-title" style="background-color: ' . $color . '; color: #fff; padding: 10px; border-radius: 6px;">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '" style="border:1px solid rgba(255,255,255,0.5);">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
-            echo '<div class="azac-card-body">';
-            echo '<div class="azac-meta-list">';
-            echo '<div class="azac-meta-item"><span class="azac-meta-label">Giảng viên</span><span class="azac-meta-value">' . esc_html($gv ?: 'Chưa gán') . '</span></div>';
-            echo '<div class="azac-meta-item"><span class="azac-meta-label">Tổng số buổi</span><span class="azac-meta-value">' . esc_html($tsb) . '</span></div>';
-            echo '<div class="azac-meta-item"><span class="azac-meta-label">Số học viên</span><span class="azac-meta-value">' . esc_html($shv) . '</span></div>';
-            echo '<div class="azac-meta-item"><span class="azac-meta-label">Số buổi hiện tại</span><span class="azac-meta-value">' . esc_html($progress_done . '/' . $progress_total) . '</span></div>';
-            echo '</div>';
-            echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
-            echo '</div>';
-            echo '<div class="azac-card-actions azac-actions--classes">';
-            if ($is_admin || $is_manager) {
-                if ($is_pending) {
-                    echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
-                } else {
-                    echo '<button type="button" class="button button-warning azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đóng lớp</button> ';
-                }
-                echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
-                echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
+            if ($is_teacher) {
+                // Teacher View
+                echo '<div class="azac-tv-card">';
+                echo '<div class="azac-tv-card-header">';
+                echo '<span class="azac-tv-badge-class" style="background-color: ' . $color . ';">' . esc_html($c->post_title) . '</span>';
+                echo '</div>';
+                echo '<div class="azac-tv-card-body">';
+                echo '<div class="azac-tv-stat-row"><strong>Sĩ số:</strong> ' . esc_html($shv) . '</div>';
+                echo '<div class="azac-tv-stat-row"><strong>Tiến độ:</strong> ' . esc_html($progress_done . '/' . $progress_total) . ' buổi</div>';
+                echo '<div class="azac-tv-progress"><div class="azac-tv-progress-bar" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
+                echo '</div>';
+                echo '<div class="azac-tv-card-actions">';
                 if (!$is_pending) {
-                    echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a> ';
+                    echo '<a class="azac-tv-btn azac-tv-btn-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                    echo '<a class="azac-tv-btn azac-tv-btn-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
+                    echo '<a class="azac-tv-btn azac-tv-btn-info" href="' . esc_url($link_view) . '">Vào lớp</a>';
                 }
-                if ($is_admin) {
-                    echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
-                }
-            } elseif ($is_teacher) {
-                if (!$is_pending) {
+                echo '</div>';
+                echo '</div>';
+            } else {
+                echo '<div class="azac-card">';
+                echo '<div class="azac-card-title" style="background-color: ' . $color . '; color: #fff; padding: 10px; border-radius: 6px;">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '" style="border:1px solid rgba(255,255,255,0.5);">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
+                echo '<div class="azac-card-body">';
+                echo '<div class="azac-meta-list">';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Giảng viên</span><span class="azac-meta-value">' . esc_html($gv ?: 'Chưa gán') . '</span></div>';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Tổng số buổi</span><span class="azac-meta-value">' . esc_html($tsb) . '</span></div>';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Số học viên</span><span class="azac-meta-value">' . esc_html($shv) . '</span></div>';
+                echo '<div class="azac-meta-item"><span class="azac-meta-label">Số buổi hiện tại</span><span class="azac-meta-value">' . esc_html($progress_done . '/' . $progress_total) . '</span></div>';
+                echo '</div>';
+                echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
+                echo '</div>';
+                echo '<div class="azac-card-actions azac-actions--classes">';
+                if ($is_admin || $is_manager) {
+                    if ($is_pending) {
+                        echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
+                    } else {
+                        echo '<button type="button" class="button button-warning azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="pending">Đóng lớp</button> ';
+                    }
                     echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
                     echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
-                    echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a>';
+                    if (!$is_pending) {
+                        echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a> ';
+                    }
+                    if ($is_admin) {
+                        echo '<button type="button" class="button button-danger azac-delete-btn" data-id="' . esc_attr($c->ID) . '">Xóa lớp</button>';
+                    }
+                } elseif ($is_teacher) {
+                    if (!$is_pending) {
+                        echo '<a class="button button-secondary" href="' . esc_url($link_edit) . '">Chỉnh sửa</a> ';
+                        echo '<a class="button button-primary" href="' . esc_url($link_dashboard) . '">Vào điểm danh</a> ';
+                        echo '<a class="button button-info" href="' . esc_url($link_view) . '">Vào lớp</a>';
+                    }
+                } else {
+                    echo '<a class="button button-info" href="' . esc_url($link_view) . '">Xem lớp</a>';
                 }
-            } else {
-                echo '<a class="button button-info" href="' . esc_url($link_view) . '">Xem lớp</a>';
+                echo '</div>';
+                echo '</div>';
             }
-            echo '</div>';
-            echo '</div>';
         }
         echo '</div></div></div></div>';
         AzAC_Core_Helper::render_pagination($current_page, $total_pages);
@@ -773,8 +796,10 @@ class AzAC_Admin_Pages
             echo '<a href="' . admin_url('admin.php?page=azac-students-list') . '" class="button">Xóa lọc</a>';
         }
         echo '</form>';
-        $export_url = admin_url('admin.php?page=azac-students-list&action=export_students_xlsx&_wpnonce=' . wp_create_nonce('export_students_nonce'));
-        echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Danh sách Học Viên</a>';
+        if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {
+            $export_url = admin_url('admin.php?page=azac-students-list&action=export_students_xlsx&_wpnonce=' . wp_create_nonce('export_students_nonce'));
+            echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Danh sách Học Viên</a>';
+        }
 
         // Allowed Users Logic (Teacher Restriction)
         $allowed_user_ids = null;
@@ -2083,89 +2108,149 @@ class AzAC_Admin_Pages
             return;
         }
 
-        // --- Teacher View (Original Logic) ---
+        // --- Teacher View (Single Table Layout) ---
         echo '<div class="wrap"><h1>Chấm công Giảng viên</h1>';
         echo '<p>Danh sách các buổi học của lớp bạn phụ trách.</p>';
 
-        $args = [
+        $teacher_classes = get_posts([
             'post_type' => 'az_class',
             'numberposts' => -1,
             'meta_key' => 'az_teacher_user',
-            'meta_value' => $user->ID
-        ];
+            'meta_value' => $user->ID,
+            'fields' => 'ids'
+        ]);
 
-        $classes = get_posts($args);
+        if (empty($teacher_classes)) {
+            echo '<p>Bạn chưa được phân công lớp học nào.</p>';
+            echo '</div>';
+            return;
+        }
+
+        global $wpdb;
+        $sess_table = $wpdb->prefix . 'az_sessions';
+        $posts_table = $wpdb->prefix . 'posts';
+        $class_ids_str = implode(',', array_map('absint', $teacher_classes));
+
+        // --- Filter Logic ---
+        $filter_class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+        $filter_month = isset($_GET['month']) ? sanitize_text_field($_GET['month']) : '';
+
+        // Render Filter Form
+        echo '<form method="get" class="azac-tv-filter-form" style="margin-bottom: 20px;">';
+        echo '<input type="hidden" name="page" value="azac-teacher-attendance">';
+        echo '<div class="azac-tv-filter-container" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
+
+        // Class Select
+        echo '<label for="azac-tv-class-filter" style="font-weight:600;">Lọc theo lớp:</label>';
+        echo '<select id="azac-tv-class-filter" name="class_id" onchange="this.form.submit()" class="azac-tv-select">';
+        echo '<option value="">-- Tất cả các lớp --</option>';
+        foreach ($teacher_classes as $cid) {
+            $c_title = get_the_title($cid);
+            $selected = ($filter_class_id == $cid) ? 'selected' : '';
+            echo '<option value="' . $cid . '" ' . $selected . '>' . esc_html($c_title) . '</option>';
+        }
+        echo '</select>';
+
+        // Month Input
+        echo '<label for="azac-tv-month-filter" style="font-weight:600;margin-left:10px;">Lọc tháng:</label>';
+        echo '<input type="month" id="azac-tv-month-filter" name="month" value="' . esc_attr($filter_month) . '" class="azac-tv-input" onchange="this.form.submit()">';
+
+        // Clear Filter
+        if ($filter_class_id || $filter_month) {
+            echo '<a href="' . admin_url('admin.php?page=azac-teacher-attendance') . '" class="button">Xóa lọc</a>';
+        }
+        echo '</div>';
+        echo '</form>';
+
+        // Apply Filters
+        if ($filter_class_id && in_array($filter_class_id, $teacher_classes)) {
+            $class_ids_str = $filter_class_id;
+        }
+
+        $where_sql = "s.class_id IN ({$class_ids_str})";
+        if ($filter_month) {
+            $where_sql .= $wpdb->prepare(" AND DATE_FORMAT(s.session_date, '%%Y-%%m') = %s", $filter_month);
+        }
+
+        // Pagination
+        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+        $per_page = 20;
+        $offset = ($paged - 1) * $per_page;
+
+        // Query with Session Number Calculation
+        $sql = "SELECT SQL_CALC_FOUND_ROWS s.*, p.post_title as class_name, 
+                (SELECT COUNT(*) + 1 FROM {$sess_table} s2 WHERE s2.class_id = s.class_id AND (s2.session_date < s.session_date OR (s2.session_date = s.session_date AND s2.session_time < s.session_time))) as session_number 
+                FROM {$sess_table} s 
+                JOIN {$posts_table} p ON s.class_id = p.ID 
+                WHERE {$where_sql} 
+                ORDER BY s.session_date DESC, s.session_time ASC 
+                LIMIT %d, %d";
+
+        $sessions = $wpdb->get_results($wpdb->prepare($sql, $offset, $per_page));
+        $total_items = $wpdb->get_var("SELECT FOUND_ROWS()");
+        $total_pages = ceil($total_items / $per_page);
+
         $today = current_time('Y-m-d');
-
-        echo '<div class="azac-grid">';
-
-        $has_sessions = false;
         $palette = AzAC_Core_Admin::$palette;
 
-        foreach ($classes as $c) {
-            global $wpdb;
-            $sess_table = $wpdb->prefix . 'az_sessions';
-            // Show all sessions ordered by date ASC
-            $sessions = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$sess_table} WHERE class_id=%d ORDER BY session_date ASC, session_time ASC",
-                $c->ID
-            ));
+        echo '<div class="azac-tv-table-container">';
+        echo '<table class="azac-tv-attendance-table">';
+        echo '<thead><tr>
+                <th>Ngày dạy</th>
+                <th>Lớp học</th>
+                <th>Buổi</th>
+                <th>Thời gian</th>
+                <th>Trạng thái</th>
+                <th>Hành động</th>
+              </tr></thead>';
+        echo '<tbody>';
 
-            if (empty($sessions))
-                continue;
-            $has_sessions = true;
-
-            // Hash Color
-            $hash = 0;
-            $c_name = $c->post_title;
-            for ($i = 0; $i < strlen($c_name); $i++) {
-                $hash += ord($c_name[$i]);
-            }
-            $color = $palette[$hash % count($palette)];
-
-            echo '<div class="azac-card">';
-            echo '<div class="azac-card-title" style="border-left: 5px solid ' . $color . '">' . esc_html($c->post_title) . '</div>';
-            echo '<div class="azac-card-body">';
-            echo '<table class="widefat">';
-            echo '<thead><tr><th>Buổi</th><th>Thời gian</th><th>Trạng thái</th><th>Hành động</th></tr></thead>';
-            echo '<tbody>';
-
-            $s_index = 0;
+        if ($sessions) {
             foreach ($sessions as $s) {
-                $s_index++;
                 $is_checked = intval($s->teacher_checkin) === 1;
                 $checked_attr = $is_checked ? 'checked' : '';
-                // Only allow checkin on exact date
                 $is_today = ($s->session_date === $today);
                 $disabled_attr = !$is_today ? 'disabled' : '';
                 $row_class = $is_today ? 'class="is-today"' : '';
 
-                // Format date for display
-                $date_display = date_i18n('d/m/Y', strtotime($s->session_date));
+                // Hash Color
+                $hash = 0;
+                $c_name = $s->class_name;
+                for ($i = 0; $i < strlen($c_name); $i++) {
+                    $hash += ord($c_name[$i]);
+                }
+                $color = $palette[$hash % count($palette)];
+                $badge_html = '<span class="azac-tv-badge-class" style="background-color: ' . $color . ';">' . esc_html($c_name) . '</span>';
+
+                // Status Badge
+                $status_badge = $is_checked
+                    ? '<span class="azac-tv-badge azac-tv-badge-success">Đã dạy</span>'
+                    : '<span class="azac-tv-badge azac-tv-badge-warning">Chưa dạy</span>';
 
                 echo '<tr ' . $row_class . '>';
-                // Buổi # instead of title
-                echo '<td data-label="Buổi"><strong>Buổi ' . $s_index . '</strong><br><small>' . $date_display . '</small></td>';
+                echo '<td data-label="Ngày dạy" class="azac-col-date"><strong>' . date_i18n('d/m/Y', strtotime($s->session_date)) . '</strong></td>';
+                echo '<td data-label="Lớp học">' . $badge_html . '</td>';
+                echo '<td data-label="Buổi">Buổi ' . intval($s->session_number) . '</td>';
                 echo '<td data-label="Thời gian">' . esc_html($s->session_time) . '</td>';
-                echo '<td data-label="Trạng thái">' . ($is_checked ? '<span class="azac-badge azac-badge-publish">Đã dạy</span>' : '<span class="azac-badge azac-badge-pending">Chưa dạy</span>') . '</td>';
+                echo '<td data-label="Trạng thái">' . $status_badge . '</td>';
                 echo '<td data-label="Hành động">';
-                echo '<label class="azac-switch ' . ($is_today ? '' : 'azac-disabled') . '">';
-                echo '<input type="checkbox" class="azac-teacher-checkin-cb" data-class="' . esc_attr($c->ID) . '" data-date="' . esc_attr($s->session_date) . '" ' . $checked_attr . ' ' . $disabled_attr . '>';
-                echo '<span class="azac-slider round"></span>';
+                echo '<label class="azac-tv-switch ' . ($is_today ? '' : 'azac-tv-disabled') . '">';
+                echo '<input type="checkbox" class="azac-tv-checkin-cb" data-class="' . esc_attr($s->class_id) . '" data-date="' . esc_attr($s->session_date) . '" ' . $checked_attr . ' ' . $disabled_attr . '>';
+                echo '<span class="azac-tv-slider round"></span>';
                 echo '</label>';
                 echo '</td>';
                 echo '</tr>';
             }
-            echo '</tbody></table>';
-            echo '</div>'; // body
-            echo '</div>'; // card
+        } else {
+            echo '<tr><td colspan="6" style="text-align:center; padding: 20px;">Không có buổi học nào.</td></tr>';
         }
 
-        if (!$has_sessions) {
-            echo '<p>Chưa có lịch học nào được phân công.</p>';
-        }
+        echo '</tbody></table>';
+        echo '</div>'; // table container
 
-        echo '</div>'; // grid
+        // Pagination
+        AzAC_Core_Helper::render_pagination($paged, $total_pages);
+
         echo '<script>window.azacData=' . wp_json_encode([
             'ajaxUrl' => admin_url('admin-ajax.php'),
             'sessionNonce' => wp_create_nonce('azac_session'),
