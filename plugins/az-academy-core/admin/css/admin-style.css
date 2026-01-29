@@ -5,37 +5,56 @@
 
 /* --- GRID LAYOUT (SUPER SPECIFICITY) --- */
 @media screen and (min-width: 783px) {
-    /* Ép container chia cột đúng tỷ lệ */
-    html body.wp-admin .azac-admin-teal #azac-tab-stats #azac-stats-grid,
-    html body.wp-admin .azac-admin-teal #azac-tab-classes .azac-grid {
-        display: grid !important;
-        grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)) !important;
-        gap: 20px !important;
-        width: 100% !important;
-        flex-direction: unset !important;
-        align-items: stretch !important;
-    }
+  /* Ép container chia cột đúng tỷ lệ */
+  html
+    body.wp-admin
+    .azac-admin-teal
+    #azac-tab-stats
+    #azac-stats-grid,
+  html
+    body.wp-admin
+    .azac-admin-teal
+    #azac-tab-classes
+    .azac-grid {
+    display: grid !important;
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(280px, 1fr)
+    ) !important;
+    gap: 20px !important;
+    width: 100% !important;
+    flex-direction: unset !important;
+    align-items: stretch !important;
+  }
 
-    /* NHIỆM VỤ CỐT LÕI: Ép Card phải thu nhỏ */
-    html body.wp-admin .azac-admin-teal .azac-grid .azac-card,
-    html body.wp-admin .azac-admin-teal #azac-stats-grid .azac-card {
-        width: 100% !important;
-        max-width: 100% !important;
-        min-width: 0 !important; /* QUAN TRỌNG: Cho phép card nhỏ hơn nội dung con */
-        display: block !important;
-        margin: 0 !important;
-        overflow: hidden !important; /* Cắt bỏ phần nội dung thừa nếu biểu đồ quá to */
-        box-sizing: border-box !important;
-    }
+  /* NHIỆM VỤ CỐT LÕI: Ép Card phải thu nhỏ */
+  html
+    body.wp-admin
+    .azac-admin-teal
+    .azac-grid
+    .azac-card,
+  html
+    body.wp-admin
+    .azac-admin-teal
+    #azac-stats-grid
+    .azac-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-width: 0 !important; /* QUAN TRỌNG: Cho phép card nhỏ hơn nội dung con */
+    display: block !important;
+    margin: 0 !important;
+    overflow: hidden !important; /* Cắt bỏ phần nội dung thừa nếu biểu đồ quá to */
+    box-sizing: border-box !important;
+  }
 
-    /* Xử lý phần tử con (Biểu đồ, Table) bên trong Card */
-    .azac-card canvas,
-    .azac-card .google-visualization-container,
-    .azac-card table {
-        max-width: 100% !important;
-        width: auto !important;
-        height: auto !important;
-    }
+  /* Xử lý phần tử con (Biểu đồ, Table) bên trong Card */
+  .azac-card canvas,
+  .azac-card .google-visualization-container,
+  .azac-card table {
+    max-width: 100% !important;
+    width: auto !important;
+    height: auto !important;
+  }
 }
 /* Teal brand for admin management pages */
 .azac-admin-teal
@@ -60,95 +79,84 @@
 }
 
 /* --- NEW BADGE SYSTEM (Global) --- */
-.azac-badge, 
-.azac-issue-badge, 
+.azac-badge,
+.azac-issue-badge,
 .tip-badge {
-    display: inline-flex !important;
-    align-items: center;
-    justify-content: center;
-    border-radius: 12px !important; /* Pill shape */
-    font-weight: 600 !important;
-    padding: 3px 10px !important;
-    border: 1px solid rgba(0,0,0,0.05) !important;
-    font-size: 11px !important;
-    text-transform: uppercase;
-    letter-spacing: 0.3px;
-    line-height: 1.4;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    white-space: nowrap;
-    gap: 4px; /* Space between icon and text */
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px !important; /* Pill shape */
+  font-weight: 600 !important;
+  padding: 3px 10px !important;
+  border: 1px solid rgba(0, 0, 0, 0.05) !important;
+  font-size: 11px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  line-height: 1.4;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  white-space: nowrap;
+  gap: 4px; /* Space between icon and text */
 }
 
 /* Hover effect */
-.azac-badge:hover, 
+.azac-badge:hover,
 .azac-issue-badge:hover {
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-    transform: translateY(-1px);
-    transition: all 0.2s ease;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transform: translateY(-1px);
+  transition: all 0.2s ease;
 }
 
 /* Palette: Green (Success/Today/Safe) */
-.azac-badge-success, 
-.azac-badge-publish, 
+.azac-badge-success,
+.azac-badge-publish,
 .azac-issue-safe,
 .azac-badge-today,
 .tip-badge.present {
-    background-color: #e6f4ea !important;
-    color: #1e7e34 !important;
+  background-color: #e6f4ea !important;
+  color: #1e7e34 !important;
 }
 /* Icon: Checkmark */
-.azac-badge-success::before, 
-.azac-badge-publish::before, 
-.azac-issue-safe::before,
+.azac-badge-success::before,
+.azac-badge-publish::before,
 .azac-badge-today::before,
 .tip-badge.present::before {
-    content: "\2713";
-    font-size: 12px;
+  content: "\2713";
+  font-size: 12px;
 }
 
 /* Palette: Red (Error/Absent/Missing) */
-.azac-badge-error, 
+.azac-badge-error,
 .azac-issue-absent,
 .tip-badge.absent {
-    background-color: #fce8e6 !important;
-    color: #d93025 !important;
+  background-color: #fce8e6 !important;
+  color: #d93025 !important;
 }
-/* Icon: X Mark */
-.azac-badge-error::before, 
-.azac-issue-absent::before,
-.tip-badge.absent::before {
-    content: "\2715";
-    font-size: 12px;
-}
+
 
 /* Palette: Orange/Yellow (Warning/Pending/Half) */
-.azac-badge-warning, 
-.azac-badge-pending, 
+.azac-badge-warning,
+.azac-badge-pending,
 .azac-issue-half {
-    background-color: #fef7e0 !important;
-    color: #b05b00 !important;
+  background-color: #fef7e0 !important;
+  color: #b05b00 !important;
 }
 /* Icon: Exclamation */
-.azac-badge-warning::before, 
-.azac-badge-pending::before, 
-.azac-issue-half::before {
-    content: "\0021";
-    font-size: 12px;
-    font-weight: 800;
-}
+.azac-badge-warning::before,
+.azac-badge-pending::before,
+
 
 /* Palette: Gray (Secondary/Finished) */
-.azac-badge-secondary, 
+.azac-badge-secondary,
 .azac-badge-finished {
-    background-color: #f1f3f4 !important;
-    color: #5f6368 !important;
+  background-color: #f1f3f4 !important;
+  color: #5f6368 !important;
 }
 /* Icon: Bullet/Dot */
-.azac-badge-secondary::before, 
+.azac-badge-secondary::before,
 .azac-badge-finished::before {
-    content: "\2022";
-    font-size: 14px;
-    line-height: 0.5;
+  content: "\2022";
+  font-size: 14px;
+  line-height: 0.5;
 }
 
 /* Tooltip Styles (Preserved but optimized) */
@@ -156,7 +164,8 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + 8px);
-  transform: translateX(-50%) translateY(-6px) scale(0.98);
+  transform: translateX(-50%) translateY(-6px)
+    scale(0.98);
   background: #fff;
   color: #333;
   border: 1px solid #e2e2e2;
@@ -167,7 +176,9 @@
   z-index: 9999;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.18s ease, transform 0.18s ease;
+  transition:
+    opacity 0.18s ease,
+    transform 0.18s ease;
 }
 .azac-issue-badge .azac-tip:before {
   content: "";
@@ -186,21 +197,25 @@
 .azac-issue-badge:hover .azac-tip {
   opacity: 1;
   pointer-events: auto;
-  transform: translateX(-50%) translateY(0) scale(1);
+  transform: translateX(-50%) translateY(0)
+    scale(1);
 }
 
 /* --- Layout Components --- */
 .azac-stats {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(300px, 1fr)
+  );
   gap: 20px;
   margin-bottom: 20px;
-.azac-table-wrapper {
-  overflow-x: auto;
-}
-.azac-table-responsive table {
-  table-layout: auto !important;
-}
+  .azac-table-wrapper {
+    overflow-x: auto;
+  }
+  .azac-table-responsive table {
+    table-layout: auto !important;
+  }
   width: 100%;
   -webkit-overflow-scrolling: touch;
 }
@@ -213,15 +228,17 @@
   margin-bottom: 20px;
   display: block; /* Quan trọng: Giữ block để Google Charts không bị méo */
   box-sizing: border-box;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   border-top: 4px solid var(--az-primary);
 }
 .azac-card:hover {
-  box-shadow: 0 10px 20px rgba(0,0,0,0.12);
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.12);
   transform: translateY(-4px);
 }
 #azac-stats-grid .azac-card {
-    padding: 12px;
+  padding: 12px;
 }
 .azac-card-title {
   font-weight: 700;
@@ -283,27 +300,113 @@
 }
 
 /* Buttons */
-.button-primary { background: var(--az-primary); border-color: var(--az-primary); }
-.button-primary:hover { background-color: #0d233e !important; color: #ffffff !important; border-color: #0d233e !important; opacity: 1 !important; visibility: visible !important; display: inline-flex !important; }
-.button, .az-btn, .azac-btn { transition: all 0.3s ease !important; }
-.button-warning { background: #e67e22; border-color: #e67e22; color: #fff; }
-.wp-core-ui .button.button-warning { background: #e67e22; border-color: #e67e22; color: #fff; }
-.button-warning:hover { background: #cf6d16; border-color: #cf6d16; color: #fff; }
-.wp-core-ui .button.button-warning:hover { background: #cf6d16; border-color: #cf6d16; color: #fff; }
-.button-danger { background: #e74c3c; border-color: #e74c3c; color: #fff; }
-.wp-core-ui .button.button-danger { background: #e74c3c; border-color: #e74c3c; color: #fff; }
-.button-danger:hover { background: #c0392b; border-color: #c0392b; color: #fff; }
-.wp-core-ui .button.button-danger:hover { background: #c0392b; border-color: #c0392b; color: #fff; }
-.button-success { background: #2ecc71; border-color: #2ecc71; color: #fff; }
-.wp-core-ui .button.button-success { background: #2ecc71; border-color: #2ecc71; color: #fff; }
-.button-success:hover { background: #27ae60; border-color: #27ae60; color: #fff; }
-.wp-core-ui .button.button-success:hover { background: #27ae60; border-color: #27ae60; color: #fff; }
-.button-info { background: #3498db; border-color: #3498db; color: #fff; }
-.wp-core-ui .button.button-info { background: #28b964; border-color: #1a7540; color: #fff; }
-.button-info:hover { background: #2f86c5; border-color: #2f86c5; color: #fff; }
-.wp-core-ui .button.button-info:hover { background: #1c7c44; border-color: #0e4425; color: #fff; }
-.wp-core-ui .button.button-secondary { background: #95a5a6; border-color: #95a5a6; color: #fff; }
-.wp-core-ui .button.button-secondary:hover { background: #7f8c8d; border-color: #7f8c8d; color: #fff; }
+.button-primary {
+  background: var(--az-primary);
+  border-color: var(--az-primary);
+}
+.button-primary:hover {
+  background-color: #0d233e !important;
+  color: #ffffff !important;
+  border-color: #0d233e !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  display: inline-flex !important;
+}
+.button,
+.az-btn,
+.azac-btn {
+  transition: all 0.3s ease !important;
+}
+.button-warning {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+}
+.wp-core-ui .button.button-warning {
+  background: #e67e22;
+  border-color: #e67e22;
+  color: #fff;
+}
+.button-warning:hover {
+  background: #cf6d16;
+  border-color: #cf6d16;
+  color: #fff;
+}
+.wp-core-ui .button.button-warning:hover {
+  background: #cf6d16;
+  border-color: #cf6d16;
+  color: #fff;
+}
+.button-danger {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: #fff;
+}
+.wp-core-ui .button.button-danger {
+  background: #e74c3c;
+  border-color: #e74c3c;
+  color: #fff;
+}
+.button-danger:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+.wp-core-ui .button.button-danger:hover {
+  background: #c0392b;
+  border-color: #c0392b;
+  color: #fff;
+}
+.button-success {
+  background: #2ecc71;
+  border-color: #2ecc71;
+  color: #fff;
+}
+.wp-core-ui .button.button-success {
+  background: #2ecc71;
+  border-color: #2ecc71;
+  color: #fff;
+}
+.button-success:hover {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #fff;
+}
+.wp-core-ui .button.button-success:hover {
+  background: #27ae60;
+  border-color: #27ae60;
+  color: #fff;
+}
+.button-info {
+  background: #3498db;
+  border-color: #3498db;
+  color: #fff;
+}
+.wp-core-ui .button.button-info {
+  background: #28b964;
+  border-color: #1a7540;
+  color: #fff;
+}
+.button-info:hover {
+  background: #2f86c5;
+  border-color: #2f86c5;
+  color: #fff;
+}
+.wp-core-ui .button.button-info:hover {
+  background: #1c7c44;
+  border-color: #0e4425;
+  color: #fff;
+}
+.wp-core-ui .button.button-secondary {
+  background: #95a5a6;
+  border-color: #95a5a6;
+  color: #fff;
+}
+.wp-core-ui .button.button-secondary:hover {
+  background: #7f8c8d;
+  border-color: #7f8c8d;
+  color: #fff;
+}
 
 /* List pages: az_class and az_student */
 body.post-type-az_class .wrap h1,
@@ -322,10 +425,22 @@ body.post-type-az_student .tablenav {
   padding: 8px 10px;
   margin: 12px 0;
 }
-body.post-type-az_class .tablenav .actions select,
-body.post-type-az_class .tablenav .actions input,
-body.post-type-az_student .tablenav .actions select,
-body.post-type-az_student .tablenav .actions input {
+body.post-type-az_class
+  .tablenav
+  .actions
+  select,
+body.post-type-az_class
+  .tablenav
+  .actions
+  input,
+body.post-type-az_student
+  .tablenav
+  .actions
+  select,
+body.post-type-az_student
+  .tablenav
+  .actions
+  input {
   border: 1px solid #e2e2e2;
   border-radius: 6px;
 }
@@ -342,237 +457,300 @@ body.post-type-az_student .search-box .button {
 
 /* Student Table Styling */
 .azac-students-table thead th {
-    background-color: var(--az-primary) !important;
-    color: #fff !important;
-    font-weight: 600;
+  background-color: var(
+    --az-primary
+  ) !important;
+  color: #fff !important;
+  font-weight: 600;
 }
 .azac-students-table tbody tr:hover {
-    background-color: #f0f6fc;
+  background-color: #f0f6fc;
 }
 .azac-students-table td {
-    vertical-align: middle;
+  vertical-align: middle;
 }
 
 /* Search Box & Available Students List */
 .azac-search-box,
 .azac-available-container {
-    background: #fff;
-    padding: 15px;
-    border: 1px solid #c3c4c7;
-    margin-bottom: 15px;
-    border-radius: 4px;
+  background: #fff;
+  padding: 15px;
+  border: 1px solid #c3c4c7;
+  margin-bottom: 15px;
+  border-radius: 4px;
 }
 .azac-search-box {
-    background: #f0f0f1;
+  background: #f0f0f1;
 }
 .azac-search-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
-    margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
 }
 .azac-search-results {
-    margin-top: 10px;
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    background: #fff;
-    display: none;
+  margin-top: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  background: #fff;
+  display: none;
 }
 .azac-available-box {
-    max-height: 200px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    padding: 10px;
-    background: #fff;
-    margin-bottom: 10px;
+  max-height: 200px;
+  overflow-y: auto;
+  border: 1px solid #ddd;
+  padding: 10px;
+  background: #fff;
+  margin-bottom: 10px;
 }
-.azac-available-list { margin: 0; padding: 0; list-style: none; }
-.azac-available-item { padding: 5px 0; border-bottom: 1px solid #f0f0f1; }
-.azac-available-item:last-child { border-bottom: none; }
-.azac-available-item label { display: block; cursor: pointer; }
-.azac-select-all-wrap { margin-bottom: 8px; }
-.azac-select-all-wrap label { font-weight: 600; cursor: pointer; }
+.azac-available-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.azac-available-item {
+  padding: 5px 0;
+  border-bottom: 1px solid #f0f0f1;
+}
+.azac-available-item:last-child {
+  border-bottom: none;
+}
+.azac-available-item label {
+  display: block;
+  cursor: pointer;
+}
+.azac-select-all-wrap {
+  margin-bottom: 8px;
+}
+.azac-select-all-wrap label {
+  font-weight: 600;
+  cursor: pointer;
+}
 
 /* Custom Admin Footer */
-#wpfooter { position: relative !important; bottom: auto !important; clear: both !important; }
-body.folded #wpfooter { margin-left: 36px; }
-#footer-upgrade { display: none !important; }
-#wpbody-content { padding-bottom: 50px; }
+#wpfooter {
+  position: relative !important;
+  bottom: auto !important;
+  clear: both !important;
+}
+body.folded #wpfooter {
+  margin-left: 36px;
+}
+#footer-upgrade {
+  display: none !important;
+}
+#wpbody-content {
+  padding-bottom: 50px;
+}
 @media screen and (max-width: 960px) {
-    #wpfooter { margin-left: 36px; }
+  #wpfooter {
+    margin-left: 36px;
+  }
 }
 @media screen and (max-width: 782px) {
-    #wpfooter { margin-left: 0; background: transparent; border-top: none; }
-    #wpbody-content { padding-bottom: 20px; }
+  #wpfooter {
+    margin-left: 0;
+    background: transparent;
+    border-top: none;
+  }
+  #wpbody-content {
+    padding-bottom: 20px;
+  }
 }
 
 /* Highlight chung cho cả Desktop và Mobile */
-.widefat tr.is-today, .wp-list-table tr.is-today {
-    background-color: #fff9c4 !important;
-    border-left: 4px solid #f39c12 !important;
+.widefat tr.is-today,
+.wp-list-table tr.is-today {
+  background-color: #fff9c4 !important;
+  border-left: 4px solid #f39c12 !important;
 }
 
 /* Mobile Badges */
 .azac-mobile-badges {
-    display: none;
+  display: none;
 }
 @media (max-width: 768px) {
-    .azac-mobile-badges {
-        display: block;
-        margin-top: 4px;
-    }
+  .azac-mobile-badges {
+    display: block;
+    margin-top: 4px;
+  }
 }
 
 /* Badge tên lớp học đặc trưng */
-.azac-badge-class-name, .azac-badge-class {
-    background-color: #15345a !important;
-    color: #fff !important;
-    padding: 4px 12px !important;
-    border-radius: 6px !important;
-    font-size: 12px !important;
-    font-weight: 600;
-    display: inline-block;
-    margin-bottom: 5px;
-    box-shadow: 0 2px 4px rgba(21, 52, 90, 0.2);
+.azac-badge-class-name,
+.azac-badge-class {
+  background-color: #15345a !important;
+  color: #fff !important;
+  padding: 4px 12px !important;
+  border-radius: 6px !important;
+  font-size: 12px !important;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 5px;
+  box-shadow: 0 2px 4px rgba(21, 52, 90, 0.2);
 }
 
 /* Đảm bảo không làm ảnh hưởng sidebar */
 #adminmenu .wp-has-current-submenu .wp-submenu {
-    background-color: #15345a !important;
+  background-color: #15345a !important;
 }
 
-/* --- FINAL TABLE SYNC --- */ 
-.azac-table-responsive table { table-layout: auto !important; width: 100% !important; border-collapse: collapse; } 
-.azac-col-action { width: 165px !important; text-align: center !important; white-space: nowrap; }
+/* --- FINAL TABLE SYNC --- */
+.azac-table-responsive table {
+  table-layout: auto !important;
+  width: 100% !important;
+  border-collapse: collapse;
+}
+.azac-col-action {
+  width: 165px !important;
+  text-align: center !important;
+  white-space: nowrap;
+}
 
 /* --- COMPACT MOBILE UI & SPACING OPTIMIZATION --- */
 @media screen and (max-width: 768px) {
-    /* 1. CSS Spacing & Size */
-    .azac-card, .azac-container {
-        padding: 10px !important;
-        margin-bottom: 10px !important;
-    }
-    .azac-stats, .azac-grid {
-        gap: 10px !important;
-        margin-bottom: 10px !important;
-    }
-    .wrap {
-        margin-right: 5px !important;
-        margin-left: 0 !important;
-    }
+  /* 1. CSS Spacing & Size */
+  .azac-card,
+  .azac-container {
+    padding: 10px !important;
+    margin-bottom: 10px !important;
+  }
+  .azac-stats,
+  .azac-grid {
+    gap: 10px !important;
+    margin-bottom: 10px !important;
+  }
+  .wrap {
+    margin-right: 5px !important;
+    margin-left: 0 !important;
+  }
 
-    /* Font Size Reduction */
-    h1, h2, h3, .azac-stat-title {
-        font-size: 16px !important;
-        line-height: 1.3 !important;
-    }
-    .azac-info-item .az-info-label {
-        font-size: 12px !important;
-    }
-    .azac-info-item .az-info-value {
-        font-size: 13px !important;
-    }
-    .widefat td, .widefat th, .widefat {
-        font-size: 13px !important;
-    }
+  /* Font Size Reduction */
+  h1,
+  h2,
+  h3,
+  .azac-stat-title {
+    font-size: 16px !important;
+    line-height: 1.3 !important;
+  }
+  .azac-info-item .az-info-label {
+    font-size: 12px !important;
+  }
+  .azac-info-item .az-info-value {
+    font-size: 13px !important;
+  }
+  .widefat td,
+  .widefat th,
+  .widefat {
+    font-size: 13px !important;
+  }
 
-    /* 2. Responsive Grid (Forced 1 Column) */
-    .azac-stats,
-    .azac-grid,
-    #azac-stats-grid {
-        grid-template-columns: 1fr !important;
-        display: grid !important;
-    }
+  /* 2. Responsive Grid (Forced 1 Column) */
+  .azac-stats,
+  .azac-grid,
+  #azac-stats-grid {
+    grid-template-columns: 1fr !important;
+    display: grid !important;
+  }
 
-    /* 3. Chart & Table Constraints */
-    .azac-chart-box canvas,
-    .azac-chart-box {
-        max-height: 250px !important;
-    }
-    .azac-chart-row {
-        flex-direction: column !important;
-    }
+  /* 3. Chart & Table Constraints */
+  .azac-chart-box canvas,
+  .azac-chart-box {
+    max-height: 250px !important;
+  }
+  .azac-chart-row {
+    flex-direction: column !important;
+  }
 
-    /* Negative margin for table wrapper to utilize full width */
-    .azac-table-wrapper {
-        margin: 0 -10px !important;
-        width: calc(100% + 20px) !important;
-        border-radius: 0 !important;
-    }
-    /* Remove borders on mobile for cleaner look in wrapper */
-    .azac-table-wrapper table.widefat {
-        box-shadow: none !important;
-        border: none !important;
-    }
+  /* Negative margin for table wrapper to utilize full width */
+  .azac-table-wrapper {
+    margin: 0 -10px !important;
+    width: calc(100% + 20px) !important;
+    border-radius: 0 !important;
+  }
+  /* Remove borders on mobile for cleaner look in wrapper */
+  .azac-table-wrapper table.widefat {
+    box-shadow: none !important;
+    border: none !important;
+  }
 
-    /* 4. Remove elements (Hide less important columns) */
-    /* Hide STT (Sequence Number) on mobile as it takes vertical space in card view */
-    .widefat td[data-label="STT"] {
-        display: none !important;
-    }
-    
-    /* Compact the "Ghi chú" input */
-    .widefat td[data-label="Ghi chú"] input.azac-note,
-    .widefat td[data-label="Ghi chú"] input.azac-note-mid {
-        width: 100% !important;
-        font-size: 13px !important;
-        padding: 4px 8px !important;
-    }
+  /* 4. Remove elements (Hide less important columns) */
+  /* Hide STT (Sequence Number) on mobile as it takes vertical space in card view */
+  .widefat td[data-label="STT"] {
+    display: none !important;
+  }
+
+  /* Compact the "Ghi chú" input */
+  .widefat
+    td[data-label="Ghi chú"]
+    input.azac-note,
+  .widefat
+    td[data-label="Ghi chú"]
+    input.azac-note-mid {
+    width: 100% !important;
+    font-size: 13px !important;
+    padding: 4px 8px !important;
+  }
 }
 
-@media screen and (max-width: 782px) { 
-    /* Tinh chỉnh hiển thị Card Mobile cho gọn gàng */
-    
-    /* Cột Giảng viên: Đảm bảo tên không bị ngắt dòng xấu */
-    .widefat td.azac-col-teacher {
-        align-items: center !important;
-    }
-    .widefat td.azac-col-teacher strong {
-        text-align: right;
-        display: block;
-        max-width: 100%;
-    }
+@media screen and (max-width: 782px) {
+  /* Tinh chỉnh hiển thị Card Mobile cho gọn gàng */
 
-    /* Badge Lớp học: Căn phải */
-    .widefat td[data-label="Lớp học"] {
-        align-items: center !important;
-    }
-    
-    /* Ngày dạy: Đậm */
-    .azac-date-display {
-        font-weight: 600;
-        color: #1d2327;
-    }
+  /* Cột Giảng viên: Đảm bảo tên không bị ngắt dòng xấu */
+  .widefat td.azac-col-teacher {
+    align-items: center !important;
+  }
+  .widefat td.azac-col-teacher strong {
+    text-align: right;
+    display: block;
+    max-width: 100%;
+  }
+
+  /* Badge Lớp học: Căn phải */
+  .widefat td[data-label="Lớp học"] {
+    align-items: center !important;
+  }
+
+  /* Ngày dạy: Đậm */
+  .azac-date-display {
+    font-weight: 600;
+    color: #1d2327;
+  }
 }
 
 /* --- Mobile Card Layout (Optimized) --- */
 @media screen and (max-width: 768px) {
-  .widefat, .wp-list-table {
+  .widefat,
+  .wp-list-table {
     border: 0 !important;
     background: transparent !important;
     box-shadow: none !important;
   }
-  .widefat thead, .wp-list-table thead {
+  .widefat thead,
+  .wp-list-table thead {
     display: none !important;
   }
-  .widefat tbody, .wp-list-table tbody {
+  .widefat tbody,
+  .wp-list-table tbody {
     display: block;
     width: 100%;
   }
-  .widefat tr, .wp-list-table tr {
+  .widefat tr,
+  .wp-list-table tr {
     display: block;
     background: #fff;
     margin-bottom: 8px !important;
     border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
     border: 1px solid #e2e4e7;
     border-top: 3px solid #ccc;
     padding: 8px !important;
     position: relative;
     font-size: 12px;
   }
-  .widefat td, .wp-list-table td {
+  .widefat td,
+  .wp-list-table td {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
@@ -585,7 +763,8 @@ body.folded #wpfooter { margin-left: 36px; }
   .widefat td:last-child {
     border-bottom: none;
   }
-  .widefat td:before, .wp-list-table td:before {
+  .widefat td:before,
+  .wp-list-table td:before {
     content: attr(data-label);
     font-weight: 600;
     color: #50575e;
@@ -595,24 +774,24 @@ body.folded #wpfooter { margin-left: 36px; }
     min-width: 80px;
     max-width: 40%;
   }
-  
+
   /* Container for badges (Mobile Optimized) */
   .azac-container-flex {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: flex-end;
-      gap: 6px !important; /* Spacing between badges */
-      width: 100%; 
-      padding-top: 4px;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px !important; /* Spacing between badges */
+    width: 100%;
+    padding-top: 4px;
   }
   /* Margin for individual badges in mobile flex */
   .azac-container-flex .azac-badge,
   .azac-container-flex .azac-issue-badge {
-      margin: 2px !important;
+    margin: 2px !important;
   }
 
   /* Specific styling for actions */
-  .widefat td[data-label="Hành động"], 
+  .widefat td[data-label="Hành động"],
   .widefat td[data-label="Actions"] {
     justify-content: flex-end;
     margin-top: 4px;
@@ -621,91 +800,104 @@ body.folded #wpfooter { margin-left: 36px; }
   }
 
   /* Badge tiêu đề lớp */
-  [data-label="Lớp"] strong, [data-label="Lớp học"] strong {
-      background: #f0f0f1;
-      padding: 2px 8px;
-      border-radius: 4px;
-      display: inline-block;
-      color: inherit;
+  [data-label="Lớp"] strong,
+  [data-label="Lớp học"] strong {
+    background: #f0f0f1;
+    padding: 2px 8px;
+    border-radius: 4px;
+    display: inline-block;
+    color: inherit;
   }
 
   /* Adjust inputs */
-  .widefat input[type="text"], 
+  .widefat input[type="text"],
   .widefat input[type="number"],
   .widefat select {
     max-width: 100%;
     font-size: 12px;
   }
-  
+
   /* Hide redundant Class columns in Mobile */
   .widefat td[data-label="Lớp"],
   .widefat td[data-label="Lớp học"],
-  .widefat td[data-label="Danh sách lớp phụ trách"],
+  .widefat
+    td[data-label="Danh sách lớp phụ trách"],
   .widefat td[data-label="Lớp đang học"] {
-      display: none !important;
+    display: none !important;
   }
 }
 
 /* Badge tên lớp học (Dynamic Color Base) - Updated for Overflow Handling */
 /* Sửa triệt để lỗi tràn Badge */
 .azac-badge-class {
-    color: #fff !important;
-    padding: 4px 12px !important;
-    border-radius: 12px !important;
-    font-size: 11px !important; /* Giảm nhẹ font để dễ nhìn hơn */
-    font-weight: 600;
-    
-    /* CHÌA KHÓA: Phải dùng inline-block để ellipsis hoạt động ổn định */
-    display: inline-block !important;
-    vertical-align: middle;
-    
-    /* Xử lý cắt chữ */
-    max-width: 150px !important; /* Giới hạn ngắn hơn để cột không bị phình */
-    white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
-    
-    /* Layout */
-    margin: 0 !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+  color: #fff !important;
+  padding: 4px 12px !important;
+  border-radius: 12px !important;
+  font-size: 11px !important; /* Giảm nhẹ font để dễ nhìn hơn */
+  font-weight: 600;
+
+  /* CHÌA KHÓA: Phải dùng inline-block để ellipsis hoạt động ổn định */
+  display: inline-block !important;
+  vertical-align: middle;
+
+  /* Xử lý cắt chữ */
+  max-width: 150px !important; /* Giới hạn ngắn hơn để cột không bị phình */
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+
+  /* Layout */
+  margin: 0 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
 }
 
 /* Container bao quanh */
 .azac-badge-container {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 4px !important;
-    align-items: center !important;
-    width: 100% !important;
-    padding: 5px 0 !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 4px !important;
+  align-items: center !important;
+  width: 100% !important;
+  padding: 5px 0 !important;
 }
 
 .azac-badge-gap {
-    margin-right: 6px;
-    margin-bottom: 6px;
+  margin-right: 6px;
+  margin-bottom: 6px;
 }
 
 .badge-azac-cyan {
-    background-color: #1abc9c !important;
+  background-color: #1abc9c !important;
 }
 
 .badge-azac-purple {
-    background-color: #9b59b6 !important;
+  background-color: #9b59b6 !important;
 }
 
 .badge-azac-blue {
-    background-color: #3498db !important;
+  background-color: #3498db !important;
 }
 
 .badge-azac-orange {
-    background-color: #e67e22 !important;
+  background-color: #e67e22 !important;
 }
 
 .badge-azac-gray {
-    background-color: #7f8c8d !important;
+  background-color: #7f8c8d !important;
 }
 
 /* Đảm bảo không làm ảnh hưởng sidebar */
 #adminmenu .wp-has-current-submenu .wp-submenu {
-    background-color: #15345a !important;
+  background-color: #15345a !important;
+}
+
+/* Fix tooltips issues */
+@media (max-width: 768px) {
+  .azac-issue-badge:hover .azac-tip {
+    display: grid;
+    justify-content: start;
+    align-items: start;
+    justify-items: start;
+    align-content: space-evenly;
+  }
 }
