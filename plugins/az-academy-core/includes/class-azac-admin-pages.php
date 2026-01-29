@@ -333,6 +333,167 @@ class AzAC_Admin_Pages
     {
         return self::handle_export_students_csv();
     }
+
+    public static function handle_export_classes_excel()
+    {
+        $action = isset($_REQUEST['action']) ? sanitize_text_field($_REQUEST['action']) : '';
+        if ($action !== 'export_classes_excel') {
+            return;
+        }
+
+        $nonce = isset($_REQUEST['_wpnonce']) ? sanitize_text_field($_REQUEST['_wpnonce']) : '';
+        if (!$nonce || !wp_verify_nonce($nonce, 'azac_export_classes_report')) {
+            wp_die('Security check failed (Invalid Nonce).');
+        }
+
+        if (!current_user_can('read')) {
+            wp_die('Unauthorized access.');
+        }
+
+        // Fetch Classes
+        $args = [
+            'post_type' => 'az_class',
+            'numberposts' => -1,
+            'post_status' => ['publish', 'pending'],
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ];
+        $classes = get_posts($args);
+
+        // Prepare Data
+        $data = [];
+        $stt = 1;
+        foreach ($classes as $c) {
+            $gv = get_post_meta($c->ID, 'az_giang_vien', true);
+            $tsb = intval(get_post_meta($c->ID, 'az_tong_so_buoi', true));
+            $shv = intval(get_post_meta($c->ID, 'az_so_hoc_vien', true));
+
+            // Calculate Progress
+            $current_sessions = count(AzAC_Core_Sessions::get_class_sessions($c->ID));
+            $progress_str = $current_sessions . '/' . $tsb;
+
+            $status_label = ($c->post_status === 'pending') ? 'Chưa mở' : 'Đang mở';
+            $created_date = date_i18n('d/m/Y', strtotime($c->post_date));
+
+            $data[] = [
+                'stt' => $stt++,
+                'name' => $c->post_title,
+                'teacher' => $gv ?: 'Chưa gán',
+                'count' => $shv,
+                'status' => $status_label,
+                'progress' => $progress_str,
+                'date' => $created_date
+            ];
+        }
+
+        $filename = 'Bao-cao-danh-sach-lop-hoc-' . date_i18n('d-m-Y') . '.xlsx';
+
+        // Check Library
+        if (class_exists('PhpOffice\PhpSpreadsheet\Spreadsheet')) {
+            $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Headers
+            $headers = ['STT', 'Tên lớp học', 'Giảng viên', 'Sĩ số', 'Trạng thái', 'Tiến độ', 'Ngày tạo'];
+            $colLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G'];
+
+            for ($i = 0; $i < count($headers); $i++) {
+                $sheet->setCellValue($colLetters[$i] . '1', $headers[$i]);
+            }
+
+            // Style Header
+            $headerStyle = [
+                'font' => [
+                    'bold' => true,
+                    'color' => ['argb' => 'FFFFFFFF'],
+                ],
+                'fill' => [
+                    'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                    'startColor' => ['argb' => 'FF15345A'], // Blue #15345a
+                ],
+                'alignment' => [
+                    'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                    'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+                ],
+                'borders' => [
+                    'allBorders' => [
+                        'borderStyle' => \PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN,
+                    ],
+                ],
+            ];
+            $sheet->getStyle('A1:G1')->applyFromArray($headerStyle);
+            $sheet->getRowDimension(1)->setRowHeight(25);
+
+            // Fill Data
+            $row = 2;
+            foreach ($data as $item) {
+                $sheet->setCellValue('A' . $row, $item['stt']);
+                $sheet->setCellValue('B' . $row, $item['name']);
+                $sheet->setCellValue('C' . $row, $item['teacher']);
+                $sheet->setCellValue('D' . $row, $item['count']);
+                $sheet->setCellValue('E' . $row, $item['status']);
+                $sheet->setCellValue('F' . $row, $item['progress']);
+                $sheet->setCellValue('G' . $row, $item['date']);
+                $row++;
+            }
+
+            $lastRow = max($row - 1, 2);
+
+            // Styling Data
+            // Borders
+            $sheet->getStyle('A1:G' . $lastRow)->getBorders()->getAllBorders()->setBorderStyle(\PhpOffice\PhpSpreadsheet\Style\Border::BORDER_THIN);
+
+            // Alignment (Center: STT, Count, Progress, Date)
+            $sheet->getStyle('A2:A' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // STT
+            $sheet->getStyle('D2:D' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // Count
+            $sheet->getStyle('F2:G' . $lastRow)->getAlignment()->setHorizontal(\PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER); // Progress, Date
+
+            // AutoSize
+            foreach ($colLetters as $col) {
+                $sheet->getColumnDimension($col)->setAutoSize(true);
+            }
+
+            // Output
+            nocache_headers();
+            header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+            header('Content-Disposition: attachment;filename="' . $filename . '"');
+            header('Cache-Control: max-age=0');
+
+            $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+            $writer->save('php://output');
+            exit;
+
+        } else {
+            // Fallback: CSV
+            $filename = str_replace('.xlsx', '.csv', $filename);
+
+            nocache_headers();
+            header('Content-Type: text/csv; charset=utf-8');
+            header('Content-Disposition: attachment; filename=' . $filename);
+
+            $output = fopen('php://output', 'w');
+
+            // BOM for UTF-8 in Excel
+            fputs($output, "\xEF\xBB\xBF");
+
+            // Headers
+            fputcsv($output, ['STT', 'Tên lớp học', 'Giảng viên', 'Sĩ số', 'Trạng thái', 'Tiến độ', 'Ngày tạo']);
+
+            foreach ($data as $item) {
+                fputcsv($output, [
+                    $item['stt'],
+                    $item['name'],
+                    $item['teacher'],
+                    $item['count'],
+                    $item['status'],
+                    $item['progress'],
+                    $item['date']
+                ]);
+            }
+            fclose($output);
+            exit;
+        }
+    }
     public static function render_attendance_list_page()
     {
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý điểm danh</h1>';
@@ -459,16 +620,15 @@ class AzAC_Admin_Pages
         }
         echo '</form>';
 
-        $is_admin = in_array('administrator', $user->roles, true);
-        $is_manager = in_array('az_manager', (array) $user->roles);
-        if ($is_admin || $is_manager) {
-            $nonce = wp_create_nonce('azac_export_students');
-            echo '<form method="post" style="display:inline-block;margin-left:10px;">';
-            echo '<input type="hidden" name="action" value="export_students_excel">';
-            echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce) . '">';
-            echo '<button type="submit" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất file Excel</button>';
-            echo '</form>';
-        }
+        // Export Classes Button
+        $nonce_export_classes = wp_create_nonce('azac_export_classes_report');
+        echo '<form method="post" style="display:inline-block;margin-left:10px;">';
+        echo '<input type="hidden" name="action" value="export_classes_excel">';
+        echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce_export_classes) . '">';
+        echo '<button type="submit" id="btn-export-classes-excel" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Báo Cáo Lớp</button>';
+        echo '</form>';
+
+        
 
         $args = [
             'post_type' => 'az_class',
@@ -614,7 +774,7 @@ class AzAC_Admin_Pages
         }
         echo '</form>';
         $export_url = admin_url('admin.php?page=azac-students-list&action=export_students_xlsx&_wpnonce=' . wp_create_nonce('export_students_nonce'));
-        echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất file Excel</a>';
+        echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Danh sách Học Viên</a>';
 
         // Allowed Users Logic (Teacher Restriction)
         $allowed_user_ids = null;
@@ -1526,7 +1686,7 @@ class AzAC_Admin_Pages
             echo '<form method="post" style="display:inline-block;margin-left:10px;">';
             echo '<input type="hidden" name="action" value="export_students_excel">';
             echo '<input type="hidden" name="_wpnonce" value="' . esc_attr($nonce) . '">';
-            echo '<button type="submit" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất file Excel</button>';
+            echo '<button type="submit" class="button button-secondary"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Điểm danh Học viên</button>';
             echo '</form>';
         }
 

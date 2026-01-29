@@ -69,6 +69,7 @@ class AzAC_Core_Admin
         add_action('admin_init', [__CLASS__, 'ensure_manager_capabilities']);
         add_action('admin_init', ['AzAC_Admin_Pages', 'early_redirect_back_to_home']);
         add_action('admin_init', ['AzAC_Admin_Pages', 'handle_export_students_xlsx']);
+        add_action('admin_init', ['AzAC_Admin_Pages', 'handle_export_classes_excel']);
 
         // Hide "Delete Permanently" in Media Grid via CSS
         add_action('admin_head', [__CLASS__, 'hide_delete_ui_css']);
