@@ -48,6 +48,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
 </head>
 
 <body>
+    <?php
+    if ( function_exists( 'wp_body_open' ) ) {
+        wp_body_open();
+    }
+    ?>
 
     <div class="auth-container">
         <!-- Left Side: Branding -->

@@ -19,6 +19,11 @@ if (strpos($_SERVER['REQUEST_URI'], '/register') !== false) {
     <?php wp_head(); ?>
 </head>
 <body <?php body_class(); ?>>
+<?php
+if ( function_exists( 'wp_body_open' ) ) {
+    wp_body_open();
+}
+?>
 <header class="site-header">
     <div class="container site-header-container">
         <div class="site-branding">
