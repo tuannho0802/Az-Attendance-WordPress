@@ -355,15 +355,10 @@
   border-left: 4px solid #f1c40f;
 }
 
-.azac-tv-attendance-table
-  tbody
-  tr.is-today
-  td:first-child {
-  border-left: none; /* Reset if needed */
+.azac-tv-attendance-table tbody tr.is-today td:first-child {
+    border-left: none; /* Reset if needed */
 }
 
-.azac-tv-attendance-table
-  tbody
-  tr.is-today:hover {
+.azac-tv-attendance-table tbody tr.is-today:hover {
   background-color: #fff59d !important; /* Slightly darker yellow on hover */
 }
