@@ -38,16 +38,137 @@
                 azacToast.success(
                   "Đã tạo lớp thành công",
                 );
-              location.reload();
+
+              // Append new class card
+              var d = res.data;
+              var palette = (AZAC_LIST &&
+                AZAC_LIST.palette) || [
+                "#2ecc71",
+                "#3498db",
+                "#9b59b6",
+                "#e67e22",
+                "#1abc9c",
+                "#e74c3c",
+                "#16a085",
+                "#2980b9",
+                "#8e44ad",
+                "#d35400",
+                "#27ae60",
+                "#f39c12",
+                "#34495e",
+                "#7f8c8d",
+                "#e84393",
+                "#00cec9",
+                "#6c5ce7",
+                "#fdcb6e",
+                "#00b894",
+                "#0984e3",
+                "#d63031",
+                "#ff7675",
+                "#636e72",
+                "#55efc4",
+                "#a29bfe",
+                "#fab1a0",
+                "#74b9ff",
+                "#b2bec3",
+                "#ff6b6b",
+                "#4dabf7",
+                "#f4a261",
+                "#2a9d8f",
+                "#e76f51",
+                "#264653",
+              ];
+              var hash = 0;
+              for (
+                var i = 0;
+                i < d.title.length;
+                i++
+              ) {
+                hash += d.title.charCodeAt(i);
+              }
+              var color =
+                palette[hash % palette.length];
+
+              var html =
+                '<div class="azac-card" style="display:none;">' +
+                '<div class="azac-card-title" style="background-color: ' +
+                color +
+                '; color: #fff; padding: 10px; border-radius: 6px;">' +
+                $("<div>")
+                  .text(d.title)
+                  .html() +
+                ' <span class="azac-badge azac-badge-publish" style="border:1px solid rgba(255,255,255,0.5);">Đang mở</span></div>' +
+                '<div class="azac-card-body">' +
+                '<div class="azac-meta-list">' +
+                '<div class="azac-meta-item"><span class="azac-meta-label">Giảng viên</span><span class="azac-meta-value">' +
+                $("<div>")
+                  .text(d.teacher_name)
+                  .html() +
+                "</span></div>" +
+                '<div class="azac-meta-item"><span class="azac-meta-label">Tổng số buổi</span><span class="azac-meta-value">' +
+                d.sessions +
+                "</span></div>" +
+                '<div class="azac-meta-item"><span class="azac-meta-label">Số học viên</span><span class="azac-meta-value">0</span></div>' +
+                '<div class="azac-meta-item"><span class="azac-meta-label">Số buổi hiện tại</span><span class="azac-meta-value">0/' +
+                d.sessions +
+                "</span></div>" +
+                "</div>" +
+                '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' +
+                d.id +
+                '" style="width:0%"></div></div>' +
+                "</div>" +
+                '<div class="azac-card-actions azac-actions--classes">' +
+                '<button type="button" class="button button-warning azac-status-btn" data-id="' +
+                d.id +
+                '" data-status="pending">Đóng lớp</button> ' +
+                '<a class="button button-secondary" href="' +
+                d.link_edit +
+                '">Chỉnh sửa</a> ' +
+                '<a class="button button-primary" href="' +
+                d.link_dashboard +
+                '">Vào điểm danh</a> ' +
+                '<a class="button button-info" href="' +
+                d.link_view +
+                '">Vào lớp</a> ' +
+                (AZAC_LIST.isAdmin
+                  ? '<button type="button" class="button button-danger azac-delete-btn" data-id="' +
+                    d.id +
+                    '">Xóa lớp</button>'
+                  : "") +
+                "</div>" +
+                "</div>";
+
+              var $grid = $(".azac-grid");
+              if ($grid.length) {
+                var $el = $(html);
+                $grid.prepend($el);
+                $el.fadeIn();
+              } else {
+                location.reload();
+              }
+
+              // Clear inputs
+              $("#azac_new_class_title").val(
+                "",
+              );
+              $("#azac_new_class_teacher").val(
+                "",
+              );
             } else {
               if (window.azacToast)
                 azacToast.error(
-                  "Không thể tạo lớp",
+                  res.data
+                    ? res.data.message
+                    : "Không thể tạo lớp",
                 );
               else alert("Không thể tạo lớp");
             }
           },
-        );
+        ).fail(function () {
+          btn.prop("disabled", false);
+          if (window.azacToast)
+            azacToast.error("Lỗi kết nối");
+        });
       },
     );
 
@@ -84,7 +205,16 @@
                 azacToast.success(
                   "Đã xóa lớp thành công",
                 );
-              location.reload();
+              var $card =
+                $btn.closest(".azac-card");
+              $card.fadeOut(300, function () {
+                $(this).remove();
+                if (
+                  $(".azac-card").length === 0
+                ) {
+                  location.reload();
+                }
+              });
             } else {
               if (window.azacToast)
                 azacToast.error(

@@ -88,21 +88,29 @@ class AzAC_Core_Classes
         }
         update_post_meta($post_id, 'az_tong_so_buoi', $sessions ?: 0);
         update_post_meta($post_id, 'az_so_hoc_vien', 0);
+        $teacher_display = 'Chưa gán';
         if ($teacher_id) {
             $u = get_userdata($teacher_id);
             if ($u && in_array('az_teacher', $u->roles, true)) {
                 update_post_meta($post_id, 'az_teacher_user', $teacher_id);
-                update_post_meta($post_id, 'az_giang_vien', $u->display_name ?: $u->user_login);
+                $teacher_display = $u->display_name ?: $u->user_login;
+                update_post_meta($post_id, 'az_giang_vien', $teacher_display);
             }
         } else {
             if ($teacher) {
+                $teacher_display = $teacher;
                 update_post_meta($post_id, 'az_giang_vien', $teacher);
             }
         }
         wp_send_json_success([
             'id' => $post_id,
             'title' => get_the_title($post_id),
-            'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . $post_id),
+            'teacher_name' => $teacher_display,
+            'sessions' => $sessions ?: 0,
+            'link_dashboard' => admin_url('admin.php?page=azac-classes-list&class_id=' . $post_id),
+            'link_edit' => admin_url('post.php?post=' . $post_id . '&action=edit'),
+            'link_view' => get_permalink($post_id),
+            'status' => 'publish'
         ]);
     }
 }
