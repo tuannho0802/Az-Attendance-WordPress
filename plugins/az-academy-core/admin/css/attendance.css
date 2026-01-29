@@ -492,3 +492,146 @@
     margin: 2px auto 0;
 }
 
+/* =========================================
+   CUSTOM SELECT (DIV-BASED) & STATUS TAGS
+   ========================================= */
+
+/* Hide Original Select */
+.azac-hidden-select {
+  display: none !important;
+}
+
+/* Custom Select Wrapper */
+.azac-custom-select-wrapper {
+  position: relative;
+  display: inline-block;
+  min-width: 320px;
+  vertical-align: middle;
+}
+
+/* Custom Trigger (Replaces Select Box) */
+.azac-custom-select-trigger {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: #ffffff;
+  border: 1px solid #e2e2e2;
+  border-radius: 6px;
+  cursor: pointer;
+  min-height: 40px;
+  box-sizing: border-box;
+  font-size: 14px;
+  color: #333;
+  transition: all 0.2s;
+}
+
+.azac-custom-select-trigger:hover {
+  border-color: #b5b5b5;
+}
+
+/* Arrow Icon */
+.azac-custom-select-trigger::after {
+  content: '';
+  display: block;
+  width: 6px;
+  height: 6px;
+  border-right: 2px solid #888;
+  border-bottom: 2px solid #888;
+  transform: rotate(45deg);
+  margin-left: 10px;
+  margin-top: -2px;
+}
+
+/* Dropdown Options Container */
+.azac-custom-options {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  background: #ffffff;
+  border: 1px solid #e2e2e2;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  margin-top: 6px;
+  padding: 6px 0;
+  display: none;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+/* Show State */
+.azac-custom-select-wrapper.open .azac-custom-options {
+  display: block;
+}
+
+.azac-custom-select-wrapper.open .azac-custom-select-trigger {
+  border-color: var(--az-primary, #15345a);
+  box-shadow: 0 0 0 1px var(--az-primary, #15345a);
+}
+
+/* Individual Option */
+.azac-custom-option {
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  color: #333;
+  transition: background 0.1s;
+}
+
+.azac-custom-option:hover {
+  background-color: #f3f4f6;
+}
+
+.azac-custom-option.selected {
+  background-color: #edf2f7;
+  color: var(--az-primary, #15345a);
+  font-weight: 500;
+}
+
+/* --- Status Tags Styling --- */
+.azac-tag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 3px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  line-height: 1.2;
+  white-space: nowrap;
+  min-width: 60px;
+}
+
+/* Màu Xám - Đã qua */
+.azac-tag.tag-past {
+  background-color: #f3f4f6;
+  color: #6b7280;
+  border: 1px solid #e5e7eb;
+}
+
+/* Màu Xanh Lá - Hiện tại */
+.azac-tag.tag-current {
+  background-color: #ecfdf5;
+  color: #059669;
+  border: 1px solid #a7f3d0;
+}
+
+/* Màu Xanh Dương - Sắp tới */
+.azac-tag.tag-future {
+  background-color: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+}
+
+/* Style riêng cho phần ngày tháng */
+.azac-date {
+  font-weight: 500;
+}

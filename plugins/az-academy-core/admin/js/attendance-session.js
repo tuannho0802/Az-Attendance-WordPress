@@ -3,6 +3,220 @@
     console.log("Attendance Session JS loaded");
     console.log("azacData:", window.azacData);
 
+    // Helper: Get status info based on date comparison
+    function getStatusInfo(date) {
+      if (!window.azacData || !window.azacData.today)
+        return { label: "", className: "" };
+      var today = window.azacData.today;
+      if (date < today)
+        return {
+          label: "Đã qua",
+          className: "tag-past",
+        };
+      if (date === today)
+        return {
+          label: "Hiện tại",
+          className: "tag-current",
+        };
+      if (date > today)
+        return {
+          label: "Sắp tới",
+          className: "tag-future",
+        };
+      return { label: "", className: "" };
+    }
+
+    // Helper: Render Option HTML
+    // NOTE: This now prepares HTML for the CUSTOM DIV-based select.
+    // The native <option> will keep simple text.
+    function renderCustomOptionHtml(val, fullLabel, isListItem) {
+      if (!val) return fullLabel; // Placeholder "Chọn buổi học"
+
+      var status = getStatusInfo(val);
+      if (!status || !status.label) return fullLabel;
+
+      return (
+        '<span class="azac-tag ' +
+        status.className +
+        '">' +
+        status.label +
+        "</span> " +
+        '<span class="azac-date">' +
+        fullLabel +
+        "</span>"
+      );
+    }
+
+    // Function to build/refresh Custom Select
+    function initCustomSelect() {
+      var $nativeSelect = $(
+        "#azac_session_select",
+      );
+      if ($nativeSelect.length === 0) return;
+
+      // 1. Hide native select if not already hidden
+      if (
+        !$nativeSelect.hasClass(
+          "azac-hidden-select",
+        )
+      ) {
+        $nativeSelect.addClass(
+          "azac-hidden-select",
+        );
+      }
+
+      // 2. Prepare Wrapper
+      var $wrapper = $(
+        ".azac-custom-select-wrapper",
+      );
+      if ($wrapper.length === 0) {
+        $wrapper = $(
+          '<div class="azac-custom-select-wrapper"></div>',
+        );
+        $nativeSelect.after($wrapper);
+      }
+      $wrapper.empty(); // Rebuild content
+
+      // 3. Build Trigger
+      var $selectedOption =
+        $nativeSelect.find("option:selected");
+      var selectedText =
+        $selectedOption.text() ||
+        "Chọn buổi học";
+      // Cleanup text if needed
+      selectedText = selectedText.replace(
+        /^\[(Đã qua|Hiện tại|Sắp tới)\]\s*/,
+        "",
+      );
+
+      var selectedVal = $selectedOption.val();
+      var triggerHtml = renderCustomOptionHtml(
+        selectedVal,
+        selectedText,
+        false,
+      );
+
+      var $trigger = $(
+        '<div class="azac-custom-select-trigger">' +
+          triggerHtml +
+          "</div>",
+      );
+
+      // 4. Build Options List
+      var $options = $(
+        '<div class="azac-custom-options"></div>',
+      );
+      $nativeSelect
+        .find("option")
+        .each(function () {
+          var val = $(this).val();
+          var text = $(this).text();
+          text = text.replace(
+            /^\[(Đã qua|Hiện tại|Sắp tới)\]\s*/,
+            "",
+          );
+
+          var optionHtml = renderCustomOptionHtml(
+            val,
+            text,
+            true,
+          );
+          var $optDiv = $(
+            '<div class="azac-custom-option" data-value="' +
+              val +
+              '">' +
+              optionHtml +
+              "</div>",
+          );
+
+          if (val === selectedVal)
+            $optDiv.addClass("selected");
+
+          // Click on Custom Option
+          $optDiv.on("click", function (e) {
+            e.stopPropagation();
+            var newVal = $(this).data("value");
+            $nativeSelect
+              .val(newVal)
+              .trigger("change");
+            $wrapper.removeClass("open");
+
+            // Update Trigger Visual
+            var newText = $(this).text(); // Use text from div (might need cleanup if HTML included? No, .text() strips tags)
+            // Wait, we want the original label. Let's find it from native select to be safe or re-use text var from closure?
+            // Closure 'text' var is from the loop. We need the text of the *clicked* item.
+            // Better: get from native select after change?
+            // Actually, we can just re-run initCustomSelect? No, that's heavy.
+            // Let's just update trigger manually.
+            var updatedText =
+              $nativeSelect
+                .find(
+                  'option[value="' +
+                    newVal +
+                    '"]',
+                )
+                .text() || "";
+            updatedText = updatedText.replace(
+              /^\[(Đã qua|Hiện tại|Sắp tới)\]\s*/,
+              "",
+            );
+            $trigger.html(
+              renderCustomOptionHtml(
+                newVal,
+                updatedText,
+                false,
+              ),
+            );
+
+            $wrapper
+              .find(".selected")
+              .removeClass("selected");
+            $(this).addClass("selected");
+          });
+
+          $options.append($optDiv);
+        });
+
+      $wrapper.append($trigger);
+      $wrapper.append($options);
+
+      // Trigger Click
+      $trigger.on("click", function (e) {
+        e.stopPropagation();
+        // Close other dropdowns if any
+        $(".azac-custom-select-wrapper")
+          .not($wrapper)
+          .removeClass("open");
+        $wrapper.toggleClass("open");
+      });
+
+      // Global Click to Close (One-time binding check)
+      if (!window.azacCustomSelectBound) {
+        $(document).on("click", function () {
+          $(
+            ".azac-custom-select-wrapper",
+          ).removeClass("open");
+        });
+        window.azacCustomSelectBound = true;
+      }
+    }
+
+    // Initialize existing options - Revert to simple text but init Custom Select
+    $("#azac_session_select option").each(function () {
+      var val = $(this).val();
+      var text = $(this).text();
+      if (val) {
+         // Clean up old prefix if present in text
+         var cleanText = text.replace(/^\[(Đã qua|Hiện tại|Sắp tới)\]\s*/, "");
+         if (cleanText !== text) {
+             $(this).text(cleanText);
+         }
+      }
+    });
+
+    // Initial Build
+    initCustomSelect();
+
     $("#azac_session_select").on(
       "change",
       function () {
@@ -102,12 +316,16 @@
                     (s.time
                       ? " " + s.time
                       : "");
-                  $("<option/>", {
-                    value: s.date,
-                    text: label,
-                  }).appendTo($sel);
+                  // Native select keeps simple text
+                  $("<option/>")
+                    .val(s.date)
+                    .text(label)
+                    .appendTo($sel);
                 },
               );
+
+              // Rebuild Custom Select
+              initCustomSelect();
               if (res.data.selected) {
                 $sel.val(res.data.selected);
                 window.azacData.sessionDate =
@@ -239,12 +457,16 @@
                     (s.time
                       ? " " + s.time
                       : "");
-                  $("<option/>", {
-                    value: s.date,
-                    text: label,
-                  }).appendTo($sel);
+                  // Native select keeps simple text
+                  $("<option/>")
+                    .val(s.date)
+                    .text(label)
+                    .appendTo($sel);
                 },
               );
+
+              // Rebuild Custom Select
+              initCustomSelect();
               if (res.data.selected) {
                 $sel.val(res.data.selected);
                 window.azacData.sessionDate =
