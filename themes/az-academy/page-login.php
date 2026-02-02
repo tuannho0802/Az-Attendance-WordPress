@@ -3,17 +3,23 @@
  * Template Name: Login Page
  */
 
-// Redirect if already logged in
+// Điều hướng nếu đã đăng nhập
 if (is_user_logged_in()) {
     wp_redirect(admin_url());
     exit;
 }
 
-// Handle Form Submission
+// Xử lý gửi Form
 $login_error = '';
 if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) {
-    // Check nonce
-    if (!isset($_POST['azac_login_nonce']) || !wp_verify_nonce($_POST['azac_login_nonce'], 'azac_login_action')) {
+
+    // 1. KIỂM TRA HONEYPOT (BẪY BOT)
+    // Nếu ô này không trống, nghĩa là Bot đã tự động điền vào
+    if (!empty($_POST['confirm_user_extra_field'])) {
+        $login_error = 'Phát hiện hành động bất thường. Vui lòng thử lại.';
+    }
+    // 2. Kiểm tra Nonce bảo mật
+    else if (!isset($_POST['azac_login_nonce']) || !wp_verify_nonce($_POST['azac_login_nonce'], 'azac_login_action')) {
         $login_error = 'Yêu cầu không hợp lệ. Vui lòng thử lại.';
     } else {
         $creds = array(
@@ -22,6 +28,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
             'remember' => isset($_POST['rememberme']),
         );
 
+        // Thực hiện đăng nhập
         $user = wp_signon($creds, is_ssl());
 
         if (is_wp_error($user)) {
@@ -49,25 +56,21 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
 
 <body>
     <?php
-    if ( function_exists( 'wp_body_open' ) ) {
+    if (function_exists('wp_body_open')) {
         wp_body_open();
     }
     ?>
 
     <div class="auth-container">
-        <!-- Left Side: Branding -->
         <div class="auth-branding">
             <div class="auth-branding-content">
                 <img src="<?php echo get_template_directory_uri(); ?>/assets/img/logo.png" alt="Az Academy Logo"
                     class="auth-branding-logo" />
                 <h1>Chào mừng bạn quay lại!</h1>
-                <p>Kết nối với hệ thống quản lý học tập chuyên nghiệp của Az Academy để theo dõi tiến độ và tham gia lớp
-                    học.</p>
-                <!-- Register button removed -->
+                <p>Kết nối với hệ thống quản lý học tập chuyên nghiệp của Az Academy để theo dõi tiến độ và tham gia lớp học.</p>
             </div>
         </div>
 
-        <!-- Right Side: Form -->
         <div class="auth-form-wrapper">
             <div class="auth-form-content">
                 <div class="auth-header">
@@ -97,12 +100,17 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
                     </div>
 
                     <?php if ($login_error): ?>
-                        <div id="login-message" class="auth-message error" style="display:block;">
+                        <div id="login-message" class="auth-message error"
+                            style="display:block; color: #e11d48; background: #fff1f2; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 0.9rem; border: 1px solid #fda4af;">
                             <?php echo $login_error; ?>
                         </div>
                     <?php endif; ?>
 
-                    <button type="submit" name="azac_login_submit" class="btn-primary" id="btn-login">
+                    <div style="display:none !important; visibility:hidden !important; position:absolute; left:-9999px;">
+                        <input type="text" name="confirm_user_extra_field" id="confirm_user_extra_field" tabindex="-1" autocomplete="off">
+                    </div>
+
+                    <button type="submit" name="azac_login_submit" class="btn-primary" id="btn-login" style="cursor: pointer;">
                         <span class="btn-text">Đăng nhập</span>
                     </button>
                 </form>
@@ -119,5 +127,4 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['azac_login_submit'])) 
 
     <?php wp_footer(); ?>
 </body>
-
 </html>

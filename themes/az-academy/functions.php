@@ -137,3 +137,13 @@ add_filter('admin_footer_text', 'azac_custom_admin_footer_text', 20);
 
 // Xóa số phiên bản WordPress
 add_filter('update_footer', '__return_empty_string', 20);
+
+add_filter('rest_authentication_errors', function ($result) {
+    if (!empty($result)) {
+        return $result;
+    }
+    if (!is_user_logged_in()) {
+        return new WP_Error('rest_not_logged_in', 'Bạn phải đăng nhập để dùng API.', array('status' => 401));
+    }
+    return $result;
+});
