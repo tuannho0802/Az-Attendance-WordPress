@@ -1934,7 +1934,7 @@ class AzAC_Admin_Pages
 
         echo '<table class="widefat fixed striped"><thead><tr>
             <th>Tên giảng viên</th>
-            <th>Danh sách lớp phụ trách</th>
+            <th>Lớp học</th>
             <th>Học viên</th>
             <th>Tổng buổi dạy</th>
             <th>Đã chấm công</th>
@@ -1944,32 +1944,23 @@ class AzAC_Admin_Pages
         if ($paged_rows) {
             foreach ($paged_rows as $r) {
                 $name = $r['name'];
-                $classes = $r['classes'];
+                $class_name = $r['class_name'];
+                $class_link = $r['class_link'];
+                $class_color = $r['class_color'];
                 $students_total = intval($r['students_total']);
-
                 $stats = isset($r['stats']) ? $r['stats'] : ['total' => 0, 'checked' => 0, 'missing' => 0];
+                $detail_link = $r['detail_link'];
 
-                $links = array_map(function ($cl) use ($palette) {
-                    // Force hash color
-                    $hash = 0;
-                    $c_name = $cl['title'];
-                    for ($i = 0; $i < strlen($c_name); $i++) {
-                        $hash += ord($c_name[$i]);
-                    }
-                    $color = $palette[$hash % count($palette)];
+                // Badge for class
+                $badge_style = 'background-color:' . $class_color . ' !important; color:#fff !important; border:none;';
+                $class_badge = '<a href="' . esc_url($class_link) . '" class="button azac-badge-class" style="margin:2px 4px;' . $badge_style . '">' . esc_html($class_name) . '</a>';
 
-                    // Use badge class
-                    $style = 'background-color:' . $color . ' !important; color:#fff !important; border:none;';
-                    return '<a href="' . esc_url($cl['link']) . '" class="button azac-badge-class" style="margin:2px 4px;' . $style . '">' . esc_html($cl['title']) . '</a>';
-                }, $classes);
-
-                $detail_link = admin_url('admin.php?page=azac-manage-teachers&teacher_id=' . $r['id']);
-
-                $mobile_badges = '<div class="azac-mobile-badges">' . implode(' ', $links) . '</div>';
+                // Mobile Badges wrapper (reused for consistent mobile view if needed)
+                $mobile_badges = '<div class="azac-mobile-badges">' . $class_badge . '</div>';
 
                 echo '<tr>';
                 echo '<td data-label="Tên giảng viên"><strong>' . esc_html($name) . '</strong>' . $mobile_badges . '</td>';
-                echo '<td data-label="Danh sách lớp phụ trách">' . implode(' ', $links) . '</td>';
+                echo '<td data-label="Lớp học">' . $class_badge . '</td>';
                 echo '<td data-label="Học viên">' . esc_html($students_total) . '</td>';
                 echo '<td data-label="Tổng buổi dạy">' . esc_html($stats['total']) . '</td>';
                 echo '<td data-label="Đã chấm công"><span style="color:#2ecc71;font-weight:bold">' . esc_html($stats['checked']) . '</span></td>';

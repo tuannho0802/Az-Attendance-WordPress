@@ -426,19 +426,8 @@ class AzAC_Core_Admin
                 'meta_value' => intval($u->ID),
                 'post_status' => ['publish', 'pending'],
             ]);
-            $cls = [];
-            $user_ids = [];
-            $class_ids = [];
 
             foreach ($classes as $c) {
-                $ids = get_post_meta($c->ID, 'az_students', true);
-                $ids = is_array($ids) ? array_map('absint', $ids) : [];
-                foreach ($ids as $sid) {
-                    $uid = intval(get_post_meta($sid, 'az_user_id', true));
-                    if ($uid)
-                        $user_ids[$uid] = true;
-                }
-
                 // Name-based ASCII Hash (Standardized)
                 $hash = 0;
                 $c_name = $c->post_title;
@@ -447,22 +436,24 @@ class AzAC_Core_Admin
                 }
                 $color = $palette[$hash % count($palette)];
 
-                $cls[] = [
-                    'id' => intval($c->ID),
-                    'title' => $c->post_title,
-                    'link' => admin_url('admin.php?page=azac-classes-list&class_id=' . intval($c->ID)),
-                    'color' => $color,
-                ];
-                $class_ids[] = $c->ID;
-            }
+                // Student Count
+                $ids = get_post_meta($c->ID, 'az_students', true);
+                $ids = is_array($ids) ? array_map('absint', $ids) : [];
+                $user_ids = [];
+                foreach ($ids as $sid) {
+                    $uid = intval(get_post_meta($sid, 'az_user_id', true));
+                    if ($uid)
+                        $user_ids[$uid] = true;
+                }
+                $total_students = count($user_ids);
 
-            $total_sessions = 0;
-            $checked_sessions = 0;
-
-            if (!empty($class_ids)) {
-                $ids_placeholder = implode(',', array_fill(0, count($class_ids), '%d'));
-                $sql = "SELECT teacher_checkin FROM {$sess_table} WHERE class_id IN ($ids_placeholder)";
-                $params = $class_ids;
+                // Stats per class
+                $total_sessions = 0;
+                $checked_sessions = 0;
+                
+                // Query sessions for THIS class only
+                $sql = "SELECT teacher_checkin FROM {$sess_table} WHERE class_id = %d";
+                $params = [$c->ID];
 
                 if ($month_filter) {
                     $sql .= " AND DATE_FORMAT(session_date, '%Y-%m') = %s";
@@ -476,27 +467,29 @@ class AzAC_Core_Admin
                         $checked_sessions++;
                     }
                 }
-            }
 
-            // If filtering by month, skip teachers with no sessions in that month
-            if ($month_filter && $total_sessions === 0) {
-                continue;
-            }
+                // If filtering by month, skip classes with no sessions in that month
+                if ($month_filter && $total_sessions === 0) {
+                    continue;
+                }
 
-            $missing = $total_sessions - $checked_sessions;
-            $total_students = count($user_ids);
-            
-            $rows[] = [
-                'id' => $u->ID,
-                'name' => $u->display_name ?: $u->user_login,
-                'classes' => $cls,
-                'students_total' => $total_students,
-                'stats' => [
-                    'total' => $total_sessions,
-                    'checked' => $checked_sessions,
-                    'missing' => $missing
-                ]
-            ];
+                $missing = $total_sessions - $checked_sessions;
+                
+                $rows[] = [
+                    'id' => $u->ID,
+                    'name' => $u->display_name ?: $u->user_login,
+                    'class_name' => $c->post_title,
+                    'class_link' => admin_url('admin.php?page=azac-classes-list&class_id=' . intval($c->ID)),
+                    'class_color' => $color,
+                    'students_total' => $total_students,
+                    'stats' => [
+                        'total' => $total_sessions,
+                        'checked' => $checked_sessions,
+                        'missing' => $missing
+                    ],
+                    'detail_link' => admin_url('admin.php?page=azac-classes-list&class_id=' . intval($c->ID))
+                ];
+            }
         }
         return $rows;
     }
