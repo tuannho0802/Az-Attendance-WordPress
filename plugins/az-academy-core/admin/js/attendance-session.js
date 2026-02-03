@@ -799,9 +799,13 @@
 
         var payload = {
           action: "azac_teacher_checkin",
-          nonce: window.azacData
-            ? window.azacData.sessionNonce
-            : "",
+          nonce:
+            window.azacData &&
+            window.azacData.checkinNonce
+              ? window.azacData.checkinNonce
+              : window.azacData
+                ? window.azacData.sessionNonce
+                : "",
           class_id: classId,
           date: date,
           is_checkin: isCheckin,

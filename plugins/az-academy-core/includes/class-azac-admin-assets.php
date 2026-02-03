@@ -236,6 +236,15 @@ class AzAC_Admin_Assets
             wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
             wp_enqueue_script('azac-attendance-session-js', AZAC_CORE_URL . 'admin/js/attendance-session.js', ['jquery', 'azac-attendance-utils'], AZAC_CORE_VERSION, true);
+
+            // Localize for Teacher Attendance Page
+            wp_localize_script('azac-attendance-session-js', 'azacData', [
+                'ajaxUrl' => admin_url('admin-ajax.php'),
+                'checkinNonce' => wp_create_nonce('azac_teacher_checkin_nonce'),
+                'sessionNonce' => wp_create_nonce('azac_session'), // Fallback or for other actions
+                'isTeacher' => in_array('az_teacher', (array) $user->roles, true),
+                'isAdmin' => current_user_can('manage_options'),
+            ]);
         }
     }
 }

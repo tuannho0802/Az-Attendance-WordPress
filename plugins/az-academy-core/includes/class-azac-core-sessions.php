@@ -533,10 +533,7 @@ class AzAC_Core_Sessions
         } elseif ($is_teacher) {
             $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
             if ($teacher_user === intval($user->ID)) {
-                $today = current_time('Y-m-d');
-                if ($session->session_date !== $today) {
-                    wp_send_json_error(['message' => 'Chỉ được sửa nội dung vào đúng ngày dạy.'], 403);
-                }
+                // Allow teacher to edit content anytime (removed date restriction)
                 $can_edit = true;
             }
         }
@@ -588,6 +585,23 @@ class AzAC_Core_Sessions
             wp_send_json_error(['message' => 'Unauthorized'], 403);
         }
 
+        // Additional ownership check for Teacher
+        if ($is_teacher && !$can_upload) {
+            $session_id = isset($_POST['session_id']) ? absint($_POST['session_id']) : 0;
+            if ($session_id) {
+                global $wpdb;
+                $sess_table = $wpdb->prefix . 'az_sessions';
+                $class_id = $wpdb->get_var($wpdb->prepare("SELECT class_id FROM {$sess_table} WHERE id = %d", $session_id));
+                
+                if ($class_id) {
+                    $teacher_user = intval(get_post_meta($class_id, 'az_teacher_user', true));
+                    if ($teacher_user !== intval($user->ID)) {
+                        wp_send_json_error(['message' => 'Unauthorized: Not your class'], 403);
+                    }
+                }
+            }
+        }
+
         // Detect type and strip header
         $ext = '.png';
         if (strpos($data, 'data:image/jpeg;base64,') === 0) {
@@ -636,7 +650,7 @@ class AzAC_Core_Sessions
 
     public static function ajax_teacher_checkin()
     {
-        check_ajax_referer('azac_session', 'nonce');
+        check_ajax_referer('azac_teacher_checkin_nonce', 'nonce');
         $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
         $date = isset($_POST['date']) ? sanitize_text_field($_POST['date']) : '';
         $is_checkin = isset($_POST['is_checkin']) ? intval($_POST['is_checkin']) : 0;
