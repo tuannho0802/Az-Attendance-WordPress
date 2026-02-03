@@ -664,14 +664,16 @@ class AzAC_Core_Sessions
         global $wpdb;
         $sess_table = $wpdb->prefix . 'az_sessions';
 
+        $checkin_time = $is_checkin ? current_time('mysql') : null;
+
         $wpdb->update(
             $sess_table,
             [
                 'teacher_checkin' => $is_checkin,
-                'teacher_checkin_time' => $is_checkin ? current_time('mysql') : null,
+                'teacher_checkin_time' => $checkin_time,
                 // Also update legacy/admin columns for consistency if needed, but keeping separate as requested
                 'is_taught' => $is_checkin,
-                'taught_at' => $is_checkin ? current_time('mysql') : null
+                'taught_at' => $checkin_time
             ],
             ['class_id' => $class_id, 'session_date' => $date],
             ['%d', '%s', '%d', '%s'],
@@ -681,7 +683,8 @@ class AzAC_Core_Sessions
         // Audit Log
         do_action('azac_teacher_checkin_event', $class_id, $date, $is_checkin, $user->ID);
 
-        wp_send_json_success(['is_checkin' => $is_checkin]);
+        $response_time = $checkin_time ? mysql2date('H:i d/m/Y', $checkin_time) : '---';
+        wp_send_json_success(['is_checkin' => $is_checkin, 'checkin_time' => $response_time]);
     }
 
     public static function ajax_delete_session()

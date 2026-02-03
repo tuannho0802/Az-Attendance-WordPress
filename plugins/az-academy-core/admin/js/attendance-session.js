@@ -866,6 +866,23 @@
                     )
                     .text("Chưa dạy");
                 }
+
+                // Update Check-in Time
+                var $timeCell = $row.find(
+                  'td[data-label="Thời gian chấm công"]',
+                );
+                if ($timeCell.length) {
+                  if (
+                    res.data &&
+                    res.data.checkin_time
+                  ) {
+                    $timeCell.text(
+                      res.data.checkin_time,
+                    );
+                  } else {
+                    $timeCell.text("---");
+                  }
+                }
               }
             } else {
               var m =

@@ -2230,7 +2230,7 @@ class AzAC_Admin_Pages
                     : '<span class="azac-tv-badge azac-tv-badge-warning">Chưa dạy</span>';
 
                 // Checkin Time
-                $checkin_time_display = $s->teacher_checkin_time ? date_i18n('H:i d/m/Y', strtotime($s->teacher_checkin_time)) : '---';
+                $checkin_time_display = $s->teacher_checkin_time ? mysql2date('H:i d/m/Y', $s->teacher_checkin_time) : '---';
 
                 echo '<tr ' . $row_class . '>';
                 echo '<td data-label="Ngày dạy" class="azac-col-date"><strong>' . date_i18n('d/m/Y', strtotime($s->session_date)) . '</strong></td>';
