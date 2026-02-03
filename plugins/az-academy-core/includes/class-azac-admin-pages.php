@@ -72,15 +72,17 @@ class AzAC_Admin_Pages
             0
         );
 
-        add_menu_page(
-            'Chấm công Giảng viên',
-            'Chấm công Giảng viên',
-            'edit_published_posts', // Only teachers and admins
-            'azac-teacher-attendance',
-            [__CLASS__, 'render_teacher_attendance_page'],
-            'dashicons-calendar-alt',
-            0
-        );
+        if (in_array('az_teacher', (array) $user->roles)) {
+            add_menu_page(
+                'Chấm công Giảng viên',
+                'Chấm công Giảng viên',
+                'read', // Only visible to teachers via Role check
+                'azac-teacher-attendance',
+                [__CLASS__, 'render_teacher_attendance_page'],
+                'dashicons-calendar-alt',
+                0
+            );
+        }
         remove_menu_page('edit.php?post_type=az_class');
         remove_menu_page('edit.php?post_type=az_student');
 
