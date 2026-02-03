@@ -1,7 +1,9 @@
 ;(function ($) {
   $(function () {
     console.log("Attendance Session JS loaded");
-    console.log("azacData:", window.azacData);
+    console.log(
+      "azacData: Fully data loaded !!",
+    );
 
     // Helper: Get status info based on date comparison
     function getStatusInfo(date) {
