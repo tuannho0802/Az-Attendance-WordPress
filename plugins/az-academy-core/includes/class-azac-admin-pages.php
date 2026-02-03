@@ -2231,6 +2231,9 @@ class AzAC_Admin_Pages
 
                 // Checkin Time
                 $checkin_time_display = $s->teacher_checkin_time ? mysql2date('H:i d/m/Y', $s->teacher_checkin_time) : '---';
+                if (!empty($s->checked_by)) {
+                    $checkin_time_display .= ' <br><small style="color:#666;">' . esc_html($s->checked_by) . '</small>';
+                }
 
                 echo '<tr ' . $row_class . '>';
                 echo '<td data-label="Ngày dạy" class="azac-col-date"><strong>' . date_i18n('d/m/Y', strtotime($s->session_date)) . '</strong></td>';

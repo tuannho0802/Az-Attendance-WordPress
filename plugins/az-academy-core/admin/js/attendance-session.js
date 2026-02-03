@@ -797,121 +797,190 @@
           ? 1
           : 0;
 
-        var payload = {
-          action: "azac_teacher_checkin",
-          nonce:
-            window.azacData &&
-            window.azacData.checkinNonce
-              ? window.azacData.checkinNonce
-              : window.azacData
-                ? window.azacData.sessionNonce
-                : "",
-          class_id: classId,
-          date: date,
-          is_checkin: isCheckin,
-        };
+        // --- LOGIC MODAL XÁC NHẬN ---
+        var isAdmin =
+          window.azacData &&
+          window.azacData.isAdmin;
+        var isManager =
+          window.azacData &&
+          window.azacData.isManager;
+        var needsConfirm = false;
+        var confirmMsg = "";
 
-        $cb.prop("disabled", true);
-        $.post(
-          window.azacData.ajaxUrl,
-          payload,
-          function (res) {
-            $cb.prop("disabled", false);
-            if (res.success) {
-              var $row = $cb.closest("tr");
+        // Trường hợp 1: Admin/Manager can thiệp
+        if (isAdmin || isManager) {
+          needsConfirm = true;
+          confirmMsg =
+            "Bạn đang can thiệp vào dữ liệu chấm công. Hành động này sẽ ghi lại danh tính của bạn. Tiếp tục?";
+        }
+        // Trường hợp 2: Chấm công lần 2 (Re-checkin)
+        else {
+          var $row = $cb.closest("tr");
+          var $timeCell = $row.find(
+            'td[data-label="Thời gian chấm công"]',
+          );
+          var hasTime =
+            $timeCell.length &&
+            $timeCell.text().trim() !== "---";
 
-              // Admin View Badge
-              var $badge = $row.find(
-                ".azac-badge",
-              );
-              if ($badge.length) {
-                if (isCheckin) {
-                  $badge
-                    .removeClass(
-                      "azac-badge-pending",
-                    )
-                    .addClass(
-                      "azac-badge-publish",
-                    )
-                    .text("Đã dạy");
-                } else {
-                  $badge
-                    .removeClass(
-                      "azac-badge-publish",
-                    )
-                    .addClass(
-                      "azac-badge-pending",
-                    )
-                    .text("Chưa dạy");
-                }
-              }
+          if (hasTime) {
+            needsConfirm = true;
+            confirmMsg =
+              "Buổi học này đã được chấm công trước đó. Bạn có chắc chắn muốn xác nhận chấm công lại lần 2?";
+          }
+        }
 
-              // Teacher View Badge
-              var $badgeTv = $row.find(
-                ".azac-tv-badge",
-              );
-              if ($badgeTv.length) {
-                if (isCheckin) {
-                  $badgeTv
-                    .removeClass(
-                      "azac-tv-badge-warning",
-                    )
-                    .addClass(
-                      "azac-tv-badge-success",
-                    )
-                    .text("Đã dạy");
-                } else {
-                  $badgeTv
-                    .removeClass(
-                      "azac-tv-badge-success",
-                    )
-                    .addClass(
-                      "azac-tv-badge-warning",
-                    )
-                    .text("Chưa dạy");
-                }
+        // Helper function to execute AJAX
+        var executeCheckin = function () {
+          var payload = {
+            action: "azac_teacher_checkin",
+            nonce:
+              window.azacData &&
+              window.azacData.checkinNonce
+                ? window.azacData.checkinNonce
+                : window.azacData
+                  ? window.azacData.sessionNonce
+                  : "",
+            class_id: classId,
+            date: date,
+            is_checkin: isCheckin,
+          };
 
-                // Update Check-in Time
-                var $timeCell = $row.find(
-                  'td[data-label="Thời gian chấm công"]',
+          $cb.prop("disabled", true);
+          $.post(
+            window.azacData.ajaxUrl,
+            payload,
+            function (res) {
+              $cb.prop("disabled", false);
+              if (res.success) {
+                var $row = $cb.closest("tr");
+
+                // Admin View Badge
+                var $badge = $row.find(
+                  ".azac-badge",
                 );
-                if ($timeCell.length) {
-                  if (
-                    res.data &&
-                    res.data.checkin_time
-                  ) {
-                    $timeCell.text(
-                      res.data.checkin_time,
-                    );
+                if ($badge.length) {
+                  if (isCheckin) {
+                    $badge
+                      .removeClass(
+                        "azac-badge-pending",
+                      )
+                      .addClass(
+                        "azac-badge-publish",
+                      )
+                      .text("Đã dạy");
                   } else {
-                    $timeCell.text("---");
+                    $badge
+                      .removeClass(
+                        "azac-badge-publish",
+                      )
+                      .addClass(
+                        "azac-badge-pending",
+                      )
+                      .text("Chưa dạy");
                   }
                 }
-              }
-            } else {
-              var m =
-                res &&
-                res.data &&
-                res.data.message
-                  ? res.data.message
-                  : "Lỗi";
-              if (window.azacToast) {
-                azacToast.error(m);
+
+                // Teacher View Badge
+                var $badgeTv = $row.find(
+                  ".azac-tv-badge",
+                );
+                if ($badgeTv.length) {
+                  if (isCheckin) {
+                    $badgeTv
+                      .removeClass(
+                        "azac-tv-badge-warning",
+                      )
+                      .addClass(
+                        "azac-tv-badge-success",
+                      )
+                      .text("Đã dạy");
+                  } else {
+                    $badgeTv
+                      .removeClass(
+                        "azac-tv-badge-success",
+                      )
+                      .addClass(
+                        "azac-tv-badge-warning",
+                      )
+                      .text("Chưa dạy");
+                  }
+
+                  // Update Check-in Time
+                  var $timeCell = $row.find(
+                    'td[data-label="Thời gian chấm công"]',
+                  );
+                  if ($timeCell.length) {
+                    if (
+                      res.data &&
+                      res.data.checkin_time
+                    ) {
+                      $timeCell.html(
+                        res.data.checkin_time,
+                      );
+                    } else {
+                      $timeCell.html("---");
+                    }
+                  }
+                }
               } else {
-                alert(m);
+                var m =
+                  res &&
+                  res.data &&
+                  res.data.message
+                    ? res.data.message
+                    : "Lỗi";
+                if (window.azacToast) {
+                  azacToast.error(m);
+                } else {
+                  alert(m);
+                }
+                $cb.prop("checked", !isCheckin);
               }
+            },
+          ).fail(function () {
+            $cb.prop("disabled", false);
+            if (window.azacToast) {
+              azacToast.error("Lỗi kết nối");
+            } else {
+              alert("Lỗi kết nối");
+            }
+            $cb.prop("checked", !isCheckin);
+          });
+        };
+
+        // Execute logic with confirmation if needed
+        if (needsConfirm) {
+          if (
+            typeof window.azacConfirm ===
+            "function"
+          ) {
+            window
+              .azacConfirm(
+                "Xác nhận chấm công",
+                confirmMsg,
+                { confirmText: "Đồng ý" },
+              )
+              .then(function (confirmed) {
+                if (confirmed) {
+                  executeCheckin();
+                } else {
+                  $cb.prop(
+                    "checked",
+                    !isCheckin,
+                  );
+                }
+              });
+          } else {
+            if (confirm(confirmMsg)) {
+              executeCheckin();
+            } else {
               $cb.prop("checked", !isCheckin);
             }
-          },
-        ).fail(function () {
-          $cb.prop("disabled", false);
-          if (window.azacToast) {
-            azacToast.error("Lỗi kết nối");
-          } else {
-            alert("Lỗi kết nối");
           }
-          $cb.prop("checked", !isCheckin);
-        });
+        } else {
+          executeCheckin();
+        }
       },
     );
 

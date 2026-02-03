@@ -103,6 +103,10 @@ class AzAC_Core_Sessions
             if (empty($row)) {
                 $wpdb->query("ALTER TABLE {$sess_table} ADD COLUMN teacher_checkin_time datetime NULL");
             }
+            $row = $wpdb->get_results("SHOW COLUMNS FROM {$sess_table} LIKE 'checked_by'");
+            if (empty($row)) {
+                $wpdb->query("ALTER TABLE {$sess_table} ADD COLUMN checked_by varchar(255) NULL");
+            }
         }
     }
     public static function get_class_sessions($class_id)
@@ -680,17 +684,33 @@ class AzAC_Core_Sessions
 
         $checkin_time = $is_checkin ? current_time('mysql') : null;
 
+        // Determine Checked By
+        $checked_by = null;
+        if ($is_checkin) {
+            $user_info = get_userdata($user->ID);
+            $role_label = 'Người dùng';
+            if (in_array('administrator', $user->roles))
+                $role_label = 'Admin';
+            elseif (in_array('az_manager', $user->roles))
+                $role_label = 'Manager';
+            elseif (in_array('az_teacher', $user->roles))
+                $role_label = 'Giảng viên';
+
+            $checked_by = $user_info->display_name . ' (' . $role_label . ')';
+        }
+
         $wpdb->update(
             $sess_table,
             [
                 'teacher_checkin' => $is_checkin,
                 'teacher_checkin_time' => $checkin_time,
+                'checked_by' => $checked_by,
                 // Also update legacy/admin columns for consistency if needed, but keeping separate as requested
                 'is_taught' => $is_checkin,
                 'taught_at' => $checkin_time
             ],
             ['class_id' => $class_id, 'session_date' => $date],
-            ['%d', '%s', '%d', '%s'],
+            ['%d', '%s', '%s', '%d', '%s'],
             ['%d', '%s']
         );
 
@@ -698,6 +718,10 @@ class AzAC_Core_Sessions
         do_action('azac_teacher_checkin_event', $class_id, $date, $is_checkin, $user->ID);
 
         $response_time = $checkin_time ? mysql2date('H:i d/m/Y', $checkin_time) : '---';
+        if ($checked_by) {
+            $response_time .= ' <br><small style="color:#666;">' . esc_html($checked_by) . '</small>';
+        }
+
         wp_send_json_success(['is_checkin' => $is_checkin, 'checkin_time' => $response_time]);
     }
 

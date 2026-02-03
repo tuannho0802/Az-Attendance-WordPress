@@ -44,37 +44,64 @@
         },
 
         show: function(title, message, options) {
-            this.init();
-            
-            var $overlay = $('#azac-modal-overlay');
-            var $title = $overlay.find('.azac-modal-title');
-            var $content = $overlay.find('.azac-modal-content');
-            var $confirmBtn = $overlay.find('.azac-btn-confirm');
-            
-            // Defaults
-            options = options || {};
-            var btnText = options.confirmText || 'Xác nhận';
-            var btnClass = options.isDanger ? 'azac-danger' : '';
-            
-            // Set content
-            $title.text(title || 'Xác nhận');
-            $content.html(message || 'Bạn có chắc chắn muốn thực hiện hành động này?');
-            $confirmBtn.text(btnText).removeClass('azac-danger').addClass(btnClass);
-            
-            // Reset handlers
-            $confirmBtn.off('click').on('click', function() {
-                AzacModal.close(true);
+          this.init();
+
+          var $overlay = $(
+            "#azac-modal-overlay",
+          );
+          var $title = $overlay.find(
+            ".azac-modal-title",
+          );
+          var $content = $overlay.find(
+            ".azac-modal-content",
+          );
+          var $confirmBtn = $overlay.find(
+            ".azac-btn-confirm",
+          );
+
+          // Defaults
+          options = options || {};
+          var btnText =
+            options.confirmText || "Xác nhận";
+          var btnClass = options.isDanger
+            ? "azac-danger"
+            : "";
+
+          // Set content
+          $title.text(title || "Xác nhận");
+          $content.html(
+            message ||
+              "Bạn có chắc chắn muốn thực hiện hành động này?",
+          );
+          $confirmBtn
+            .text(btnText)
+            .removeClass("azac-danger")
+            .addClass(btnClass);
+
+          // Reset handlers
+          $confirmBtn
+            .off("click")
+            .on("click", function () {
+              AzacModal.close(true);
             });
-            
-            // Show
-            $overlay.show().addClass('azac-modal-visible'); // Use flex via css but show() is needed for display:none
-            $overlay.css('display', 'flex');
-            $('body').addClass('azac-modal-open');
-            
-            // Return Promise
-            return new Promise(function(resolve) {
-                AzacModal.resolve = resolve;
-            });
+
+          // Show
+          $overlay.css("display", "flex");
+          // Small timeout to ensure display:flex applies before opacity transition triggers
+          setTimeout(function () {
+            $overlay.addClass(
+              "azac-modal-visible",
+            );
+          }, 10);
+
+          $("body").addClass("azac-modal-open");
+
+          // Return Promise
+          return new Promise(function (
+            resolve,
+          ) {
+            AzacModal.resolve = resolve;
+          });
         },
 
         close: function(confirmed) {

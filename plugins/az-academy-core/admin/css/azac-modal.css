@@ -11,11 +11,13 @@
     justify-content: center;
     align-items: center;
     opacity: 0;
-    transition: opacity 0.3s ease;
+    backdrop-filter: blur(0px);
+    transition: opacity 0.3s ease, backdrop-filter 0.3s ease;
 }
 
 .azac-modal-overlay.azac-modal-visible {
     opacity: 1;
+    backdrop-filter: blur(3px);
 }
 
 .azac-modal-container {
