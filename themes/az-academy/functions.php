@@ -147,3 +147,30 @@ add_filter('rest_authentication_errors', function ($result) {
     }
     return $result;
 });
+
+/**
+ * 6. Protect Front Page
+ */
+function azac_protect_front_page()
+{
+    // 1. Nếu không phải trang chủ thì bỏ qua
+    if (!is_front_page()) {
+        return;
+    }
+
+    // 2. Nếu đã đăng nhập thì bỏ qua
+    if (is_user_logged_in()) {
+        return;
+    }
+
+    // 3. Nếu đang ở chính trang login (để tránh vòng lặp) thì bỏ qua
+    // Kiểm tra query var từ rewrite rule (quan trọng cho custom login) HOẶC slug trang
+    if (get_query_var('az_auth_page') === 'login' || is_page('login')) {
+        return;
+    }
+
+    // 4. Ép chuyển hướng về trang login tùy chỉnh
+    wp_safe_redirect(home_url('/login/'));
+    exit;
+}
+add_action('template_redirect', 'azac_protect_front_page');
