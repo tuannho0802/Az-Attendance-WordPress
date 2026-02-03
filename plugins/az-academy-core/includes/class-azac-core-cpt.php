@@ -430,16 +430,22 @@ class AzAC_Core_CPT
             // Search UI
             echo '<div class="azac-search-box">';
             echo '<h4 style="margin:0 0 10px 0;">Tìm kiếm & Thêm học viên</h4>';
-            echo '<div class="azac-search-inputs">';
-            echo '<input type="text" id="azac_search_name" class="regular-text" style="width:100%" placeholder="Họ tên" />';
-            echo '<input type="text" id="azac_search_email" class="regular-text" style="width:100%" placeholder="Email" />';
-            echo '<input type="text" id="azac_search_phone" class="regular-text" style="width:100%" placeholder="Số điện thoại" />';
-            echo '<input type="text" id="azac_search_biz" class="regular-text" style="width:100%" placeholder="Lĩnh vực kinh doanh" />';
+
+            // Flex container for single row layout
+            echo '<div class="azac-search-inputs" style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">';
+
+            // Name Input
+            echo '<input type="text" id="azac_search_name" class="regular-text" style="flex: 1; min-width: 150px;" placeholder="Họ tên" />';
+
+            // Phone Input
+            echo '<input type="text" id="azac_search_phone" class="regular-text" style="flex: 1; min-width: 150px;" placeholder="Số điện thoại" />';
+
+            // Button inline
+            echo '<button type="button" class="button button-primary" id="azac_search_btn" style="flex: 0 0 auto;">Tìm kiếm</button>';
+
             echo '</div>';
-            echo '<div style="text-align:right;">';
-            echo '<button type="button" class="button button-primary" id="azac_search_btn">Tìm kiếm</button>';
-            echo '</div>';
-            echo '<div id="azac_search_results" class="azac-search-results"></div>';
+
+            echo '<div id="azac_search_results" class="azac-search-results" style="margin-top: 10px;"></div>';
             echo '</div>';
 
             // Available Students List (New)

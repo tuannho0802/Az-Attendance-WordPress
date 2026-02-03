@@ -1,8 +1,7 @@
 (function ($) {
   $(function () {
     console.log(
-      "AzAC Params:",
-      window.azac_params,
+      "AzAC Params: Get Full Data !!",
     );
 
     // Helper: Recalculate student count and update hidden field
@@ -80,18 +79,23 @@
       function (e) {
         e.preventDefault();
         var btn = $(this);
-        var name = $("#azac_search_name")
-          .val()
-          .trim();
-        var email = $("#azac_search_email")
-          .val()
-          .trim();
-        var phone = $("#azac_search_phone")
-          .val()
-          .trim();
-        var biz = $("#azac_search_biz")
-          .val()
-          .trim();
+
+        // Null check and trim for existing fields
+        var nameInput = $("#azac_search_name");
+        var name = nameInput.length
+          ? (nameInput.val() || "").trim()
+          : "";
+
+        var phoneInput = $(
+          "#azac_search_phone",
+        );
+        var phone = phoneInput.length
+          ? (phoneInput.val() || "").trim()
+          : "";
+
+        // Removed fields (Email, Biz) - set to empty string
+        var email = "";
+        var biz = "";
 
         if (!window.azac_params) {
           console.error("Missing azac_params");
@@ -108,9 +112,7 @@
             action: "azac_search_students",
             security: azac_params.nonce,
             name: name,
-            email: email,
             phone: phone,
-            biz: biz,
           },
           function (res) {
             btn
