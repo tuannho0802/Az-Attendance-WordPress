@@ -106,9 +106,6 @@ add_action('init', 'azac_redirect_wp_login');
 add_filter('login_url', function ($url) {
     return home_url('/login');
 });
-add_filter('register_url', function ($url) {
-    return home_url('/register');
-});
 
 /**
  * 4. Flush Rules (Run once then comment out)

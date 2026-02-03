@@ -14,6 +14,15 @@ class AzAC_Admin_Assets
             wp_enqueue_style('azac-teacher-view', AZAC_CORE_URL . 'admin/css/azac-teacher-view.css', [], AZAC_CORE_VERSION);
         }
 
+        // Enqueue Add Student JS only on the specific page
+        if (isset($_GET['page']) && $_GET['page'] === 'azac-add-student') {
+            wp_enqueue_script('azac-add-student-js', AZAC_CORE_URL . 'admin/js/azac-add-student.js', ['jquery'], AZAC_CORE_VERSION, true);
+            wp_localize_script('azac-add-student-js', 'azac_obj', [
+                'ajax_url' => admin_url('admin-ajax.php'),
+                'nonce' => wp_create_nonce('azac_ajax_nonce')
+            ]);
+        }
+
         wp_enqueue_script('azac-admin-js', AZAC_CORE_URL . 'admin/js/admin.js', ['jquery'], AZAC_CORE_VERSION, true);
         // Global Toast assets on all admin pages
         if (!wp_script_is('azac-toast-js', 'enqueued')) {

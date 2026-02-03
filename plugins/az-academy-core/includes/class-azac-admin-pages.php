@@ -62,6 +62,18 @@ class AzAC_Admin_Pages
                 0
             );
         }
+
+        if (current_user_can('manage_options') || in_array('az_manager', (array) $user->roles)) {
+            add_submenu_page(
+                'azac-manage-students',
+                'Thêm học viên mới',
+                'Thêm học viên mới',
+                'read',
+                'azac-add-student',
+                [__CLASS__, 'render_admin_registration_page']
+            );
+        }
+
         add_menu_page(
             'Quản lý Giảng viên',
             'Quản lý Giảng viên',
@@ -1321,6 +1333,82 @@ class AzAC_Admin_Pages
         </script>
         <?php
         echo '</div>';
+    }
+    public static function render_admin_registration_page()
+    {
+        ?>
+                <div class="wrap">
+                    <h1 class="wp-heading-inline">Thêm học viên mới</h1>
+                    <hr class="wp-header-end">
+            
+                    <div class="card" style="max-width: 800px; margin-top: 20px; padding: 0;">
+                        <h2 style="padding: 15px 20px; margin: 0; border-bottom: 1px solid #eee; background: #f9f9f9;">Thông tin học viên</h2>
+                        <div style="padding: 20px;">
+                            <div id="register-message" class="notice inline" style="display:none; margin: 0 0 20px 0;"><p></p></div>
+                            <form id="azac-add-student-form" method="post" autocomplete="off">
+                                <table class="form-table" role="presentation">
+                                    <tbody>
+                                        <tr class="form-field form-required">
+                                            <th scope="row"><label for="user_login">Tên đăng nhập <span class="description">(bắt buộc)</span></label></th>
+                                            <td>
+                                                <input name="user_login" type="text" id="user_login" value="" aria-required="true" autocapitalize="none" autocorrect="off" maxlength="60">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field form-required">
+                                            <th scope="row"><label for="user_email">Email <span class="description">(bắt buộc)</span></label></th>
+                                            <td>
+                                                <input name="user_email" type="email" id="user_email" value="" aria-required="true">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field">
+                                            <th scope="row"><label for="first_name">Họ và tên lót</label></th>
+                                            <td>
+                                                <input name="first_name" type="text" id="first_name" value="">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field">
+                                            <th scope="row"><label for="last_name">Tên</label></th>
+                                            <td>
+                                                <input name="last_name" type="text" id="last_name" value="">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field form-required">
+                                            <th scope="row"><label for="user_pass">Mật khẩu <span class="description">(bắt buộc)</span></label></th>
+                                            <td>
+                                                <input name="user_pass" type="password" id="user_pass" value="" autocomplete="new-password">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field form-required">
+                                            <th scope="row"><label for="user_pass_confirm">Nhập lại mật khẩu <span class="description">(bắt buộc)</span></label></th>
+                                            <td>
+                                                <input name="user_pass_confirm" type="password" id="user_pass_confirm" value="" autocomplete="new-password">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field">
+                                            <th scope="row"><label for="az_phone">Số điện thoại</label></th>
+                                            <td>
+                                                <input name="az_phone" type="text" id="az_phone" value="">
+                                            </td>
+                                        </tr>
+                                        <tr class="form-field">
+                                            <th scope="row"><label for="az_business_field">Lĩnh vực kinh doanh</label></th>
+                                            <td>
+                                                <input name="az_business_field" type="text" id="az_business_field" value="">
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                        
+                                <p class="submit" style="padding-top: 20px;">
+                                    <button type="submit" name="createuser" id="btn-submit-student" class="button button-primary">
+                                        <span class="btn-text">Thêm học viên mới</span>
+                                    </button>
+                                </p>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <?php
     }
     public static function render_class_dashboard_page()
     {

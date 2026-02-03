@@ -83,6 +83,66 @@ class AzAC_Core_Admin
         // Flash Toast Logic (Moved from AzAC_Loading)
         add_action('admin_footer', [__CLASS__, 'render_flash_toast']);
         add_action('wp_footer', [__CLASS__, 'render_flash_toast']);
+
+        // Register Student AJAX
+        add_action('wp_ajax_azac_register_student', [__CLASS__, 'ajax_register_student']);
+    }
+
+    public static function ajax_register_student()
+    {
+        check_ajax_referer('azac_ajax_nonce', 'security');
+
+        if (!current_user_can('manage_options') && !current_user_can('create_users')) {
+            wp_send_json_error(['message' => 'Bạn không có quyền thực hiện hành động này.']);
+        }
+
+        $username = isset($_POST['user_login']) ? sanitize_user($_POST['user_login']) : '';
+        $email = isset($_POST['user_email']) ? sanitize_email($_POST['user_email']) : '';
+        $first_name = isset($_POST['first_name']) ? sanitize_text_field($_POST['first_name']) : '';
+        $last_name = isset($_POST['last_name']) ? sanitize_text_field($_POST['last_name']) : '';
+        $password = isset($_POST['user_pass']) ? $_POST['user_pass'] : '';
+        $confirm = isset($_POST['user_pass_confirm']) ? $_POST['user_pass_confirm'] : '';
+        $phone = isset($_POST['az_phone']) ? sanitize_text_field($_POST['az_phone']) : '';
+        $business = isset($_POST['az_business_field']) ? sanitize_text_field($_POST['az_business_field']) : '';
+
+        if (empty($username) || empty($email) || empty($password)) {
+            wp_send_json_error(['message' => 'Vui lòng điền đầy đủ các trường bắt buộc.']);
+        }
+
+        if ($password !== $confirm) {
+            wp_send_json_error(['message' => 'Mật khẩu nhập lại không khớp.']);
+        }
+
+        if (username_exists($username) || email_exists($email)) {
+            wp_send_json_error(['message' => 'Tên đăng nhập hoặc Email đã tồn tại.']);
+        }
+
+        // Create user
+        $user_id = wp_insert_user([
+            'user_login' => $username,
+            'user_pass' => $password,
+            'user_email' => $email,
+            'first_name' => $first_name,
+            'last_name' => $last_name,
+            'display_name' => $first_name . ' ' . $last_name,
+            'role' => 'az_student',
+        ]);
+
+        if (is_wp_error($user_id)) {
+            wp_send_json_error(['message' => $user_id->get_error_message()]);
+        } else {
+            // Update User Meta
+            update_user_meta($user_id, 'az_phone', $phone);
+            update_user_meta($user_id, 'az_business_field', $business);
+
+            // Also update billing_phone for consistency if needed, but keeping strictly to requirements
+            update_user_meta($user_id, 'billing_phone', $phone);
+
+            // Set Flash Toast for next page load if redirecting, but here we return JSON
+            AzAC_Core_Helper::set_flash_toast('Thêm học viên mới thành công!', 'success');
+
+            wp_send_json_success(['message' => 'Thêm học viên mới thành công!']);
+        }
     }
 
     public static function render_flash_toast()
