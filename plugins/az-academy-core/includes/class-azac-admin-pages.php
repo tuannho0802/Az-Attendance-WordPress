@@ -516,10 +516,7 @@ class AzAC_Admin_Pages
         $is_admin = current_user_can('manage_options');
         $is_student = in_array('az_student', $user->roles, true);
         echo '<div class="azac-tabs" style="margin-bottom:10px;">';
-        echo '<button class="button azac-tab-btn" data-target="#azac-tab-sessions">Buổi học</button>';
-        if ($is_student) {
-            echo ' <button class="button azac-tab-btn" data-target="#azac-tab-stats">Thống kê điểm danh</button>';
-        }
+       
         echo '</div>';
         if ($is_teacher || $is_admin || $is_student) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
@@ -597,14 +594,6 @@ class AzAC_Admin_Pages
             echo '<div id="azac-sessions-pagination"></div>';
             echo '</div>'; // End azac-layout-wrapper
             echo '</div>'; // End #azac-tab-sessions
-
-            if ($is_student) {
-                echo '<div id="azac-tab-stats" class="azac-tab">';
-                echo '<div id="azac-stats-grid" class="azac-grid">';
-                echo '<div class="azac-card"><div class="azac-card-title">Đang tải thống kê...</div></div>';
-                echo '</div>';
-                echo '</div>';
-            }
         }
         echo '</div>';
     }

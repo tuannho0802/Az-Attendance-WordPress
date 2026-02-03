@@ -6,7 +6,6 @@ class AzAC_Admin_Stats
 {
     public static function register()
     {
-        add_action('wp_ajax_azac_student_stats', [__CLASS__, 'ajax_student_stats']);
         add_action('wp_ajax_azac_get_reviews', [__CLASS__, 'ajax_get_reviews']);
     }
     public static function get_attendance_stats($class_id)
@@ -46,12 +45,11 @@ class AzAC_Admin_Stats
         check_ajax_referer('azac_student_stats', 'nonce');
         $user = wp_get_current_user();
         
-        $is_student = in_array('az_student', $user->roles, true);
         $is_admin = current_user_can('manage_options');
         $is_teacher = in_array('az_teacher', $user->roles, true);
         $is_manager = current_user_can('read');
 
-        if (!$is_manager && !$is_admin && !$is_teacher && !$is_student) {
+        if (!$is_manager && !$is_admin && !$is_teacher) {
             wp_send_json_error(['message' => 'Unauthorized'], 401);
         }
 
@@ -60,8 +58,6 @@ class AzAC_Admin_Stats
 
         if ($req_student_id && ($is_admin || $is_teacher || $is_manager)) {
             $student_post_id = $req_student_id;
-        } elseif ($is_student) {
-            $student_post_id = AzAC_Core_Helper::get_current_student_post_id();
         } else {
             wp_send_json_error(['message' => 'Capability or Missing ID'], 403);
         }
