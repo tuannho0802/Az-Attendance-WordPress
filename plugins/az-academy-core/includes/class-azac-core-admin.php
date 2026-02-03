@@ -561,7 +561,7 @@ class AzAC_Core_Admin
                         'checked' => $checked_sessions,
                         'missing' => $missing
                     ],
-                    'detail_link' => admin_url('admin.php?page=azac-classes-list&class_id=' . intval($c->ID))
+                    'detail_link' => admin_url('admin.php?page=azac-teacher-attendance&teacher_id=' . intval($u->ID) . '&class_id=' . intval($c->ID))
                 ];
             }
         }

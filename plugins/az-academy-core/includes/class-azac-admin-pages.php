@@ -94,6 +94,16 @@ class AzAC_Admin_Pages
                 'dashicons-calendar-alt',
                 0
             );
+        } elseif (current_user_can('manage_options') || in_array('az_manager', (array) $user->roles)) {
+            // Hidden page for Admin/Manager
+            add_submenu_page(
+                null,
+                'Chấm công Giảng viên',
+                'Chấm công Giảng viên',
+                'read',
+                'azac-teacher-attendance',
+                [__CLASS__, 'render_teacher_attendance_page']
+            );
         }
         remove_menu_page('edit.php?post_type=az_class');
         remove_menu_page('edit.php?post_type=az_student');
@@ -2057,141 +2067,52 @@ class AzAC_Admin_Pages
 
     public static function render_teacher_attendance_page()
     {
-        $user = wp_get_current_user();
-        if (!in_array('az_teacher', $user->roles, true) && !in_array('administrator', $user->roles, true) && !in_array('az_manager', (array) $user->roles)) {
+        $current_user = wp_get_current_user();
+        if (!in_array('az_teacher', $current_user->roles, true) && !in_array('administrator', $current_user->roles, true) && !in_array('az_manager', (array) $current_user->roles)) {
             wp_die('Unauthorized');
         }
 
-        // --- Admin View ---
-        if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {
-            echo '<div class="wrap"><h1>Quản lý chấm công</h1>';
+        $is_admin_or_manager = (in_array('administrator', $current_user->roles, true) || in_array('az_manager', (array) $current_user->roles));
 
-            // Filter Params
-            $filter_month = isset($_GET['month']) ? sanitize_text_field($_GET['month']) : '';
-            $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
-            $per_page = 20;
+        // Determine Target Teacher
+        $target_teacher_id = $current_user->ID;
+        if ($is_admin_or_manager && isset($_GET['teacher_id'])) {
+            $target_teacher_id = intval($_GET['teacher_id']);
+        }
 
-            // Query
-            global $wpdb;
-            $sess_table = $wpdb->prefix . 'az_sessions';
-            $posts_table = $wpdb->prefix . 'posts';
-            $postmeta_table = $wpdb->prefix . 'postmeta';
-
-            $where = "1=1";
-            if ($filter_month) {
-                $where .= $wpdb->prepare(" AND DATE_FORMAT(s.session_date, '%%Y-%%m') = %s", $filter_month);
-            }
-
-            $offset = ($paged - 1) * $per_page;
-
-            $sql = "SELECT SQL_CALC_FOUND_ROWS s.*, p.post_title as class_name, pm.meta_value as teacher_id,
-                    (SELECT COUNT(*) + 1 FROM {$sess_table} s2 WHERE s2.class_id = s.class_id AND (s2.session_date < s.session_date OR (s2.session_date = s.session_date AND s2.session_time < s.session_time))) as session_number 
-                    FROM {$sess_table} s 
-                    JOIN {$posts_table} p ON s.class_id = p.ID 
-                    LEFT JOIN {$postmeta_table} pm ON (p.ID = pm.post_id AND pm.meta_key = 'az_teacher_user')
-                    WHERE {$where} 
-                    ORDER BY s.session_date DESC, s.session_time ASC 
-                    LIMIT %d, %d";
-
-            $rows = $wpdb->get_results($wpdb->prepare($sql, $offset, $per_page));
-            $total_items = $wpdb->get_var("SELECT FOUND_ROWS()");
-            $total_pages = ceil($total_items / $per_page);
-
-            // Filter Form
-            echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
-            echo '<input type="hidden" name="page" value="azac-teacher-attendance">';
-            echo '<label><strong>Lọc tháng:</strong> <input type="month" name="month" value="' . esc_attr($filter_month) . '"></label>';
-            echo '<button class="button button-secondary">Lọc</button>';
-            if ($filter_month) {
-                echo '<a href="' . admin_url('admin.php?page=azac-teacher-attendance') . '" class="button">Xóa lọc</a>';
-            }
-            echo '</form>';
-
-            // Table
-            echo '<table class="widefat fixed striped">';
-            echo '<thead><tr>
-                <th>Ngày dạy</th>
-                <th>Lớp học</th>
-                <th>Giảng viên</th>
-                <th>Buổi</th>
-                <th>Thời gian</th>
-                <th>Trạng thái</th>
-                <th>Thời gian chấm công</th>
-            </tr></thead><tbody>';
-
-            $today = current_time('Y-m-d');
-            $palette = AzAC_Core_Admin::$palette;
-            if ($rows) {
-                foreach ($rows as $r) {
-                    $teacher_name = '---';
-                    if ($r->teacher_id) {
-                        $u = get_userdata($r->teacher_id);
-                        if ($u)
-                            $teacher_name = $u->display_name;
-                    }
-
-                    $is_checked = intval($r->teacher_checkin) === 1;
-                    $status_html = $is_checked
-                        ? '<span class="azac-badge azac-badge-publish">Đã dạy</span>'
-                        : '<span class="azac-badge azac-badge-pending">Chưa dạy</span>';
-
-                    $checkin_time = $r->teacher_checkin_time ? date_i18n('d/m/Y H:i', strtotime($r->teacher_checkin_time)) : '---';
-
-                    $row_class = ($r->session_date === $today) ? ' class="is-today"' : '';
-
-                    // Color Logic
-                    $hash = 0;
-                    // Ensure class_name fallback
-                    $c_name = !empty($r->class_name) ? $r->class_name : 'Lớp #' . $r->class_id;
-
-                    for ($i = 0; $i < strlen($c_name); $i++) {
-                        $hash += ord($c_name[$i]);
-                    }
-                    $color = $palette[$hash % count($palette)];
-                    $badge_html = '<span class="azac-badge-class" style="background-color: ' . $color . ' !important;">' . esc_html($c_name) . '</span>';
-                    $style = ' style="border-top: 3px solid ' . $color . ';"';
-
-                    echo '<tr' . $row_class . $style . '>';
-
-                    echo '<td data-label="Ngày dạy" class="azac-col-date">';
-                    echo '<span class="azac-date-display">' . date_i18n('d/m/Y', strtotime($r->session_date)) . '</span>';
-                    echo '</td>';
-
-                    echo '<td data-label="Lớp học">' . $badge_html . '</td>';
-                    echo '<td data-label="Giảng viên" class="azac-col-teacher"><strong>' . esc_html($teacher_name) . '</strong></td>';
-                    echo '<td data-label="Buổi">Buổi ' . intval($r->session_number) . '<div class="azac-mobile-badges">' . $badge_html . '</div></td>';
-                    echo '<td data-label="Thời gian">' . esc_html($r->session_time) . '</td>';
-                    echo '<td data-label="Trạng thái">' . $status_html . '</td>';
-                    echo '<td data-label="Thời gian chấm công">' . $checkin_time . '</td>';
-                    echo '</tr>';
-                }
-            } else {
-                echo '<tr><td colspan="7">Không có dữ liệu.</td></tr>';
-            }
-
-            echo '</tbody></table>';
-
-            // Pagination
-            AzAC_Core_Helper::render_pagination($paged, $total_pages);
-
-            echo '</div>'; // wrap
+        $teacher_user = get_userdata($target_teacher_id);
+        if (!$teacher_user) {
+            echo '<div class="wrap"><p>Giảng viên không tồn tại.</p></div>';
             return;
         }
 
-        // --- Teacher View (Single Table Layout) ---
-        echo '<div class="wrap"><h1>Chấm công Giảng viên</h1>';
-        echo '<p>Danh sách các buổi học của lớp bạn phụ trách.</p>';
+        // Filter Params
+        $filter_class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
+        $filter_month = isset($_GET['month']) ? sanitize_text_field($_GET['month']) : '';
 
+        // H1 Title Logic
+        $h1_title = 'Chấm công Giảng viên: ' . esc_html($teacher_user->display_name);
+        if ($filter_class_id) {
+            $class_title = get_the_title($filter_class_id);
+            if ($class_title) {
+                $h1_title .= ' - Lớp: ' . esc_html($class_title);
+            }
+        }
+
+        echo '<div class="wrap"><h1>' . $h1_title . '</h1>';
+        echo '<p>Danh sách các buổi học của giảng viên ' . esc_html($teacher_user->display_name) . '.</p>';
+
+        // Get Teacher Classes
         $teacher_classes = get_posts([
             'post_type' => 'az_class',
             'numberposts' => -1,
             'meta_key' => 'az_teacher_user',
-            'meta_value' => $user->ID,
+            'meta_value' => $target_teacher_id,
             'fields' => 'ids'
         ]);
 
         if (empty($teacher_classes)) {
-            echo '<p>Bạn chưa được phân công lớp học nào.</p>';
+            echo '<p>Giảng viên chưa được phân công lớp học nào.</p>';
             echo '</div>';
             return;
         }
@@ -2199,15 +2120,45 @@ class AzAC_Admin_Pages
         global $wpdb;
         $sess_table = $wpdb->prefix . 'az_sessions';
         $posts_table = $wpdb->prefix . 'posts';
+
+        // Prepare Class IDs for Query
         $class_ids_str = implode(',', array_map('absint', $teacher_classes));
 
-        // --- Filter Logic ---
-        $filter_class_id = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
-        $filter_month = isset($_GET['month']) ? sanitize_text_field($_GET['month']) : '';
+        // Filter Logic
+        if ($filter_class_id && in_array($filter_class_id, $teacher_classes)) {
+            $class_ids_str = $filter_class_id;
+        }
+
+        $where_sql = "s.class_id IN ({$class_ids_str})";
+        if ($filter_month) {
+            $where_sql .= $wpdb->prepare(" AND DATE_FORMAT(s.session_date, '%%Y-%%m') = %s", $filter_month);
+        }
+
+        // Pagination
+        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
+        $per_page = 20;
+        $offset = ($paged - 1) * $per_page;
+
+        // Query
+        $sql = "SELECT SQL_CALC_FOUND_ROWS s.*, p.post_title as class_name, 
+                (SELECT COUNT(*) + 1 FROM {$sess_table} s2 WHERE s2.class_id = s.class_id AND (s2.session_date < s.session_date OR (s2.session_date = s.session_date AND s2.session_time < s.session_time))) as session_number 
+                FROM {$sess_table} s 
+                JOIN {$posts_table} p ON s.class_id = p.ID 
+                WHERE {$where_sql} 
+                ORDER BY s.session_date DESC, s.session_time ASC 
+                LIMIT %d, %d";
+
+        $sessions = $wpdb->get_results($wpdb->prepare($sql, $offset, $per_page));
+        $total_items = $wpdb->get_var("SELECT FOUND_ROWS()");
+        $total_pages = ceil($total_items / $per_page);
 
         // Render Filter Form
         echo '<form method="get" class="azac-tv-filter-form" style="margin-bottom: 20px;">';
         echo '<input type="hidden" name="page" value="azac-teacher-attendance">';
+        if ($is_admin_or_manager && isset($_GET['teacher_id'])) {
+            echo '<input type="hidden" name="teacher_id" value="' . esc_attr($target_teacher_id) . '">';
+        }
+
         echo '<div class="azac-tv-filter-container" style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">';
 
         // Class Select
@@ -2227,38 +2178,14 @@ class AzAC_Admin_Pages
 
         // Clear Filter
         if ($filter_class_id || $filter_month) {
-            echo '<a href="' . admin_url('admin.php?page=azac-teacher-attendance') . '" class="button">Xóa lọc</a>';
+            $clear_link = admin_url('admin.php?page=azac-teacher-attendance');
+            if ($is_admin_or_manager && isset($_GET['teacher_id'])) {
+                $clear_link = add_query_arg('teacher_id', $target_teacher_id, $clear_link);
+            }
+            echo '<a href="' . $clear_link . '" class="button">Xóa lọc</a>';
         }
         echo '</div>';
         echo '</form>';
-
-        // Apply Filters
-        if ($filter_class_id && in_array($filter_class_id, $teacher_classes)) {
-            $class_ids_str = $filter_class_id;
-        }
-
-        $where_sql = "s.class_id IN ({$class_ids_str})";
-        if ($filter_month) {
-            $where_sql .= $wpdb->prepare(" AND DATE_FORMAT(s.session_date, '%%Y-%%m') = %s", $filter_month);
-        }
-
-        // Pagination
-        $paged = isset($_GET['paged']) ? max(1, absint($_GET['paged'])) : 1;
-        $per_page = 20;
-        $offset = ($paged - 1) * $per_page;
-
-        // Query with Session Number Calculation
-        $sql = "SELECT SQL_CALC_FOUND_ROWS s.*, p.post_title as class_name, 
-                (SELECT COUNT(*) + 1 FROM {$sess_table} s2 WHERE s2.class_id = s.class_id AND (s2.session_date < s.session_date OR (s2.session_date = s.session_date AND s2.session_time < s.session_time))) as session_number 
-                FROM {$sess_table} s 
-                JOIN {$posts_table} p ON s.class_id = p.ID 
-                WHERE {$where_sql} 
-                ORDER BY s.session_date DESC, s.session_time ASC 
-                LIMIT %d, %d";
-
-        $sessions = $wpdb->get_results($wpdb->prepare($sql, $offset, $per_page));
-        $total_items = $wpdb->get_var("SELECT FOUND_ROWS()");
-        $total_pages = ceil($total_items / $per_page);
 
         $today = current_time('Y-m-d');
         $palette = AzAC_Core_Admin::$palette;
@@ -2271,6 +2198,7 @@ class AzAC_Admin_Pages
                 <th>Buổi</th>
                 <th>Thời gian</th>
                 <th>Trạng thái</th>
+                <th>Thời gian chấm công</th>
                 <th>Hành động</th>
               </tr></thead>';
         echo '<tbody>';
@@ -2280,7 +2208,11 @@ class AzAC_Admin_Pages
                 $is_checked = intval($s->teacher_checkin) === 1;
                 $checked_attr = $is_checked ? 'checked' : '';
                 $is_today = ($s->session_date === $today);
-                $disabled_attr = !$is_today ? 'disabled' : '';
+
+                // Toggle Disable Logic: Disabled if NOT today AND NOT Admin/Manager
+                $is_disabled = (!$is_today && !$is_admin_or_manager);
+                $disabled_attr = $is_disabled ? 'disabled' : '';
+
                 $row_class = $is_today ? 'class="is-today"' : '';
 
                 // Hash Color
@@ -2297,28 +2229,31 @@ class AzAC_Admin_Pages
                     ? '<span class="azac-tv-badge azac-tv-badge-success">Đã dạy</span>'
                     : '<span class="azac-tv-badge azac-tv-badge-warning">Chưa dạy</span>';
 
+                // Checkin Time
+                $checkin_time_display = $s->teacher_checkin_time ? date_i18n('H:i d/m/Y', strtotime($s->teacher_checkin_time)) : '---';
+
                 echo '<tr ' . $row_class . '>';
                 echo '<td data-label="Ngày dạy" class="azac-col-date"><strong>' . date_i18n('d/m/Y', strtotime($s->session_date)) . '</strong></td>';
                 echo '<td data-label="Lớp học">' . $badge_html . '</td>';
                 echo '<td data-label="Buổi">Buổi ' . intval($s->session_number) . '</td>';
                 echo '<td data-label="Thời gian">' . esc_html($s->session_time) . '</td>';
                 echo '<td data-label="Trạng thái">' . $status_badge . '</td>';
+                echo '<td data-label="Thời gian chấm công">' . $checkin_time_display . '</td>';
                 echo '<td data-label="Hành động">';
-                echo '<label class="azac-tv-switch ' . ($is_today ? '' : 'azac-tv-disabled') . '">';
+                echo '<label class="azac-switch ' . ($is_disabled ? 'azac-disabled' : '') . '">';
                 echo '<input type="checkbox" class="azac-tv-checkin-cb" data-class="' . esc_attr($s->class_id) . '" data-date="' . esc_attr($s->session_date) . '" ' . $checked_attr . ' ' . $disabled_attr . '>';
-                echo '<span class="azac-tv-slider round"></span>';
+                echo '<span class="azac-slider round"></span>';
                 echo '</label>';
                 echo '</td>';
                 echo '</tr>';
             }
         } else {
-            echo '<tr><td colspan="6" style="text-align:center; padding: 20px;">Không có buổi học nào.</td></tr>';
+            echo '<tr><td colspan="7" style="text-align:center; padding: 20px;">Không có buổi học nào.</td></tr>';
         }
 
         echo '</tbody></table>';
         echo '</div>'; // table container
 
-        // Pagination
         AzAC_Core_Helper::render_pagination($paged, $total_pages);
 
         echo '<script>window.azacData=' . wp_json_encode([
