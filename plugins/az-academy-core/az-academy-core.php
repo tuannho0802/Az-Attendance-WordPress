@@ -37,7 +37,6 @@ require_once AZAC_CORE_DIR . 'includes/class-azac-shortcodes.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-admin-guides.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-system-cleanup.php';
 require_once AZAC_CORE_DIR . 'includes/class-azac-core-security.php';
-require_once AZAC_CORE_DIR . 'includes/class-azac-loading.php';
 
 
 register_activation_hook(__FILE__, ['AzAC_Core_Activator', 'activate']);
@@ -57,7 +56,6 @@ add_action('plugins_loaded', function () {
     AzAC_Admin_Guides::register();
     AzAC_System_Cleanup::init();
     AzAC_Core_Security::init();
-    AzAC_Loading::init();
 });
 add_action('init', function () {
     $ver = get_option('azac_core_version');

@@ -79,6 +79,20 @@ class AzAC_Core_Admin
 
         // Force redirect from Dashboard to Attendance page
         add_action('load-index.php', [__CLASS__, 'force_dashboard_redirect']);
+
+        // Flash Toast Logic (Moved from AzAC_Loading)
+        add_action('admin_footer', [__CLASS__, 'render_flash_toast']);
+        add_action('wp_footer', [__CLASS__, 'render_flash_toast']);
+    }
+
+    public static function render_flash_toast()
+    {
+        $flash = function_exists('AzAC_Core_Helper::get_flash_toast') ? AzAC_Core_Helper::get_flash_toast() : null;
+        if ($flash) {
+            $msg = isset($flash['message']) ? $flash['message'] : '';
+            $type = isset($flash['type']) ? $flash['type'] : 'info';
+            echo '<script>window.AZAC_FLASH_TOAST={message:' . json_encode($msg) . ',type:' . json_encode($type) . '};(function(){function fire(){if(window.azacToast){azacToast.show(window.AZAC_FLASH_TOAST.message,window.AZAC_FLASH_TOAST.type);window.AZAC_FLASH_TOAST=null;}}if(document.body.classList.contains("azac-loaded") || document.readyState === "complete"){setTimeout(fire,50);}else{window.addEventListener("load", function(){setTimeout(fire,50);});}})();</script>';
+        }
     }
 
     public static function force_dashboard_redirect()
