@@ -384,163 +384,264 @@
           }
           return;
         }
-        var payload = {
-          action: "azac_add_session",
-          nonce: window.azacData.sessionNonce,
-          class_id: window.azacData.classId,
-          date: toServerDate(d),
-          time: t,
-        };
-        var $btn = $(this).prop(
-          "disabled",
-          true,
-        );
-        $.post(
-          window.azacData.ajaxUrl,
-          payload,
-          function (res) {
-            $btn.prop("disabled", false);
-            console.log(
-              "AJAX Response Data:",
-              res,
-            );
-            if (
-              res &&
-              res.success &&
-              res.data &&
-              res.data.sessions
-            ) {
-              var $sel = $(
-                "#azac_session_select",
-              ).empty();
-              window.azacData.sessions =
-                res.data.sessions;
-              res.data.sessions.forEach(
-                function (s) {
-                  var timeDisplay = "";
-                  if (s.time) {
-                    var timeParts =
-                      s.time.split(":");
-                    var hours = parseInt(
-                      timeParts[0],
-                      10,
-                    );
-                    var minutes = timeParts[1];
-                    var ampm =
-                      hours >= 12 ? "PM" : "AM";
-                    hours = hours % 12 || 12;
-                    timeDisplay =
-                      " " +
-                      hours +
-                      ":" +
-                      minutes +
-                      " " +
-                      ampm;
-                  }
-                  var label =
-                    s.date + timeDisplay;
-                  // Native select keeps simple text
-                  $("<option/>")
-                    .val(s.date)
-                    .text(label)
-                    .appendTo($sel);
-                },
-              );
 
-              if (window.azacData) {
-                if (
-                  Array.isArray(
-                    window.azacData
-                      .existingDates,
-                  )
-                ) {
-                  res.data.sessions.forEach(
-                    function (s) {
-                      if (
-                        !window.azacData.existingDates.includes(
-                          s.date,
-                        )
-                      ) {
-                        window.azacData.existingDates.push(
-                          s.date,
-                        );
-                      }
-                    },
-                  );
-                } else {
-                  window.azacData.existingDates =
-                    res.data.sessions.map(
+        var _this = this;
+        var executeAddSession = function () {
+          var payload = {
+            action: "azac_add_session",
+            nonce: window.azacData.sessionNonce,
+            class_id: window.azacData.classId,
+            date: toServerDate(d),
+            time: t,
+          };
+          var $btn = $(_this).prop(
+            "disabled",
+            true,
+          );
+          $.post(
+            window.azacData.ajaxUrl,
+            payload,
+            function (res) {
+              $btn.prop("disabled", false);
+              console.log(
+                "AJAX Response Data:",
+                res,
+              );
+              if (
+                res &&
+                res.success &&
+                res.data &&
+                res.data.sessions
+              ) {
+                var $sel = $(
+                  "#azac_session_select",
+                ).empty();
+                window.azacData.sessions =
+                  res.data.sessions;
+                res.data.sessions.forEach(
+                  function (s) {
+                    var timeDisplay = "";
+                    if (s.time) {
+                      var timeParts =
+                        s.time.split(":");
+                      var hours = parseInt(
+                        timeParts[0],
+                        10,
+                      );
+                      var minutes =
+                        timeParts[1];
+                      var ampm =
+                        hours >= 12
+                          ? "PM"
+                          : "AM";
+                      hours = hours % 12 || 12;
+                      timeDisplay =
+                        " " +
+                        hours +
+                        ":" +
+                        minutes +
+                        " " +
+                        ampm;
+                    }
+                    var label =
+                      s.date + timeDisplay;
+                    // Native select keeps simple text
+                    $("<option/>")
+                      .val(s.date)
+                      .text(label)
+                      .appendTo($sel);
+                  },
+                );
+
+                if (window.azacData) {
+                  if (
+                    Array.isArray(
+                      window.azacData
+                        .existingDates,
+                    )
+                  ) {
+                    res.data.sessions.forEach(
                       function (s) {
-                        return s.date;
+                        if (
+                          !window.azacData.existingDates.includes(
+                            s.date,
+                          )
+                        ) {
+                          window.azacData.existingDates.push(
+                            s.date,
+                          );
+                        }
                       },
                     );
-                }
-                var $dpRefresh = $(
-                  ".azac-datepicker",
-                );
-                if ($dpRefresh.length) {
-                  $dpRefresh.datepicker(
-                    "refresh",
+                  } else {
+                    window.azacData.existingDates =
+                      res.data.sessions.map(
+                        function (s) {
+                          return s.date;
+                        },
+                      );
+                  }
+                  var $dpRefresh = $(
+                    ".azac-datepicker",
                   );
+                  if ($dpRefresh.length) {
+                    $dpRefresh.datepicker(
+                      "refresh",
+                    );
+                  }
                 }
-              }
 
-              // Rebuild Custom Select
-              initCustomSelect();
-              if (res.data.selected) {
-                $sel.val(res.data.selected);
-                window.azacData.sessionDate =
-                  res.data.selected;
-                if (
-                  window.AZACU &&
-                  typeof window.AZACU
-                    .updateSessionTitle ===
-                    "function"
-                ) {
-                  window.AZACU.updateSessionTitle(
-                    res.data.selected,
-                  );
+                // Rebuild Custom Select
+                initCustomSelect();
+                if (res.data.selected) {
+                  $sel.val(res.data.selected);
+                  window.azacData.sessionDate =
+                    res.data.selected;
+                  if (
+                    window.AZACU &&
+                    typeof window.AZACU
+                      .updateSessionTitle ===
+                      "function"
+                  ) {
+                    window.AZACU.updateSessionTitle(
+                      res.data.selected,
+                    );
+                  }
+                  if (
+                    window.AZAC_Att &&
+                    typeof window.AZAC_Att
+                      .fetchExisting ===
+                      "function"
+                  ) {
+                    window.AZAC_Att.fetchExisting(
+                      "check-in",
+                    );
+                    window.AZAC_Att.fetchExisting(
+                      "mid-session",
+                    );
+                  }
                 }
                 if (
-                  window.AZAC_Att &&
-                  typeof window.AZAC_Att
-                    .fetchExisting ===
-                    "function"
+                  window.azacToast &&
+                  typeof window.azacToast
+                    .show === "function"
                 ) {
-                  window.AZAC_Att.fetchExisting(
-                    "check-in",
-                  );
-                  window.AZAC_Att.fetchExisting(
-                    "mid-session",
-                  );
+                  var msg =
+                    "Đã tạo thành công Buổi " +
+                    res.data.sessions.length +
+                    " ngày " +
+                    d +
+                    " cho lớp " +
+                    (window.azacData
+                      .className || "...");
+                  window.azacToast.success(msg);
                 }
-              }
-              if (
-                window.azacToast &&
-                typeof window.azacToast.show ===
-                  "function"
-              ) {
-                var msg =
-                  "Đã tạo thành công Buổi " +
-                  res.data.sessions.length +
-                  " ngày " +
-                  d +
-                  " cho lớp " +
-                  (window.azacData.className ||
-                    "...");
-                window.azacToast.success(msg);
-              }
-            } else {
-              if (window.azacToast) {
-                azacToast.error(
-                  "Lỗi thêm buổi học",
-                );
               } else {
-                alert("Lỗi thêm buổi học");
+                if (window.azacToast) {
+                  azacToast.error(
+                    "Lỗi thêm buổi học",
+                  );
+                } else {
+                  alert("Lỗi thêm buổi học");
+                }
               }
+            },
+          );
+        };
+
+        // Modal Confirmation Logic
+        if (
+          typeof window.azacConfirm ===
+          "function"
+        ) {
+          // Calculate Day of Week
+          // d is dd/mm/yyyy
+          var parts = d.split("/");
+          var dayStr = "---";
+          var dateStr = d;
+          var timeStr = t ? t : "---";
+
+          if (parts.length === 3) {
+            var dObj = new Date(
+              parts[2],
+              parts[1] - 1,
+              parts[0],
+            );
+            var dayIdx = dObj.getDay(); // 0-6
+            var days = [
+              "Chủ Nhật",
+              "Thứ 2",
+              "Thứ 3",
+              "Thứ 4",
+              "Thứ 5",
+              "Thứ 6",
+              "Thứ 7",
+            ];
+            dayStr = days[dayIdx];
+          }
+
+          // Format Time AM/PM
+          if (t) {
+            var tParts = t.split(":");
+            if (tParts.length >= 2) {
+              var h = parseInt(tParts[0], 10);
+              var m = tParts[1];
+              var ampm = h >= 12 ? "PM" : "AM";
+              h = h % 12 || 12;
+              timeStr =
+                h + ":" + m + " " + ampm;
             }
-          },
-        );
+          }
+
+          // Get session number (approximate based on existing + 1)
+          // This is tricky as sessions might be deleted or out of order.
+          // User asked for "Thứ {Số buổi}".
+          // "Số buổi" usually implies count.
+          var nextSessionNum =
+            (window.azacData.sessions
+              ? window.azacData.sessions.length
+              : 0) + 1;
+
+          // Construct message
+          // "Bạn có chắc chắn muốn tạo buổi học: Buổi thứ {Số buổi} vào ngày {Ngày} tháng {Tháng} năm {Năm} lúc {Giờ:Phút AM/PM} không?"
+          var dateParts = dateStr.split("/");
+          var dayPart = dateParts[0];
+          var monthPart = dateParts[1];
+          var yearPart = dateParts[2];
+
+          var msg =
+            "Bạn có chắc chắn muốn tạo buổi học: <b>Buổi thứ " +
+            nextSessionNum +
+            "</b> vào ngày <b>" +
+            dayPart +
+            "</b> tháng <b>" +
+            monthPart +
+            "</b> năm <b>" +
+            yearPart +
+            "</b> lúc <b>" +
+            timeStr +
+            "</b> không?";
+
+          window
+            .azacConfirm(
+              "Xác nhận tạo buổi học",
+              msg,
+              { confirmText: "Tạo buổi học" },
+            )
+            .then(function (confirmed) {
+              if (confirmed) {
+                executeAddSession();
+              }
+            });
+        } else {
+          if (
+            confirm(
+              "Bạn có chắc chắn muốn tạo buổi học này không?",
+            )
+          ) {
+            executeAddSession();
+          }
+        }
       },
     );
 
@@ -580,7 +681,8 @@
           "#azac_session_select",
         ).val();
         var d = $("#azac_session_date").val();
-        var t = $("#azac_session_time").val();
+        var t = $("#azac_session_time").val(); // Get DIRECTLY from input
+
         if (!old || !d) {
           if (window.azacToast) {
             azacToast.error(
@@ -621,11 +723,30 @@
                 res.data.sessions;
               res.data.sessions.forEach(
                 function (s) {
+                  // FIX: Use same logic as Add Session to ensure AM/PM is correct
+                  var timeDisplay = "";
+                  if (s.time) {
+                    var timeParts =
+                      s.time.split(":");
+                    var hours = parseInt(
+                      timeParts[0],
+                      10,
+                    );
+                    var minutes = timeParts[1];
+                    var ampm =
+                      hours >= 12 ? "PM" : "AM";
+                    hours = hours % 12 || 12;
+                    timeDisplay =
+                      " " +
+                      hours +
+                      ":" +
+                      minutes +
+                      " " +
+                      ampm;
+                  }
+
                   var label =
-                    s.date +
-                    (s.time
-                      ? " " + s.time
-                      : "");
+                    s.date + timeDisplay;
                   // Native select keeps simple text
                   $("<option/>")
                     .val(s.date)
@@ -1025,6 +1146,12 @@
           .addClass("btn-session-update")
           .removeClass("btn-session-add");
       } else {
+        // Fix: Reset time if switching from Update to Add mode
+        // This ensures old session time doesn't persist when picking a new date
+        if ($btnUpdate.is(":visible")) {
+          $("#azac_session_time").val("");
+        }
+
         // State: Add
         $btnUpdate.hide();
         $btnAdd

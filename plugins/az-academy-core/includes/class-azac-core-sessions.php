@@ -107,6 +107,10 @@ class AzAC_Core_Sessions
             if (empty($row)) {
                 $wpdb->query("ALTER TABLE {$sess_table} ADD COLUMN checked_by varchar(255) NULL");
             }
+            $row = $wpdb->get_results("SHOW COLUMNS FROM {$sess_table} LIKE 'created_by'");
+            if (empty($row)) {
+                $wpdb->query("ALTER TABLE {$sess_table} ADD COLUMN created_by varchar(255) NULL");
+            }
         }
     }
     public static function get_class_sessions($class_id)
@@ -131,18 +135,38 @@ class AzAC_Core_Sessions
         }
         return $out;
     }
-    public static function upsert_class_session($class_id, $date, $time)
+    public static function upsert_class_session($class_id, $date, $time, $created_by = null)
     {
         global $wpdb;
         $sess_table = $wpdb->prefix . 'az_sessions';
+        
+        // Check if session exists to preserve other fields if using replace, 
+        // OR better: use INSERT ... ON DUPLICATE KEY UPDATE logic?
+        // But WP doesn't have a direct method for that.
+        // Since replace() deletes the row, we must check first if we want to update only specific fields?
+        // But this function is 'upsert'. 
+        // If it's an "Add Session" action (which calls this), we assume it's new or overwriting?
+        // User asked to "Add Session". If it exists, it's technically an update, but the UI has a separate "Update" button.
+        // However, if the user picks a date that already has a session, the UI shows "Update" button (via JS).
+        // So ajax_add_session should technically only be called for NEW sessions.
+        // But for safety, let's keep using replace but include created_by.
+        
+        $data = [
+            'class_id' => $class_id,
+            'session_date' => $date,
+            'session_time' => $time,
+        ];
+        $format = ['%d', '%s', '%s'];
+
+        if ($created_by) {
+            $data['created_by'] = $created_by;
+            $format[] = '%s';
+        }
+
         $wpdb->replace(
             $sess_table,
-            [
-                'class_id' => $class_id,
-                'session_date' => $date,
-                'session_time' => $time,
-            ],
-            ['%d', '%s', '%s']
+            $data,
+            $format
         );
         return self::get_class_sessions($class_id);
     }

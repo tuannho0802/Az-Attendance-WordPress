@@ -31,8 +31,8 @@ class AzAC_Admin_Pages
 
         if (!in_array('az_student', (array) $user->roles)) {
             add_menu_page(
-                'Học viên',
-                'Học viên',
+                'Danh sách Học viên',
+                'Danh sách Học viên',
                 'read',
                 'azac-students-list',
                 [__CLASS__, 'render_students_list_page'],
@@ -795,7 +795,7 @@ class AzAC_Admin_Pages
             exit;
         }
 
-        echo '<div class="wrap azac-admin-teal"><h1>Học viên</h1>';
+        echo '<div class="wrap azac-admin-teal"><h1> Danh sách Học viên</h1>';
 
         // Search Logic
         $search = isset($_GET['s']) ? sanitize_text_field($_GET['s']) : '';
