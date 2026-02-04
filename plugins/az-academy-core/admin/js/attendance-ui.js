@@ -1,33 +1,70 @@
 (function ($) {
   $(function () {
     $(".azac-tab-btn").on("click", function () {
-      $(".azac-tab-btn").removeClass("button-primary");
+      $(".azac-tab-btn").removeClass(
+        "button-primary",
+      );
       $(this).addClass("button-primary");
       $(".azac-tab").removeClass("active");
-      $($(this).data("target")).addClass("active");
+      $($(this).data("target")).addClass(
+        "active",
+      );
       var target = $(this).data("target");
-      if (target === "#azac-checkin" || target === "#azac-mid") {
-        var t = target === "#azac-checkin" ? "check-in" : "mid-session";
-        if (window.AZAC_Att && typeof window.AZAC_Att.fetchExisting === "function") {
+      if (
+        target === "#azac-checkin" ||
+        target === "#azac-mid"
+      ) {
+        var t =
+          target === "#azac-checkin"
+            ? "check-in"
+            : "mid-session";
+        if (
+          window.AZAC_Att &&
+          typeof window.AZAC_Att
+            .fetchExisting === "function"
+        ) {
           window.AZAC_Att.fetchExisting(t);
         }
       } else if (target === "#azac-reviews") {
-        if (window.AZAC_Reviews && typeof window.AZAC_Reviews.load === "function") {
-          var s = document.getElementById("azacReviewsFilter");
-          window.AZAC_Reviews.load(s ? s.value : "");
+        if (
+          window.AZAC_Reviews &&
+          typeof window.AZAC_Reviews.load ===
+            "function"
+        ) {
+          var s = document.getElementById(
+            "azacReviewsFilter",
+          );
+          window.AZAC_Reviews.load(
+            s ? s.value : "",
+          );
         }
       }
     });
-    $("#azac-submit-checkin").on("click", function () {
-      if (window.AZAC_Att && typeof window.AZAC_Att.submit === "function") {
-        window.AZAC_Att.submit("check-in");
-      }
-    });
-    $("#azac-submit-mid").on("click", function () {
-      if (window.AZAC_Att && typeof window.AZAC_Att.submit === "function") {
-        window.AZAC_Att.submit("mid-session");
-      }
-    });
+    $("#azac-submit-checkin").on(
+      "click",
+      function () {
+        if (
+          window.AZAC_Att &&
+          typeof window.AZAC_Att.submit ===
+            "function"
+        ) {
+          window.AZAC_Att.submit("check-in");
+        }
+      },
+    );
+    $("#azac-submit-mid").on(
+      "click",
+      function () {
+        if (
+          window.AZAC_Att &&
+          typeof window.AZAC_Att.submit ===
+            "function"
+        ) {
+          window.AZAC_Att.submit("mid-session");
+        }
+      },
+    );
+    /* Conflicting handlers disabled to prevent double AJAX and flicker - Logic moved to attendance-session.js
     $(document).on("change", ".azac-status", function () {
       var id = parseInt($(this).data("student"), 10) || 0;
       if (!id) return;
@@ -76,9 +113,16 @@
         }
       });
     });
-    if (window.AZAC_Att && typeof window.AZAC_Att.fetchExisting === "function") {
+    */
+    if (
+      window.AZAC_Att &&
+      typeof window.AZAC_Att.fetchExisting ===
+        "function"
+    ) {
       window.AZAC_Att.fetchExisting("check-in");
-      window.AZAC_Att.fetchExisting("mid-session");
+      window.AZAC_Att.fetchExisting(
+        "mid-session",
+      );
     }
     if (
       window.AZACU &&

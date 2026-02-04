@@ -1210,5 +1210,160 @@
         toggleSessionButtons($(this).val());
       });
     }
+
+    // --- STUDENT ATTENDANCE LOGIC (SILENT POINT-UPDATE) ---
+    $(document).on("change", ".azac-status", function (e) {
+      // 1. Isolation: Stop other scripts
+      e.stopImmediatePropagation();
+
+      var $cb = $(this);
+      var $row = $cb.closest("tr");
+      var $thisSwitch = $cb.closest(".azac-switch");
+      var studentId = $cb.data("student");
+      var isCheckin = $cb.is(":checked");
+
+      // Visual Feedback: Loading state
+      if ($thisSwitch.length) {
+        $thisSwitch.addClass("azac-loading");
+      }
+
+      // Prepare Payload
+      var payload = {
+        action: "azac_save_attendance",
+        nonce: window.azacData.nonce || window.azacData.sessionNonce,
+        class_id: window.azacData.classId,
+        type: "check-in",
+        session_date: window.azacData.sessionDate || window.azacData.today,
+        items: [
+          {
+            id: studentId,
+            status: isCheckin ? 1 : 0,
+            note: $row.find(".azac-note").val() || "",
+          },
+        ],
+      };
+
+      // Silent AJAX
+      $.post(window.azacData.ajaxUrl, payload, function (res) {
+        // Success: Silent Point-Update
+        if ($thisSwitch.length) {
+          $thisSwitch.removeClass("azac-loading");
+        }
+
+        if (!res || !res.success) {
+           // Logical failure
+           $cb.prop("checked", !isCheckin);
+           console.log("AJAX Logical Error:", res);
+        } else {
+          // Trigger event for external sync
+          $(document).trigger('azac_attendance_updated', [studentId, isCheckin]);
+          
+          // Sync chart immediately
+          var items = {};
+          $(".azac-status").each(function() {
+              var sid = $(this).data("student");
+              var sStatus = $(this).is(":checked") ? 1 : 0;
+              if(sid) items[sid] = { status: sStatus };
+          });
+          
+          if (window.AZAC_Att && typeof window.AZAC_Att.updateChart === "function") {
+            window.AZAC_Att.updateChart("check-in", items);
+          }
+
+          // Update stats text (Present/Absent/Pct)
+          var total = 0;
+          var present = 0;
+          $(".azac-status").each(function() {
+              total++;
+              if($(this).is(":checked")) present++;
+          });
+          var absent = total - present;
+          var pct = total > 0 ? Math.round((present / total) * 100) : 0;
+          
+          // Update generic stats containers if they exist
+          $(".azac-stats-present").text(present);
+          $(".azac-stats-absent").text(absent);
+          $(".azac-stats-pct").text(pct + "%");
+        }
+      }).fail(function (xhr, status, error) {
+        // Error: Revert
+        if ($thisSwitch.length) {
+          $thisSwitch.removeClass("azac-loading");
+        }
+        $cb.prop("checked", !isCheckin);
+        console.log("AJAX Error:", error);
+      });
+    });
+
+    // --- STUDENT ATTENDANCE LOGIC (MID-SESSION) ---
+    $(document).on("change", ".azac-status-mid", function (e) {
+      // 1. Isolation: Stop other scripts
+      e.stopImmediatePropagation();
+
+      var $cb = $(this);
+      var $row = $cb.closest("tr");
+      var $thisSwitch = $cb.closest(".azac-switch");
+      var studentId = $cb.data("student");
+      var isCheckin = $cb.is(":checked");
+
+      // Visual Feedback: Loading state
+      if ($thisSwitch.length) {
+        $thisSwitch.addClass("azac-loading");
+      }
+
+      // Prepare Payload
+      var payload = {
+        action: "azac_save_attendance",
+        nonce: window.azacData.nonce || window.azacData.sessionNonce,
+        class_id: window.azacData.classId,
+        type: "mid-session",
+        session_date: window.azacData.sessionDate || window.azacData.today,
+        items: [
+          {
+            id: studentId,
+            status: isCheckin ? 1 : 0,
+            note: $row.find(".azac-note-mid").val() || "",
+          },
+        ],
+      };
+
+      // Silent AJAX
+      $.post(window.azacData.ajaxUrl, payload, function (res) {
+        // Success: Silent Point-Update
+        if ($thisSwitch.length) {
+          $thisSwitch.removeClass("azac-loading");
+        }
+
+        if (!res || !res.success) {
+           // Logical failure
+           $cb.prop("checked", !isCheckin);
+           console.log("AJAX Logical Error:", res);
+        } else {
+          // Trigger event for external sync
+          $(document).trigger('azac_attendance_updated', [studentId, isCheckin, 'mid-session']);
+          
+          // Sync chart immediately
+          var items = {};
+          $(".azac-status-mid").each(function() {
+              var sid = $(this).data("student");
+              var sStatus = $(this).is(":checked") ? 1 : 0;
+              if(sid) items[sid] = { status: sStatus };
+          });
+          
+          if (window.AZAC_Att && typeof window.AZAC_Att.updateChart === "function") {
+            window.AZAC_Att.updateChart("mid-session", items);
+          }
+        }
+      }).fail(function (xhr, status, error) {
+        // Error: Revert
+        if ($thisSwitch.length) {
+          $thisSwitch.removeClass("azac-loading");
+        }
+        $cb.prop("checked", !isCheckin);
+        console.log("AJAX Error:", error);
+      });
+    });
+
+
   });
 })(jQuery);
