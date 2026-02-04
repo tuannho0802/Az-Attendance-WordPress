@@ -362,3 +362,179 @@
 .azac-tv-attendance-table tbody tr.is-today:hover {
   background-color: #fff59d !important; /* Slightly darker yellow on hover */
 }
+
+.azac-loading { opacity: 0.6; pointer-events: none; }
+
+/* =========================================
+   Mobile Responsive Strategy (Card Layout)
+   ========================================= */
+@media (max-width: 768px) {
+  /* 1. Table structure: Display block */
+  .azac-tv-attendance-table,
+  .azac-tv-attendance-table thead,
+  .azac-tv-attendance-table tbody,
+  .azac-tv-attendance-table th,
+  .azac-tv-attendance-table td,
+  .azac-tv-attendance-table tr {
+    display: block;
+  }
+
+  /* 2. Hide Header */
+  .azac-tv-attendance-table thead {
+    display: none;
+  }
+
+  /* 3. Card Styling for Rows */
+  .azac-tv-attendance-table tbody tr {
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 10px;
+    background: #fff;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+    /* Ensure clear separation */
+    display: block; 
+  }
+
+  /* 4. Cell Styling */
+  .azac-tv-attendance-table td {
+    text-align: right; /* Content to right */
+    padding: 8px 0;
+    border-bottom: 1px solid #f0f0f1;
+    position: relative;
+    min-height: 35px; /* Minimum height for alignment */
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* Remove border for last child */
+  .azac-tv-attendance-table td:last-child {
+    border-bottom: 0;
+  }
+
+  /* 5. Pseudo-element for Labels */
+  .azac-tv-attendance-table td::before {
+    content: attr(data-label);
+    font-weight: bold;
+    float: left;
+    text-transform: uppercase;
+    font-size: 12px;
+    color: #2c3338;
+    margin-right: 10px;
+    /* Alignment adjustments */
+    padding-top: 2px; 
+  }
+
+  /* Clear float if needed (though block context handles it usually) */
+  .azac-tv-attendance-table td::after {
+    content: "";
+    display: table;
+    clear: both;
+  }
+
+  /* 6. UI Optimization for Toggle & Input */
+  .azac-tv-attendance-table .azac-switch,
+  .azac-tv-attendance-table .azac-tv-switch {
+    float: right; /* Ensure switches stay right */
+  }
+
+  .azac-tv-attendance-table .azac-note {
+    width: 100%;
+    margin-top: 5px;
+    box-sizing: border-box;
+  }
+  
+  /* Reset Today Highlight border for Card view to look better */
+  .azac-tv-attendance-table tbody tr.is-today {
+    border-left: 4px solid #f1c40f;
+  }
+}
+
+/* =========================================
+   Admin Tables Responsive Card Layout (System-Wide)
+   ========================================= */
+@media (max-width: 768px) {
+    /* 1. Scope: All Admin Tables */
+    .wp-list-table, 
+    .azac-admin-table,
+    .azac-admin-teal .widefat {
+        display: block;
+        border: 0;
+    }
+
+    /* 2. Hide Header */
+    .wp-list-table thead, 
+    .azac-admin-table thead,
+    .azac-admin-teal .widefat thead {
+        display: none;
+    }
+
+    /* 3. Card Styling */
+    .wp-list-table tbody tr, 
+    .azac-admin-table tbody tr,
+    .azac-admin-teal .widefat tbody tr {
+        display: block;
+        margin-bottom: 15px;
+        background: #fff;
+        border-radius: 10px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        padding: 15px;
+        border: 1px solid #e5e5e5;
+    }
+
+    /* 4. Cell Styling & Data Labels */
+    .wp-list-table td, 
+    .azac-admin-table td,
+    .azac-admin-teal .widefat td {
+        display: block;
+        text-align: right;
+        padding: 8px 0;
+        border-bottom: 1px solid #eee;
+        min-height: 30px;
+    }
+    
+    .wp-list-table td:last-child, 
+    .azac-admin-table td:last-child,
+    .azac-admin-teal .widefat td:last-child {
+        border-bottom: none;
+    }
+
+    .wp-list-table td::before, 
+    .azac-admin-table td::before,
+    .azac-admin-teal .widefat td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        color: #555;
+        width: 40%;
+        display: inline-block;
+        text-align: left;
+    }
+
+    /* 5. Action Buttons Optimization */
+    .wp-list-table .row-actions, 
+    .azac-admin-table .row-actions {
+        display: flex;
+        gap: 10px;
+        margin-top: 10px;
+        justify-content: flex-end;
+        position: static;
+        visibility: visible;
+        opacity: 1;
+    }
+
+    /* 6. Input/Search Optimization */
+    .tablenav .actions select,
+    .tablenav .actions input,
+    .search-box input {
+        width: 100%;
+        margin-bottom: 10px;
+        display: block;
+    }
+    
+    .tablenav .actions {
+        display: block;
+        width: 100%;
+        margin-bottom: 10px;
+    }
+}

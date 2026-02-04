@@ -1997,7 +1997,7 @@ class AzAC_Admin_Pages
         echo '<div class="wrap azac-admin-teal"><h1>Quản lý Giảng viên</h1>';
 
         // Filter Form
-        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px">';
+        echo '<form method="get" style="margin-bottom:15px;display:flex;align-items:center;gap:10px; flex-wrap:wrap;">';
         echo '<input type="hidden" name="page" value="azac-manage-teachers">';
         echo '<label><strong>Lọc theo tháng:</strong> <input type="month" name="month" value="' . esc_attr($month) . '" class="regular-text" style="width:auto"></label>';
         echo '<input type="search" name="s" value="' . esc_attr($search) . '" placeholder="Tìm kiếm giảng viên..." class="regular-text" style="width:auto">';
