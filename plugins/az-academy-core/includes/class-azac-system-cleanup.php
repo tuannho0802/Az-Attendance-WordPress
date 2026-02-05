@@ -34,9 +34,6 @@ class AzAC_System_Cleanup
         add_action('wp_ajax_azac_get_logs', [__CLASS__, 'ajax_get_logs']);
         add_action('wp_ajax_azac_get_scan_data', [__CLASS__, 'ajax_get_scan_data']);
 
-        // Batch Scan Hooks
-        add_action('wp_ajax_azac_init_physical_scan', [__CLASS__, 'ajax_init_physical_scan']);
-        add_action('wp_ajax_azac_scan_physical_folder', [__CLASS__, 'ajax_scan_physical_folder']);
     }
 
     public static function maybe_migrate_logs()
@@ -273,30 +270,6 @@ class AzAC_System_Cleanup
             style="background:#fff; padding:20px; border:1px solid #c3c4c7; box-sizing:border-box;">
 
             <div class="azac-action-grid-layout">
-                <!-- Card 1: Physical Scan -->
-                <div class="azac-action-card">
-                    <div class="azac-action-icon dashicons dashicons-search"></div>
-                    <div class="azac-action-info">
-                        <h3>Quét dọn File vật lý</h3>
-                        <p>Quét toàn bộ thư mục uploads để tìm các file không được quản lý bởi Media Library. Giúp giải phóng
-                            dung lượng đĩa.</p>
-                    </div>
-                    <div class="azac-action-btn-wrapper">
-                        <button type="button" id="azac-start-physical-scan" class="button button-primary">Bắt đầu quét File
-                            rác</button>
-                    </div>
-                    <!-- Progress Bar for Scan -->
-                    <div id="azac-physical-scan-status" style="margin-top:10px; display:none;">
-                        <span class="spinner is-active" style="float:none; margin:0 5px;"></span>
-                        <span class="status-text">Đang chuẩn bị...</span>
-                        <span class="progress-percent" style="font-weight:bold;">0%</span>
-                    </div>
-                    <div id="azac-physical-scan-progress-bar"
-                        style="height:5px; background:#f0f0f1; margin-top:10px; display:none;">
-                        <div class="bar" style="height:100%; width:0%; background:#2271b1; transition: width 0.3s;"></div>
-                    </div>
-                </div>
-
                 <!-- Card 2: Clear Old Logs -->
                 <div class="azac-action-card">
                     <div class="azac-action-icon dashicons dashicons-calendar-alt"></div>
@@ -665,24 +638,7 @@ class AzAC_System_Cleanup
 
             ob_start();
             ?>
-            <div class="azac-scan-tools"
-                style="background:#fff; padding:15px; margin-bottom:15px; border:1px solid #ccd0d4; box-shadow:0 1px 1px rgba(0,0,0,0.04);">
-                <h3 style="margin-top:0;">Quét dọn File vật lý (Uploads)</h3>
-                <p class="description">Tính năng này sẽ quét toàn bộ thư mục uploads để tìm các file không được quản lý bởi
-                    WordPress Media Library. Quá trình có thể mất nhiều thời gian.</p>
-                <div style="margin-top:10px;">
-                    <button type="button" id="azac-start-physical-scan" class="button button-secondary">Bắt đầu quét File
-                        rác</button>
-                    <span id="azac-physical-scan-status" style="margin-left:10px; display:none;">
-                        <span class="spinner is-active" style="float:none; margin:0 5px;"></span>
-                        <span class="status-text">Đang chuẩn bị...</span>
-                        <span class="progress-percent" style="font-weight:bold;">0%</span>
-                    </span>
-                </div>
-                <div id="azac-physical-scan-progress-bar" style="height:5px; background:#f0f0f1; margin-top:10px; display:none;">
-                    <div class="bar" style="height:100%; width:0%; background:#2271b1; transition: width 0.3s;"></div>
-                </div>
-            </div>
+<!-- UI Removed -->
 
             <div class="azac-table-responsive" style="margin-left:0; padding:0; width:100%; box-sizing:border-box;">
                 <div class="tablenav top">
@@ -1176,172 +1132,6 @@ class AzAC_System_Cleanup
         return $items;
     }
 
-    private static function get_unregistered_files_in_folder($subfolder)
-    {
-        global $wpdb;
-        $upload_dir = wp_upload_dir();
-        $base_dir = $upload_dir['basedir'];
-
-        $target_dir = $subfolder ? $base_dir . '/' . $subfolder : $base_dir;
-
-        if (!is_dir($target_dir))
-            return [];
-
-        // Get files in this folder (non-recursive)
-        $files = scandir($target_dir);
-        $physical_files = [];
-        foreach ($files as $f) {
-            if ($f == '.' || $f == '..')
-                continue;
-            if (is_dir($target_dir . '/' . $f))
-                continue; // Skip subdirs
-
-            // Skip system files
-            if ($f == 'index.php' || $f == '.htaccess')
-                continue;
-
-            // Skip elementor/wc-logs if in root
-            if (!$subfolder && (strpos($f, 'elementor') !== false || strpos($f, 'wc-logs') !== false))
-                continue;
-
-            $rel_path = $subfolder ? $subfolder . '/' . $f : $f;
-            $physical_files[] = $rel_path;
-        }
-
-        if (empty($physical_files))
-            return [];
-
-        // Get DB files that match this folder
-        if ($subfolder) {
-            $like = $wpdb->esc_like($subfolder) . '/%';
-            $db_files = $wpdb->get_col($wpdb->prepare(
-                "SELECT meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value LIKE %s",
-                $like
-            ));
-        } else {
-            // Root folder: files that do NOT contain '/'
-            $db_files = $wpdb->get_col("SELECT meta_value FROM {$wpdb->postmeta} WHERE meta_key = '_wp_attached_file' AND meta_value NOT LIKE '%/%'");
-        }
-
-        // Compare
-        $orphans = [];
-        foreach ($physical_files as $p_file) {
-            // Check if in DB
-            if (!in_array($p_file, $db_files)) {
-                // Check thumbnail
-                if (!self::is_thumbnail_of_existing_file($p_file, $db_files)) {
-                    $orphans[] = (object) [
-                        'type' => 'physical_file',
-                        'post_title' => $p_file, // reused property
-                        'reason' => 'File vật lý không có trong DB',
-                        'post_date' => date("Y-m-d H:i:s", filemtime($target_dir . '/' . basename($p_file))),
-                        'size_formatted' => size_format(filesize($target_dir . '/' . basename($p_file))),
-                        'image_url' => $upload_dir['baseurl'] . '/' . $p_file,
-                        'raw_id' => 'phys_' . base64_encode($p_file)
-                    ];
-                }
-            }
-        }
-        return $orphans;
-    }
-
-    public static function ajax_init_physical_scan()
-    {
-        ob_start();
-        try {
-            check_ajax_referer('azac_system_cleanup_nonce', 'nonce');
-            if (!current_user_can('manage_options'))
-                throw new Exception('Forbidden');
-
-            $upload_dir = wp_upload_dir();
-            $base = $upload_dir['basedir'];
-            $folders = [];
-
-            // Add root (empty string)
-            $folders[] = '';
-
-            // Add Years/Months
-            $years = glob($base . '/*', GLOB_ONLYDIR);
-            if ($years) {
-                foreach ($years as $year_path) {
-                    $year = basename($year_path);
-                    if (!is_numeric($year))
-                        continue;
-
-                    $months = glob($year_path . '/*', GLOB_ONLYDIR);
-                    if ($months) {
-                        foreach ($months as $month_path) {
-                            $month = basename($month_path);
-                            if (!is_numeric($month))
-                                continue;
-                            $folders[] = $year . '/' . $month;
-                        }
-                    }
-                }
-            }
-
-            ob_clean();
-            wp_send_json_success(['folders' => $folders, 'total' => count($folders)]);
-        } catch (Exception $e) {
-            ob_clean();
-            wp_send_json_error($e->getMessage());
-        }
-    }
-
-    public static function ajax_scan_physical_folder()
-    {
-        ob_start();
-        try {
-            check_ajax_referer('azac_system_cleanup_nonce', 'nonce');
-            if (!current_user_can('manage_options'))
-                throw new Exception('Forbidden');
-
-            $folder = isset($_POST['folder']) ? sanitize_text_field($_POST['folder']) : '';
-            $orphans = self::get_unregistered_files_in_folder($folder);
-
-            // Format for JS
-            $formatted = [];
-            foreach ($orphans as $item) {
-                $preview = '';
-                if (isset($item->image_url) && $item->image_url) {
-                    $ext = strtolower(pathinfo($item->image_url, PATHINFO_EXTENSION));
-                    if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-                        $preview = '<br><img src="' . esc_url($item->image_url) . '" style="max-width:80px; height:auto; border:1px solid #ddd; margin-top:5px; display:block;">';
-                    }
-                }
-
-                $formatted[] = [
-                    'type' => 'physical_file',
-                    'desc' => 'File: <strong>' . esc_html($item->post_title) . '</strong><br><small>' . $item->reason . '</small>' . $preview,
-                    'date' => $item->post_date,
-                    'size' => $item->size_formatted,
-                    'raw_id' => $item->raw_id
-                ];
-            }
-
-            ob_clean();
-            wp_send_json_success(['orphans' => $formatted]);
-        } catch (Exception $e) {
-            ob_clean();
-            wp_send_json_error($e->getMessage());
-        }
-    }
-
-    // Hàm phụ để kiểm tra xem file có phải là thumbnail của một ảnh đang dùng không 
-    private static function is_thumbnail_of_existing_file($file_path, $all_db_files)
-    {
-        // Regex tìm pattern thumbnail của WP (ví dụ: image-150x150.jpg) 
-        if (preg_match('/-(?:\d+x\d+)\.(?:jpg|jpeg|png|gif|webp)$/i', $file_path)) {
-            $original_path = preg_replace('/-(?:\d+x\d+)\./i', '.', $file_path);
-            // Check if original path exists in DB files
-            // Note: $all_db_files contains relative paths like '2024/01/image.jpg'
-            if (in_array($original_path, $all_db_files)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     private static function get_orphaned_attendance()
     {
         global $wpdb;
@@ -1387,10 +1177,8 @@ class AzAC_System_Cleanup
                 throw new Exception('Bạn không có quyền thực hiện hành động này.');
             }
 
+            $mode = isset($_POST['mode']) ? sanitize_text_field($_POST['mode']) : '';
             $items = isset($_POST['items']) ? $_POST['items'] : [];
-            if (empty($items) || !is_array($items)) {
-                throw new Exception('Không có dữ liệu để xử lý.');
-            }
 
             global $wpdb;
             $count_media = 0;
@@ -1399,17 +1187,85 @@ class AzAC_System_Cleanup
             $count_teaching = 0;
             $count_meta = 0;
             $count_physical = 0;
+            $freed_bytes = 0;
+
+            if ($mode === 'clean_db') {
+                $now = time();
+                $options_table = $wpdb->options;
+                $posts_table = $wpdb->posts;
+                $postmeta_table = $wpdb->postmeta;
+
+                $expired_transients = $wpdb->query("
+                    DELETE o FROM $options_table o
+                    LEFT JOIN $options_table t ON t.option_name = REPLACE(o.option_name, '_transient_', '_transient_timeout_')
+                    WHERE o.option_name LIKE '_transient_%'
+                      AND o.option_name NOT LIKE '_transient_timeout_%'
+                      AND t.option_value IS NOT NULL
+                      AND CAST(t.option_value AS UNSIGNED) < $now
+                ");
+                $expired_site_transients = $wpdb->query("
+                    DELETE o FROM $options_table o
+                    LEFT JOIN $options_table t ON t.option_name = REPLACE(o.option_name, '_site_transient_', '_site_transient_timeout_')
+                    WHERE o.option_name LIKE '_site_transient_%'
+                      AND o.option_name NOT LIKE '_site_transient_timeout_%'
+                      AND t.option_value IS NOT NULL
+                      AND CAST(t.option_value AS UNSIGNED) < $now
+                ");
+                $deleted_revisions = $wpdb->query("
+                    DELETE FROM $posts_table
+                    WHERE post_type = 'revision'
+                      AND post_date < DATE_SUB(NOW(), INTERVAL 30 DAY)
+                ");
+                $deleted_orphan_meta = $wpdb->query("
+                    DELETE pm FROM $postmeta_table pm
+                    LEFT JOIN $posts_table p ON pm.post_id = p.ID
+                    WHERE p.ID IS NULL
+                ");
+
+                ob_clean();
+                wp_send_json_success([
+                    'message' => 'Đã dọn dẹp Database.',
+                    'db' => [
+                        'expired_transients' => (int) $expired_transients,
+                        'expired_site_transients' => (int) $expired_site_transients,
+                        'deleted_revisions' => (int) $deleted_revisions,
+                        'deleted_orphan_meta' => (int) $deleted_orphan_meta,
+                    ],
+                    'freed_bytes' => 0,
+                ]);
+                return;
+            }
+
+            if (empty($items) || !is_array($items)) {
+                throw new Exception('Không có dữ liệu để xử lý.');
+            }
 
             foreach ($items as $item) {
-                // format: "type|id"
                 $parts = explode('|', $item);
-                if (count($parts) !== 2)
+                if (count($parts) !== 2) {
                     continue;
+                }
 
                 $type = $parts[0];
                 $id = $parts[1];
 
                 if ($type === 'media') {
+                    $file_path = get_attached_file((int) $id);
+                    if ($file_path && file_exists($file_path)) {
+                        $freed_bytes += (int) filesize($file_path);
+                        $metadata = wp_get_attachment_metadata((int) $id);
+                        if ($metadata && isset($metadata['sizes']) && is_array($metadata['sizes'])) {
+                            $dir = dirname($file_path);
+                            foreach ($metadata['sizes'] as $size_info) {
+                                if (!empty($size_info['file'])) {
+                                    $thumb_path = wp_normalize_path($dir . '/' . $size_info['file']);
+                                    if (file_exists($thumb_path)) {
+                                        $freed_bytes += (int) filesize($thumb_path);
+                                    }
+                                }
+                            }
+                        }
+                    }
                     if (wp_delete_attachment((int) $id, true)) {
                         $count_media++;
                     }
@@ -1423,26 +1279,32 @@ class AzAC_System_Cleanup
                     $upload_dir = wp_upload_dir();
                     $full_path = wp_normalize_path($upload_dir['basedir'] . '/' . $relative_path);
 
-                    // Security check: ensure path is within uploads directory
                     if (strpos($full_path, wp_normalize_path($upload_dir['basedir'])) === 0 && file_exists($full_path)) {
-                        @unlink($full_path);
-                        $count_physical++;
+                        $freed_bytes += (int) filesize($full_path);
+                        if (function_exists('wp_delete_file')) {
+                            $result = wp_delete_file($full_path);
+                            if ($result !== false) {
+                                $count_physical++;
+                            }
+                        } else {
+                            @unlink($full_path);
+                            $count_physical++;
+                        }
                     }
                 } elseif ($type === 'review') {
                     $deleted_review = false;
-                    // Try az_reviews
                     $t1 = $wpdb->prefix . 'az_reviews';
                     if ($wpdb->get_var("SHOW TABLES LIKE '$t1'") == $t1) {
-                        if ($wpdb->delete($t1, ['id' => $id], ['%d']))
+                        if ($wpdb->delete($t1, ['id' => $id], ['%d'])) {
                             $deleted_review = true;
+                        }
                     }
-                    // Try az_feedback
                     $t2 = $wpdb->prefix . 'az_feedback';
                     if ($wpdb->get_var("SHOW TABLES LIKE '$t2'") == $t2) {
-                        if ($wpdb->delete($t2, ['id' => $id], ['%d']))
+                        if ($wpdb->delete($t2, ['id' => $id], ['%d'])) {
                             $deleted_review = true;
+                        }
                     }
-
                     if ($deleted_review) {
                         $count_reviews++;
                     }
@@ -1474,7 +1336,8 @@ class AzAC_System_Cleanup
                     'attendance' => $count_attendance,
                     'reviews' => $count_reviews,
                     'meta' => $count_meta
-                ]
+                ],
+                'freed_bytes' => (int) $freed_bytes
             ]);
 
         } catch (Exception $e) {

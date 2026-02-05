@@ -394,197 +394,7 @@
       },
     );
     // Fixed syntax error: removed garbage code
-
-    // --- PHYSICAL FILE SCAN (BATCH PROCESSING) ---
-    $(document).on(
-      "click",
-      "#azac-start-physical-scan",
-      function (e) {
-        e.preventDefault();
-
-        var $btn = $(this);
-        var $status = $(
-          "#azac-physical-scan-status",
-        );
-        var $bar = $(
-          "#azac-physical-scan-progress-bar",
-        );
-        var $barInner = $bar.find(".bar");
-        var $tbody = $("#azac-system-tbody");
-
-        $btn.prop("disabled", true);
-        $status.show();
-        $status
-          .find(".status-text")
-          .text("Đang khởi tạo...");
-        $bar.show();
-        $barInner.css("width", "0%");
-
-        // Step 1: Init (Get Folders)
-        $.post(
-          AZAC_SYSTEM.ajaxUrl,
-          {
-            action: "azac_init_physical_scan",
-            nonce: AZAC_SYSTEM.nonce,
-          },
-          function (res) {
-            if (res.success) {
-              var folders = res.data.folders;
-              var total = res.data.total;
-              processFolders(folders, 0, total);
-            } else {
-              alert(
-                "Lỗi khởi tạo: " + res.data,
-              );
-              resetScanUI();
-            }
-          },
-        ).fail(function () {
-          alert(
-            "Lỗi kết nối khi khởi tạo quét.",
-          );
-          resetScanUI();
-        });
-
-        function processFolders(
-          folders,
-          index,
-          total,
-        ) {
-          if (index >= total) {
-            // Done
-            $status
-              .find(".spinner")
-              .removeClass("is-active");
-            $status
-              .find(".status-text")
-              .text("Hoàn tất!");
-            $status
-              .find(".progress-percent")
-              .text("100%");
-            $barInner.css("width", "100%");
-            $btn
-              .prop("disabled", false)
-              .text("Quét lại");
-
-            // Check if empty results
-            if (
-              $tbody.find("tr").length === 0 ||
-              ($tbody.find("tr").length === 1 &&
-                $tbody.find("td[colspan]")
-                  .length > 0)
-            ) {
-              // Do nothing, maybe show message?
-              // If we found items, they are appended.
-            }
-            return;
-          }
-
-          var folder = folders[index];
-          var percent = Math.round(
-            (index / total) * 100,
-          );
-          $status
-            .find(".status-text")
-            .text(
-              "Đang quét: " +
-                (folder ? folder : "Root") +
-                "...",
-            );
-          $status
-            .find(".progress-percent")
-            .text(percent + "%");
-          $barInner.css("width", percent + "%");
-
-          $.post(
-            AZAC_SYSTEM.ajaxUrl,
-            {
-              action:
-                "azac_scan_physical_folder",
-              nonce: AZAC_SYSTEM.nonce,
-              folder: folder,
-            },
-            function (res) {
-              if (res.success) {
-                var orphans = res.data.orphans;
-                if (
-                  orphans &&
-                  orphans.length > 0
-                ) {
-                  // Remove "System Clean" message if exists
-                  if (
-                    $tbody.find("td[colspan]")
-                      .length > 0
-                  ) {
-                    $tbody.empty();
-                  }
-
-                  // Append rows
-                  orphans.forEach(
-                    function (item) {
-                      var rowHtml = `
-                                  <tr data-id="${item.raw_id}" data-type="${item.type}" style="display:none;">
-                                      <td class="check-column" data-label="Chọn" style="text-align:center; vertical-align:middle;">
-                                          <input type="checkbox" class="cb-select-system" value="${item.type}|${item.raw_id}">
-                                      </td>
-                                      <td data-label="Loại dữ liệu"><span style="background:#666; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">FILE RÁC</span></td>
-                                      <td data-label="Dung lượng">${item.size}</td>
-                                      <td data-label="Mô tả chi tiết">${item.desc}</td>
-                                      <td data-label="Ngày phát hiện">${item.date}</td>
-                                      <td data-label="Hành động" style="text-align:right;">
-                                          <button type="button" class="button button-small azac-delete-system-item" data-id="${item.raw_id}" data-type="${item.type}" style="color:#a00; border-color:#a00;">Xóa</button>
-                                      </td>
-                                  </tr>
-                              `;
-                      var $row = $(rowHtml);
-                      $tbody.append($row);
-                      $row.fadeIn();
-                    },
-                  );
-                }
-
-                // Next
-                processFolders(
-                  folders,
-                  index + 1,
-                  total,
-                );
-              } else {
-                console.error(
-                  "Scan error for folder " +
-                    folder +
-                    ": " +
-                    res.data,
-                );
-                // Continue anyway
-                processFolders(
-                  folders,
-                  index + 1,
-                  total,
-                );
-              }
-            },
-          ).fail(function () {
-            console.error(
-              "Network error for folder " +
-                folder,
-            );
-            // Continue anyway
-            processFolders(
-              folders,
-              index + 1,
-              total,
-            );
-          });
-        }
-
-        function resetScanUI() {
-          $btn.prop("disabled", false);
-          $status.hide();
-          $bar.hide();
-        }
-      },
-    );
+ 
 
     // --- PAGINATION CLICK HANDLERS ---
     $(document).on(
@@ -671,6 +481,20 @@
           },
           function (res) {
             if (res.success) {
+              if (res.data && res.data.counts) {
+                var totalDeleted =
+                  (res.data.counts.media || 0) +
+                  (res.data.counts.physical || 0) +
+                  (res.data.counts.attendance || 0) +
+                  (res.data.counts.reviews || 0) +
+                  (res.data.counts.meta || 0);
+                if (typeof res.data.freed_bytes === "number") {
+                  var mb = (res.data.freed_bytes / (1024 * 1024)).toFixed(2);
+                  $("#azac-scan-total-count").text(
+                    "Đã xóa " + totalDeleted + " mục, giải phóng " + mb + " MB",
+                  );
+                }
+              }
               currentChunk++;
               processNextChunk();
             } else {
