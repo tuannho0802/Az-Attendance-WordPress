@@ -170,29 +170,36 @@
       ".azac-delete-system-item",
       function (e) {
         e.preventDefault();
-        if (!confirm(AZAC_SYSTEM.confirmDelete))
-          return;
+        var $btn = $(this);
 
-        var id = $(this).data("id");
-        var type = $(this).data("type");
-        var $row = $(this).closest("tr");
-        var items = [type + "|" + id];
+        azacConfirm(
+          "Xác nhận xóa",
+          AZAC_SYSTEM.confirmDelete,
+          { isDanger: true },
+        ).then(function (confirmed) {
+          if (!confirmed) return;
 
-        performCleanup(items, function () {
-          $row.fadeOut(300, function () {
-            $(this).remove();
+          var id = $btn.data("id");
+          var type = $btn.data("type");
+          var $row = $btn.closest("tr");
+          var items = [type + "|" + id];
+
+          performCleanup(items, function () {
+            $row.fadeOut(300, function () {
+              $(this).remove();
+            });
+            setTimeout(function () {
+              if (
+                $("#azac-system-tbody tr")
+                  .length === 0
+              ) {
+                loadScanData(
+                  AZAC_SYSTEM.currentScanPage ||
+                    1,
+                );
+              }
+            }, 500);
           });
-          setTimeout(function () {
-            if (
-              $("#azac-system-tbody tr")
-                .length === 0
-            ) {
-              loadScanData(
-                AZAC_SYSTEM.currentScanPage ||
-                  1,
-              );
-            }
-          }, 500);
         });
       },
     );
@@ -203,6 +210,7 @@
       "#azac-do-system-bulk",
       function (e) {
         e.preventDefault();
+        var $btn = $(this);
         var action = $(
           "#azac-bulk-action-system",
         ).val();
@@ -222,28 +230,29 @@
           return;
         }
 
-        if (
-          !confirm(
-            AZAC_SYSTEM.confirmBulkDelete,
-          )
-        )
-          return;
+        azacConfirm(
+          "Xác nhận dọn dẹp",
+          AZAC_SYSTEM.confirmBulkDelete,
+          { isDanger: true },
+        ).then(function (confirmed) {
+          if (!confirmed) return;
 
-        var $btn = $(this);
-        $btn.prop("disabled", true);
+          $btn.prop("disabled", true);
 
-        performCleanup(
-          items,
-          function () {
-            $btn.prop("disabled", false);
-            loadScanData(
-              AZAC_SYSTEM.currentScanPage || 1,
-            );
-          },
-          function () {
-            $btn.prop("disabled", false);
-          },
-        );
+          performCleanup(
+            items,
+            function () {
+              $btn.prop("disabled", false);
+              loadScanData(
+                AZAC_SYSTEM.currentScanPage ||
+                  1,
+              );
+            },
+            function () {
+              $btn.prop("disabled", false);
+            },
+          );
+        });
       },
     );
 
@@ -253,6 +262,7 @@
       "#azac-log-do-bulk",
       function (e) {
         e.preventDefault();
+        var $btn = $(this);
         var action = $(
           "#azac-log-bulk-action",
         ).val();
@@ -273,41 +283,41 @@
           }
         }
 
-        if (
-          !confirm(
-            "Bạn có chắc chắn muốn thực hiện hành động này?",
-          )
-        )
-          return;
+        azacConfirm(
+          "Xác nhận xử lý nhật ký",
+          "Bạn có chắc chắn muốn thực hiện hành động này?",
+          { isDanger: true },
+        ).then(function (confirmed) {
+          if (!confirmed) return;
 
-        var $btn = $(this);
-        $btn
-          .prop("disabled", true)
-          .text("Đang xử lý...");
+          $btn
+            .prop("disabled", true)
+            .text("Đang xử lý...");
 
-        $.post(
-          AZAC_SYSTEM.ajaxUrl,
-          {
-            action: "azac_cleanup_logs",
-            nonce: AZAC_SYSTEM.nonce, // Using system nonce for simplicity, but ideally should use specific nonce
-            mode: action,
-            items: items,
-          },
-          function (res) {
-            $btn
-              .prop("disabled", false)
-              .text("Áp dụng");
-            if (res.success) {
-              alert("Thành công!");
-              loadLogs(1);
-            } else {
-              alert(
-                "Lỗi: " +
-                  (res.data || "Unknown"),
-              );
-            }
-          },
-        );
+          $.post(
+            AZAC_SYSTEM.ajaxUrl,
+            {
+              action: "azac_cleanup_logs",
+              nonce: AZAC_SYSTEM.nonce,
+              mode: action,
+              items: items,
+            },
+            function (res) {
+              $btn
+                .prop("disabled", false)
+                .text("Áp dụng");
+              if (res.success) {
+                alert("Thành công!");
+                loadLogs(1);
+              } else {
+                alert(
+                  "Lỗi: " +
+                    (res.data || "Unknown"),
+                );
+              }
+            },
+          );
+        });
       },
     );
 
@@ -317,43 +327,45 @@
       "#azac-cleanup-logs-old",
       function (e) {
         e.preventDefault();
-        if (
-          !confirm(
-            "Bạn có chắc chắn muốn xóa các nhật ký cũ hơn 30 ngày?",
-          )
-        )
-          return;
-
         var $btn = $(this);
-        $btn
-          .prop("disabled", true)
-          .text("Đang xử lý...");
 
-        $.post(
-          AZAC_SYSTEM.ajaxUrl,
-          {
-            action: "azac_cleanup_logs",
-            nonce: AZAC_SYSTEM.nonce,
-            mode: "older_30",
-          },
-          function (res) {
-            $btn
-              .prop("disabled", false)
-              .text("Xóa log > 30 ngày");
-            if (res.success) {
-              alert(
-                "Đã xóa nhật ký cũ thành công!",
-              );
-              // Reload logs if on log tab, but here we are on scan tab.
-              // Maybe nothing visual to update on this tab except success msg
-            } else {
-              alert(
-                "Lỗi: " +
-                  (res.data || "Unknown"),
-              );
-            }
-          },
-        );
+        azacConfirm(
+          "Xác nhận xóa nhật ký cũ",
+          "Bạn có chắc chắn muốn xóa các nhật ký cũ hơn 30 ngày?",
+          { isDanger: true },
+        ).then(function (confirmed) {
+          if (!confirmed) return;
+
+          $btn
+            .prop("disabled", true)
+            .text("Đang xử lý...");
+
+          $.post(
+            AZAC_SYSTEM.ajaxUrl,
+            {
+              action: "azac_cleanup_logs",
+              nonce: AZAC_SYSTEM.nonce,
+              mode: "older_30",
+            },
+            function (res) {
+              $btn
+                .prop("disabled", false)
+                .text("Xóa log > 30 ngày");
+              if (res.success) {
+                alert(
+                  "Đã xóa nhật ký cũ thành công!",
+                );
+                // Reload logs if on log tab, but here we are on scan tab.
+                // Maybe nothing visual to update on this tab except success msg
+              } else {
+                alert(
+                  "Lỗi: " +
+                    (res.data || "Unknown"),
+                );
+              }
+            },
+          );
+        });
       },
     );
 
@@ -362,35 +374,43 @@
       "#azac-cleanup-logs-all",
       function (e) {
         e.preventDefault();
-        if (!confirm(AZAC_SYSTEM.confirmDelete))
-          return;
-
         var $btn = $(this);
-        $btn
-          .prop("disabled", true)
-          .text("Đang xử lý...");
 
-        $.post(
-          AZAC_SYSTEM.ajaxUrl,
-          {
-            action: "azac_cleanup_logs",
-            nonce: AZAC_SYSTEM.nonce,
-            mode: "delete_all",
-          },
-          function (res) {
-            $btn
-              .prop("disabled", false)
-              .text("Xóa toàn bộ");
-            if (res.success) {
-              alert("Đã xóa toàn bộ nhật ký!");
-            } else {
-              alert(
-                "Lỗi: " +
-                  (res.data || "Unknown"),
-              );
-            }
-          },
-        );
+        azacConfirm(
+          "Xác nhận xóa toàn bộ nhật ký",
+          AZAC_SYSTEM.confirmDelete,
+          { isDanger: true },
+        ).then(function (confirmed) {
+          if (!confirmed) return;
+
+          $btn
+            .prop("disabled", true)
+            .text("Đang xử lý...");
+
+          $.post(
+            AZAC_SYSTEM.ajaxUrl,
+            {
+              action: "azac_cleanup_logs",
+              nonce: AZAC_SYSTEM.nonce,
+              mode: "delete_all",
+            },
+            function (res) {
+              $btn
+                .prop("disabled", false)
+                .text("Xóa toàn bộ");
+              if (res.success) {
+                alert(
+                  "Đã xóa toàn bộ nhật ký!",
+                );
+              } else {
+                alert(
+                  "Lỗi: " +
+                    (res.data || "Unknown"),
+                );
+              }
+            },
+          );
+        });
       },
     );
     // Fixed syntax error: removed garbage code
