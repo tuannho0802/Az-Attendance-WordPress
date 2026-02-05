@@ -825,7 +825,7 @@ class AzAC_Admin_Pages
         echo '</form>';
         if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {
             $export_url = admin_url('admin.php?page=azac-students-list&action=export_students_xlsx&_wpnonce=' . wp_create_nonce('export_students_nonce'));
-            echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Danh sách Học Viên</a>';
+            echo '<a href="' . esc_url($export_url) . '" class="button button-secondary" style="margin-bottom:15px; display:inline-block;"><span class="dashicons dashicons-download" style="line-height:1.3"></span> Xuất Danh sách Học Viên</a>';
         }
 
         // Allowed Users Logic (Teacher Restriction)
@@ -1168,7 +1168,7 @@ class AzAC_Admin_Pages
 
                 // Actions
                 echo '<td data-label="Hành động">';
-                echo '<div class="azac-actions-buttons-student">';
+                echo '<div class="azac-actions-buttons-student" style="display:flex;gap:5px;">';
                 echo '<button type="button" class="button button-small azac-view-student-btn" data-student="' . $modal_data . '"><span class="dashicons dashicons-visibility" style="line-height:1.3"></span></button>';
 
                 if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {

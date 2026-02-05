@@ -7,6 +7,7 @@ class AzAC_Admin_Stats
     public static function register()
     {
         add_action('wp_ajax_azac_get_reviews', [__CLASS__, 'ajax_get_reviews']);
+        add_action('wp_ajax_azac_student_stats', [__CLASS__, 'ajax_student_stats']);
     }
     public static function get_attendance_stats($class_id)
     {

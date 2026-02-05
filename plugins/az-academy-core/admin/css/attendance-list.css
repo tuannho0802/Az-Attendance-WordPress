@@ -253,9 +253,3 @@ table.wp-list-table {
     table-layout: auto !important;
     box-sizing: border-box !important;
 }
-
-/* Class Column Padding */
-.wp-list-table td:nth-child(2),
-.wp-list-table th:nth-child(2) {
-    padding-left: 10px !important;
-}
