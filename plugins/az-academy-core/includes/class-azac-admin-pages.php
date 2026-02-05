@@ -596,7 +596,7 @@ class AzAC_Admin_Pages
             echo '</tr>';
             echo '</thead>';
             echo '<tbody id="azac-sessions-table-body">';
-            echo '<tr><td colspan="7">Đang tải danh sách buổi học...</td></tr>';
+            echo '<tr><td data-label="Lớp" colspan="7" style="text-align:center;">Đang tải danh sách buổi học...</td></tr>';
             echo '</tbody>';
             echo '</table>';
             echo '</div>';

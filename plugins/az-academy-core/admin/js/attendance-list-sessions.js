@@ -790,12 +790,21 @@
           // Thay đổi logic format giờ sang 12h AM/PM
           var timeStr = "";
           if (s.time) {
-            var timeParts = s.time.split(':');
-            var hours = parseInt(timeParts[0], 10);
+            var timeParts = s.time.split(":");
+            var hours = parseInt(
+              timeParts[0],
+              10,
+            );
             var minutes = timeParts[1];
-            var ampm = hours >= 12 ? 'PM' : 'AM';
+            var ampm =
+              hours >= 12 ? "PM" : "AM";
             hours = hours % 12 || 12;
-            timeStr = hours + ':' + minutes + ' ' + ampm;
+            timeStr =
+              hours +
+              ":" +
+              minutes +
+              " " +
+              ampm;
           }
 
           // Calculate Date Status
@@ -867,7 +876,7 @@
             actionButtons +=
               '<a href="' +
               editUrl +
-              '" class="button button-small" style="display:inline-flex;align-items:center;gap:3px">' +
+              '" class="button button-small azac-btn-with-icon">' +
               '<span class="dashicons ' +
               btnIcon +
               '" style="font-size:14px;width:14px;height:14px;padding-top:2px;"></span> ' +
@@ -918,15 +927,6 @@
             "border-top: 3px solid " +
             color +
             ";";
-
-          // Mobile Badge (Append to Session Number/Time)
-          var mobileBadge =
-            '<div class="azac-mobile-badges"><span class="azac-badge-class" style="background-color: ' +
-            color +
-            ' !important;">' +
-            s.class_title +
-            "</span></div>";
-
           return [
             '<tr class="' +
               rowClass +
@@ -946,7 +946,6 @@
             '<td data-label="Buổi" style="text-align:center;"><span style="background:#e9ecef;color:#495057;padding:2px 8px;border-radius:10px;font-size:12px;font-weight:bold;">#' +
               s.session_number +
               "</span>" +
-              mobileBadge +
               "</td>",
             '<td data-label="Thời gian">' +
               (dateStr
@@ -970,7 +969,7 @@
             '<td data-label="Trạng thái">' +
               statusBadge +
               "</td>",
-            '<td class="azac-col-action" data-label="Hành động"><div style="display:flex; gap:8px; align-items:center;">',
+            '<td class="azac-col-action" data-label="Hành động"><div class="azac-action-buttons">',
             actionButtons,
             "</div></td>",
             "</tr>",

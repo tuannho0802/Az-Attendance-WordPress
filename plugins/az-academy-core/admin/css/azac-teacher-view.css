@@ -368,7 +368,7 @@
 /* =========================================
    Mobile Responsive Strategy (Card Layout)
    ========================================= */
-@media (max-width: 768px) {
+@media screen and (max-width: 782px) {
   /* 1. Table structure: Display block */
   .azac-tv-attendance-table,
   .azac-tv-attendance-table thead,
@@ -454,7 +454,7 @@
 /* =========================================
    Admin Tables Responsive Card Layout (System-Wide)
    ========================================= */
-@media (max-width: 768px) {
+@media screen and (max-width: 782px) {
     /* 1. Scope: All Admin Tables */
     .wp-list-table, 
     .azac-admin-table,
@@ -503,12 +503,15 @@
     .wp-list-table td::before, 
     .azac-admin-table td::before,
     .azac-admin-teal .widefat td::before {
-        content: attr(data-label);
-        font-weight: 700;
-        color: #555;
-        width: 40%;
-        display: inline-block;
-        text-align: left;
+        content: attr(data-label) !important;
+        font-weight: 700 !important;
+        color: #555 !important;
+        flex: 0 0 45% !important;
+        display: inline-flex !important;
+        text-align: left !important;
+        text-transform: uppercase !important;
+        font-size: 11px !important;
+        align-items: center !important;
     }
 
     /* 5. Action Buttons Optimization */

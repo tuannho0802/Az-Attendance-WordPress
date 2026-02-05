@@ -3,30 +3,6 @@
   --az-dark: #12243b;
 }
 
-/* --- GRID LAYOUT (SUPER SPECIFICITY) --- */
-@media screen and (min-width: 783px) {
-  /* Ép container chia cột đúng tỷ lệ */
-  html
-    body.wp-admin
-    .azac-admin-teal
-    #azac-tab-stats
-    #azac-stats-grid,
-  html
-    body.wp-admin
-    .azac-admin-teal
-    #azac-tab-classes
-    .azac-grid {
-    display: grid !important;
-    grid-template-columns: repeat(
-      auto-fit,
-      minmax(280px, 1fr)
-    ) !important;
-    gap: 20px !important;
-    width: 100% !important;
-    flex-direction: unset !important;
-    align-items: stretch !important;
-  }
-
   /* NHIỆM VỤ CỐT LÕI: Ép Card phải thu nhỏ */
   html
     body.wp-admin
@@ -55,7 +31,7 @@
     width: auto !important;
     height: auto !important;
   }
-}
+
 /* Teal brand for admin management pages */
 .azac-admin-teal
   .widefat.fixed.striped
@@ -73,6 +49,9 @@
 }
 .azac-admin-teal .button {
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .azac-admin-teal .button:active {
   transform: scale(0.96);
@@ -543,21 +522,6 @@ body.folded #wpfooter {
 #wpbody-content {
   padding-bottom: 50px;
 }
-@media screen and (max-width: 960px) {
-  #wpfooter {
-    margin-left: 36px;
-  }
-}
-@media screen and (max-width: 782px) {
-  #wpfooter {
-    margin-left: 0;
-    background: transparent;
-    border-top: none;
-  }
-  #wpbody-content {
-    padding-bottom: 20px;
-  }
-}
 
 /* Highlight chung cho cả Desktop và Mobile */
 .widefat tr.is-today,
@@ -569,12 +533,6 @@ body.folded #wpfooter {
 /* Mobile Badges */
 .azac-mobile-badges {
   display: none;
-}
-@media (max-width: 768px) {
-  .azac-mobile-badges {
-    display: block;
-    margin-top: 4px;
-  }
 }
 
 /* Badge tên lớp học đặc trưng */
@@ -608,224 +566,6 @@ body.folded #wpfooter {
   white-space: nowrap;
 }
 
-/* --- COMPACT MOBILE UI & SPACING OPTIMIZATION --- */
-@media screen and (max-width: 768px) {
-  /* 1. CSS Spacing & Size */
-  .azac-card,
-  .azac-container {
-    padding: 10px !important;
-    margin-bottom: 10px !important;
-  }
-  .azac-stats,
-  .azac-grid {
-    gap: 10px !important;
-    margin-bottom: 10px !important;
-  }
-  .wrap {
-    margin-right: 5px !important;
-    margin-left: 0 !important;
-  }
-
-  /* Font Size Reduction */
-  h1,
-  h2,
-  h3,
-  .azac-stat-title {
-    font-size: 16px !important;
-    line-height: 1.3 !important;
-  }
-  .azac-info-item .az-info-label {
-    font-size: 12px !important;
-  }
-  .azac-info-item .az-info-value {
-    font-size: 13px !important;
-  }
-  .widefat td,
-  .widefat th,
-  .widefat {
-    font-size: 13px !important;
-  }
-
-  /* 2. Responsive Grid (Forced 1 Column) */
-  .azac-stats,
-  .azac-grid,
-  #azac-stats-grid {
-    grid-template-columns: 1fr !important;
-    display: grid !important;
-  }
-
-  /* 3. Chart & Table Constraints */
-  .azac-chart-box canvas,
-  .azac-chart-box {
-    max-height: 250px !important;
-  }
-  .azac-chart-row {
-    flex-direction: column !important;
-  }
-
-  /* Negative margin for table wrapper to utilize full width */
-  .azac-table-wrapper {
-    margin: 0 -10px !important;
-    width: calc(100% + 20px) !important;
-    border-radius: 0 !important;
-  }
-  /* Remove borders on mobile for cleaner look in wrapper */
-  .azac-table-wrapper table.widefat {
-    box-shadow: none !important;
-    border: none !important;
-  }
-
-  /* 4. Remove elements (Hide less important columns) */
-  /* Hide STT (Sequence Number) on mobile as it takes vertical space in card view */
-  .widefat td[data-label="STT"] {
-    display: none !important;
-  }
-
-  /* Compact the "Ghi chú" input */
-  .widefat
-    td[data-label="Ghi chú"]
-    input.azac-note,
-  .widefat
-    td[data-label="Ghi chú"]
-    input.azac-note-mid {
-    width: 100% !important;
-    font-size: 13px !important;
-    padding: 4px 8px !important;
-  }
-}
-
-@media screen and (max-width: 782px) {
-  /* Tinh chỉnh hiển thị Card Mobile cho gọn gàng */
-
-  /* Cột Giảng viên: Đảm bảo tên không bị ngắt dòng xấu */
-  .widefat td.azac-col-teacher {
-    align-items: center !important;
-  }
-  .widefat td.azac-col-teacher strong {
-    text-align: right;
-    display: block;
-    max-width: 100%;
-  }
-
-  /* Badge Lớp học: Căn phải */
-  .widefat td[data-label="Lớp học"] {
-    align-items: center !important;
-  }
-
-  /* Ngày dạy: Đậm */
-  .azac-date-display {
-    font-weight: 600;
-    color: #1d2327;
-  }
-}
-
-/* --- Mobile Card Layout (Optimized) --- */
-@media screen and (max-width: 768px) {
-  .widefat,
-  .wp-list-table {
-    border: 0 !important;
-    background: transparent !important;
-    box-shadow: none !important;
-  }
-  .widefat thead,
-  .wp-list-table thead {
-    display: none !important;
-  }
-  .widefat tbody,
-  .wp-list-table tbody {
-    display: block;
-    width: 100%;
-  }
-  .widefat tr,
-  .wp-list-table tr {
-    display: block;
-    background: #fff;
-    margin-bottom: 8px !important;
-    border-radius: 8px;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    border: 1px solid #e2e4e7;
-    border-top: 3px solid #ccc;
-    padding: 8px !important;
-    position: relative;
-    font-size: 12px;
-  }
-  .widefat td,
-  .wp-list-table td {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    text-align: right;
-    padding: 4px 0 !important;
-    border-bottom: none !important;
-    font-size: 12px;
-    min-height: auto;
-  }
-  .widefat td:last-child {
-    border-bottom: none;
-  }
-  .widefat td:before,
-  .wp-list-table td:before {
-    content: attr(data-label);
-    font-weight: 600;
-    color: #50575e;
-    text-align: left;
-    margin-right: 15px;
-    flex-shrink: 0;
-    min-width: 80px;
-    max-width: 40%;
-  }
-
-  /* Container for badges (Mobile Optimized) */
-  .azac-container-flex {
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-    gap: 6px !important; /* Spacing between badges */
-    width: 100%;
-    padding-top: 4px;
-  }
-  /* Margin for individual badges in mobile flex */
-  .azac-container-flex .azac-badge,
-  .azac-container-flex .azac-issue-badge {
-    margin: 2px !important;
-  }
-
-  /* Specific styling for actions */
-  .widefat td[data-label="Hành động"],
-  .widefat td[data-label="Actions"] {
-    justify-content: flex-end;
-    margin-top: 4px;
-    border-top: 1px solid #eee;
-    padding-top: 8px !important;
-  }
-
-  /* Badge tiêu đề lớp */
-  [data-label="Lớp"] strong,
-  [data-label="Lớp học"] strong {
-    background: #f0f0f1;
-    padding: 2px 8px;
-    border-radius: 4px;
-    display: inline-block;
-    color: inherit;
-  }
-
-  /* Adjust inputs */
-  .widefat input[type="text"],
-  .widefat input[type="number"],
-  .widefat select {
-    max-width: 100%;
-    font-size: 12px;
-  }
-
-  /* Hide redundant Class columns in Mobile */
-  .widefat td[data-label="Lớp"],
-  .widefat td[data-label="Lớp học"],
-  .widefat
-    td[data-label="Danh sách lớp phụ trách"],
-  .widefat td[data-label="Lớp đang học"] {
-    display: none !important;
-  }
-}
 
 /* Badge tên lớp học (Dynamic Color Base) - Updated for Overflow Handling */
 /* Sửa triệt để lỗi tràn Badge */
@@ -901,3 +641,337 @@ body.folded #wpfooter {
     align-content: space-evenly;
   }
 }
+
+@media screen and (max-width: 782px) {
+    /* 1. Ép cấu trúc Card giống Teacher View */
+    .azac-admin-teal .widefat tbody tr {
+        display: block !important;
+        margin-bottom: 20px !important;
+        background: #fff !important;
+        border: 1px solid #e5e5e5 !important;
+        border-radius: 10px !important;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1) !important;
+        padding: 12px !important;
+    }
+
+    /* 2. Sửa lỗi td: Biến block thành Flex để Label và Content nằm ngang */
+    .azac-admin-teal .widefat td {
+        display: flex !important;
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        padding: 10px 0 !important;
+        border-bottom: 1px solid #eee !important;
+        width: 100% !important;
+        min-height: 45px !important;
+        background: transparent !important;
+    }
+
+    .azac-admin-teal .widefat td:last-child {
+        border-bottom: none !important;
+    }
+
+    /* 3. Label bên trái - Style từ file Teacher View của bạn */
+    .azac-admin-teal .widefat td::before {
+        content: attr(data-label) !important;
+        font-weight: 700 !important;
+        color: #555 !important;
+        text-align: left !important;
+        width: 45% !important; 
+        display: inline-block !important;
+        text-transform: uppercase !important;
+        font-size: 11px !important;
+    }
+
+    /* 4. ĐẶC TRỊ Ô CHECKBOX (Hành động) */
+    .azac-admin-teal .widefat td[data-label="Hành động"] {
+        justify-content: space-between !important;
+    }
+
+    /* Fix Switch không bị kéo dài dẹt */
+    .azac-switch {
+        display: inline-block !important;
+        width: 40px !important; 
+        height: 20px !important;
+        flex-shrink: 0 !important; /* Quan trọng: Ngăn flex kéo giãn */
+        margin: 0 !important;
+        position: relative !important;
+    }
+
+    .azac-switch input {
+        display: none !important; /* Ẩn input gốc để không chiếm chỗ */
+    }
+
+    /* 5. Ép nội dung (Badge, Trạng thái) về bên phải */
+    .azac-admin-teal .widefat td > *:not(::before) {
+        text-align: right !important;
+        display: inline-flex !important;
+        justify-content: flex-end !important;
+        flex: 0 1 auto !important;
+        max-width: 50% !important;
+    }
+
+    /* Ẩn cái thead của WordPress */
+    .azac-admin-teal .widefat thead {
+        display: none !important;
+    }
+}
+/* ========================================
+   🔧 FIX: CARD GRID RESPONSIVE MOBILE
+   Ngày: 2026-02-05
+   Bug: UI vỡ trên mobile cho Card Grid System
+   ======================================== */
+
+@media screen and (max-width: 782px) {
+    
+    /* 1. Grid Container (thiếu trong file gốc) */
+    .azac-admin-teal .azac-grid {
+        display: grid !important;
+        grid-template-columns: 1fr !important;
+        gap: 15px !important;
+        width: 100% !important;
+    }
+    
+    /* 2. Meta List: 2 cột → 1 cột */
+    .azac-admin-teal .azac-meta-list {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+    }
+    
+    /* 3. Meta Item */
+    .azac-admin-teal .azac-meta-item {
+        padding: 10px 12px !important;
+        min-height: 42px !important;
+        font-size: 14px !important;
+    }
+    
+    /* 4. Meta Label */
+    .azac-admin-teal .azac-meta-label {
+        font-size: 12px !important;
+        color: #777 !important;
+    }
+    
+    /* 5. Meta Value */
+    .azac-admin-teal .azac-meta-value {
+        font-size: 14px !important;
+        font-weight: 700 !important;
+    }
+    
+    /* 6. Card Actions: Stack buttons dọc */
+    .azac-admin-teal .azac-card-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        width: 100% !important;
+    }
+    
+    /* 7. Buttons: Full width */
+    .azac-admin-teal .azac-card-actions .button {
+        width: 100% !important;
+        text-align: center !important;
+        justify-content: center !important;
+        padding: 10px 15px !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* 8. Card Title */
+    .azac-admin-teal .azac-card-title {
+        padding: 12px !important;
+        font-size: 15px !important;
+        margin-bottom: 15px !important;
+    }
+    
+    /* 9. Card Body */
+    .azac-admin-teal .azac-card-body {
+        padding: 0 !important;
+    }
+    
+    /* 10. Progress Bar */
+    .azac-admin-teal .azac-progress {
+        margin-top: 12px !important;
+        height: 10px !important;
+    }
+    
+    /* 11. Badge Class */
+    .azac-admin-teal .azac-badge-class {
+        font-size: 12px !important;
+        padding: 5px 12px !important;
+        display: inline-block !important;
+        white-space: nowrap !important;
+        overflow: hidden !important;
+        text-overflow: ellipsis !important;
+        max-width: 100% !important;
+    }
+    
+    /* 12. Inline Create Form */
+    .azac-admin-teal .azac-inline-create {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 10px !important;
+        margin-bottom: 20px !important;
+    }
+    
+    .azac-admin-teal .azac-inline-create input,
+    .azac-admin-teal .azac-inline-create select,
+    .azac-admin-teal .azac-inline-create button {
+        width: 100% !important;
+    }
+    
+    /* 13. Teacher View Grid (nếu cần) */
+    .azac-admin-teal .azac-tv-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .azac-admin-teal .azac-tv-card-actions {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+    }
+    
+    .azac-admin-teal .azac-tv-card-actions .azac-tv-btn {
+        width: 100% !important;
+        text-align: center !important;
+    }
+}
+
+/* ========================================
+   🔧 CSS PATCH FOR JS FIX
+   Thêm vào cuối file admin-style.css
+   Kết hợp với file attendance-list-sessions-fixed.js
+   ======================================== */
+
+/* === ACTION BUTTONS CONTAINER === */
+.azac-action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* === BUTTON WITH ICON === */
+.azac-btn-with-icon {
+    display: inline-flex !important;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+}
+
+.azac-btn-with-icon .dashicons {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    padding-top: 2px;
+}
+
+/* === MOBILE RESPONSIVE (< 782px) === */
+@media screen and (max-width: 782px) {
+    
+    /* 1. Action Buttons: Stack vertically */
+    .azac-admin-teal .azac-action-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        gap: 8px !important;
+        width: 100% !important;
+    }
+    
+    /* 2. Buttons: Full width */
+    .azac-admin-teal .azac-action-buttons .button {
+        width: 100% !important;
+        justify-content: center !important;
+        box-sizing: border-box !important;
+    }
+    
+    /* 3. Button with icon: Maintain inline-flex but full width */
+    .azac-admin-teal .azac-btn-with-icon {
+        width: 100% !important;
+        justify-content: center !important;
+    }
+    
+    /* 4. Fix cho td chứa action buttons */
+    .azac-admin-teal .widefat td.azac-col-action {
+        padding: 10px 0 !important;
+    }
+    
+    /* 5. Đảm bảo td không có style conflict */
+    .azac-admin-teal .widefat td[data-label="Hành động"] {
+        display: flex !important;
+        flex-direction: column !important;
+        align-items: stretch !important;
+    }
+}
+
+/* === DESKTOP OPTIMIZATIONS === */
+@media screen and (min-width: 783px) {
+    .azac-action-buttons {
+        justify-content: flex-start;
+    }
+    
+    .azac-action-buttons .button {
+        flex: 0 0 auto;
+    }
+}
+
+/* === ADDITIONAL FIXES === */
+
+/* Fix cho delete button inline style (dòng 882 trong JS) */
+.azac-admin-teal .azac-delete-session-btn[style] {
+    color: #a00 !important;
+    border-color: #d00 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+/* --- HỆ THỐNG NÚT BẤM ĐỒNG BỘ --- */
+.azac-action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.azac-btn-with-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+
+/* --- RESPONSIVE CHO TOÀN BỘ HỆ THỐNG --- */
+@media screen and (max-width: 782px) {
+    /* Ép tất cả các container nút bấm thành hàng dọc trên Mobile */
+    .azac-admin-teal .azac-action-buttons {
+        display: flex !important;
+        flex-direction: column !important;
+        width: 100% !important;
+        gap: 10px !important;
+    }
+
+    .azac-admin-teal .azac-action-buttons .button .button-primary {
+        width: 100% !important;
+        margin: 0 !important;
+        justify-content: center !important;
+        display: flex !important;
+    }
+
+    /* Đảm bảo Badge không bị vỡ layout khi đi cùng nhãn */
+    .azac-admin-teal .widefat td > .azac-badge,
+    .azac-admin-teal .widefat td > .azac-badge-class {
+        max-width: 160px !important;
+        margin-left: auto !important; /* Đẩy badge về bên phải */
+    }
+}
+
+/* Must override the default style */
+@media screen and (max-width: 782px) {
+    .wp-list-table tr:not(.inline-edit-row):not(.no-items) td:not(.column-primary)::before {
+        position: relative;
+        left: 10px;
+        display: block;
+        overflow: hidden;
+        width: 32%;
+        content: attr(data-colname);
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+}
+
+
+/* === END OF PATCH === */
