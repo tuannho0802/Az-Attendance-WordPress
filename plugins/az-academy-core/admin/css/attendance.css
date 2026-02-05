@@ -3,7 +3,7 @@
 /* Layout handled by theme style.css */
 .azac-stats {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(1fr);
   gap: 16px;
   margin: 16px 0;
 }
@@ -52,9 +52,24 @@
   margin-bottom: 8px;
 }
 .azac-info-card .az-info-grid {
+  display: grid !important;
+  grid-template-columns: 1fr 320px !important;
+  gap: 20px;
+}
+.az-info-details-side {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px 12px;
+  grid-template-columns: repeat(1fr);
+  gap: 10px;
+}
+.az-info-selector-side .az-info-item {
+  background: #fff;
+  height: 100%;
+  box-sizing: border-box;
+}
+@media screen and (max-width: 782px) {
+  .azac-info-card .az-info-grid {
+    grid-template-columns: 1fr !important;
+  }
 }
 .azac-info-card .az-info-item {
   display: flex;
@@ -335,7 +350,9 @@
 .wp-core-ui
   .azac-tabs
   .azac-tab-btn.button-primary {
-  background-color: var(--az-primary) !important;
+  background-color: var(
+    --az-primary
+  ) !important;
   border-color: var(--az-primary) !important;
   box-shadow: 0 2px 6px rgba(21, 52, 90, 0.2) !important;
   color: #fff !important;
@@ -395,33 +412,33 @@
     flex-direction: column;
     gap: 20px;
   }
-  
+
   /* Ensure Visual (Overview) is on top - Default order is correct */
-  
+
   /* 2. Chart & Stats */
   .azac-reviews-visual .azac-chart-row {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .azac-reviews-visual .azac-chart-box {
     width: 100% !important;
     height: 250px !important;
     min-width: 0 !important;
   }
-  
+
   .azac-info-card .az-info-grid {
     grid-template-columns: 1fr; /* Stack stats vertically */
     gap: 10px;
   }
-  
+
   /* 3. Filters (Session Bar) */
   .azac-session-bar {
     flex-direction: column;
     align-items: stretch;
     gap: 12px;
   }
-  
+
   .azac-session-bar label {
     display: flex;
     flex-direction: column;
@@ -430,7 +447,7 @@
     font-weight: 600;
     color: #444;
   }
-  
+
   .azac-session-bar select,
   .azac-session-bar input[type="text"],
   .azac-session-bar input[type="search"] {
@@ -440,34 +457,34 @@
     box-sizing: border-box;
     height: 40px; /* Taller for touch */
   }
-  
+
   /* 4. Review Cards */
   .azac-review-item {
     width: 100%;
     box-sizing: border-box;
     padding: 10px;
   }
-  
+
   .azac-review-top {
     flex-wrap: wrap;
   }
-  
+
   .azac-review-comment {
     font-size: 13px;
     line-height: 1.4;
   }
-  
+
   .azac-review-date {
     font-size: 11px;
   }
-  
+
   /* Toggle Buttons */
   .azac-toggle {
     display: flex;
     width: 100%;
     margin-bottom: 12px;
   }
-  
+
   .azac-toggle .button {
     flex: 1;
     justify-content: center;
@@ -477,19 +494,19 @@
 
 /* Datepicker Highlight for Existing Sessions */
 .ui-datepicker td.azac-date-highlight a {
-    background-color: #e6fffa !important;
-    border: 1px solid #38b2ac !important;
-    color: #2c7a7b !important;
-    font-weight: 700;
+  background-color: #e6fffa !important;
+  border: 1px solid #38b2ac !important;
+  color: #2c7a7b !important;
+  font-weight: 700;
 }
 .ui-datepicker td.azac-date-highlight a::after {
-    content: '';
-    display: block;
-    width: 6px;
-    height: 6px;
-    background-color: #38b2ac;
-    border-radius: 50%;
-    margin: 2px auto 0;
+  content: "";
+  display: block;
+  width: 6px;
+  height: 6px;
+  background-color: #38b2ac;
+  border-radius: 50%;
+  margin: 2px auto 0;
 }
 
 /* =========================================
@@ -533,7 +550,7 @@
 
 /* Arrow Icon */
 .azac-custom-select-trigger::after {
-  content: '';
+  content: "";
   display: block;
   width: 6px;
   height: 6px;
@@ -554,7 +571,7 @@
   background: #ffffff;
   border: 1px solid #e2e2e2;
   border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   margin-top: 6px;
   padding: 6px 0;
   display: none;
@@ -563,13 +580,16 @@
 }
 
 /* Show State */
-.azac-custom-select-wrapper.open .azac-custom-options {
+.azac-custom-select-wrapper.open
+  .azac-custom-options {
   display: block;
 }
 
-.azac-custom-select-wrapper.open .azac-custom-select-trigger {
+.azac-custom-select-wrapper.open
+  .azac-custom-select-trigger {
   border-color: var(--az-primary, #15345a);
-  box-shadow: 0 0 0 1px var(--az-primary, #15345a);
+  box-shadow: 0 0 0 1px
+    var(--az-primary, #15345a);
 }
 
 /* Individual Option */
@@ -638,21 +658,21 @@
 
 /* --- Session Button States (Appended) --- */
 .btn-session-update {
-    background: #2271b1 !important; /* WP Primary Blue */
-    border-color: #2271b1 !important;
-    color: #fff !important;
+  background: #2271b1 !important; /* WP Primary Blue */
+  border-color: #2271b1 !important;
+  color: #fff !important;
 }
 .btn-session-update:hover {
-    background: #135e96 !important;
-    border-color: #135e96 !important;
+  background: #135e96 !important;
+  border-color: #135e96 !important;
 }
 
 .btn-session-add {
-    background: #27ae60 !important; /* Green */
-    border-color: #27ae60 !important;
-    color: #fff !important;
+  background: #27ae60 !important; /* Green */
+  border-color: #27ae60 !important;
+  color: #fff !important;
 }
 .btn-session-add:hover {
-    background: #219150 !important;
-    border-color: #219150 !important;
+  background: #219150 !important;
+  border-color: #219150 !important;
 }

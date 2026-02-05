@@ -1599,13 +1599,18 @@ class AzAC_Admin_Pages
         echo '<h1>Điểm danh lớp: ' . esc_html($post->post_title) . '</h1>';
         echo '<div class="azac-stats">';
         echo '<div class="azac-stat azac-info-card"><div class="az-info-header">Thông tin lớp</div><div class="az-info-grid">';
+
+        // LEFT SIDE: Info Details (Grid 2 columns)
+        echo '<div class="az-info-details-side">';
         echo '<div class="az-info-item"><span class="az-info-label">Lớp</span><span class="az-info-value">' . esc_html($post->post_title) . '</span></div>';
         echo '<div class="az-info-item"><span class="az-info-label">Giảng viên</span><span class="az-info-value">' . esc_html($teacher_name ?: 'Chưa gán') . '</span></div>';
         echo '<div class="az-info-item"><span class="az-info-label">Sĩ số</span><span class="az-info-value">' . esc_html(count($students)) . '</span></div>';
         echo '<div class="az-info-item"><span class="az-info-label">Tổng buổi</span><span class="az-info-value">' . esc_html(get_post_meta($class_id, 'az_tong_so_buoi', true)) . '</span></div>';
+        echo '</div>'; // End Left Side
 
-        // Dropdown chọn buổi - Integrated into card grid (Full width)
-        echo '<div class="az-info-item" style="grid-column: 1 / -1; display:flex; flex-direction:column; align-items:flex-start; gap:4px;">';
+        // RIGHT SIDE: Selector (Fixed width)
+        echo '<div class="az-info-selector-side">';
+        echo '<div class="az-info-item" style="flex-direction:column; justify-content:flex-start">';
         echo '<span class="az-info-label" style="width:100%">Chọn buổi học</span>';
         echo '<select id="azac_session_select" class="regular-text" style="width:100%; max-width:100%;">';
         foreach ($sessions_meta as $s) {
@@ -1615,6 +1620,7 @@ class AzAC_Admin_Pages
         }
         echo '</select>';
         echo '</div>';
+        echo '</div>'; // End Right Side
 
         echo '</div>';
         echo '</div>';
