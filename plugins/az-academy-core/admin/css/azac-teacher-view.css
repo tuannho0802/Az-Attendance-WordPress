@@ -540,4 +540,13 @@
         width: 100%;
         margin-bottom: 10px;
     }
+
+    .azac-actions-buttons-student{
+      justify-content: flex-end;
+    }
+}
+
+.azac-actions-buttons-student{
+  display: flex;
+  gap: 5px;
 }

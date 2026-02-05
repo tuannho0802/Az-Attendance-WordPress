@@ -800,7 +800,6 @@ body.folded #wpfooter {
         white-space: nowrap !important;
         overflow: hidden !important;
         text-overflow: ellipsis !important;
-        max-width: 100% !important;
     }
     
     /* 12. Inline Create Form */

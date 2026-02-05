@@ -298,10 +298,8 @@
               .prop("disabled", false)
               .text("Áp dụng");
             if (res.success) {
-              alert(res.data.message);
-              loadLogs(
-                AZAC_SYSTEM.currentLogPage || 1,
-              );
+              alert("Thành công!");
+              loadLogs(1);
             } else {
               alert(
                 "Lỗi: " +
@@ -309,14 +307,93 @@
               );
             }
           },
-        ).fail(function () {
-          $btn
-            .prop("disabled", false)
-            .text("Áp dụng");
-          alert("Lỗi kết nối Server.");
-        });
+        );
       },
     );
+
+    // New Cleanup Handlers (Card Buttons)
+    $(document).on(
+      "click",
+      "#azac-cleanup-logs-old",
+      function (e) {
+        e.preventDefault();
+        if (
+          !confirm(
+            "Bạn có chắc chắn muốn xóa các nhật ký cũ hơn 30 ngày?",
+          )
+        )
+          return;
+
+        var $btn = $(this);
+        $btn
+          .prop("disabled", true)
+          .text("Đang xử lý...");
+
+        $.post(
+          AZAC_SYSTEM.ajaxUrl,
+          {
+            action: "azac_cleanup_logs",
+            nonce: AZAC_SYSTEM.nonce,
+            mode: "older_30",
+          },
+          function (res) {
+            $btn
+              .prop("disabled", false)
+              .text("Xóa log > 30 ngày");
+            if (res.success) {
+              alert(
+                "Đã xóa nhật ký cũ thành công!",
+              );
+              // Reload logs if on log tab, but here we are on scan tab.
+              // Maybe nothing visual to update on this tab except success msg
+            } else {
+              alert(
+                "Lỗi: " +
+                  (res.data || "Unknown"),
+              );
+            }
+          },
+        );
+      },
+    );
+
+    $(document).on(
+      "click",
+      "#azac-cleanup-logs-all",
+      function (e) {
+        e.preventDefault();
+        if (!confirm(AZAC_SYSTEM.confirmDelete))
+          return;
+
+        var $btn = $(this);
+        $btn
+          .prop("disabled", true)
+          .text("Đang xử lý...");
+
+        $.post(
+          AZAC_SYSTEM.ajaxUrl,
+          {
+            action: "azac_cleanup_logs",
+            nonce: AZAC_SYSTEM.nonce,
+            mode: "delete_all",
+          },
+          function (res) {
+            $btn
+              .prop("disabled", false)
+              .text("Xóa toàn bộ");
+            if (res.success) {
+              alert("Đã xóa toàn bộ nhật ký!");
+            } else {
+              alert(
+                "Lỗi: " +
+                  (res.data || "Unknown"),
+              );
+            }
+          },
+        );
+      },
+    );
+    // Fixed syntax error: removed garbage code
 
     // --- PHYSICAL FILE SCAN (BATCH PROCESSING) ---
     $(document).on(
@@ -447,14 +524,14 @@
                     function (item) {
                       var rowHtml = `
                                   <tr data-id="${item.raw_id}" data-type="${item.type}" style="display:none;">
-                                      <td class="check-column" style="text-align:center; vertical-align:middle;">
+                                      <td class="check-column" data-label="Chọn" style="text-align:center; vertical-align:middle;">
                                           <input type="checkbox" class="cb-select-system" value="${item.type}|${item.raw_id}">
                                       </td>
-                                      <td><span style="background:#666; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">FILE RÁC</span></td>
-                                      <td>${item.size}</td>
-                                      <td>${item.desc}</td>
-                                      <td>${item.date}</td>
-                                      <td style="text-align:right;">
+                                      <td data-label="Loại dữ liệu"><span style="background:#666; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">FILE RÁC</span></td>
+                                      <td data-label="Dung lượng">${item.size}</td>
+                                      <td data-label="Mô tả chi tiết">${item.desc}</td>
+                                      <td data-label="Ngày phát hiện">${item.date}</td>
+                                      <td data-label="Hành động" style="text-align:right;">
                                           <button type="button" class="button button-small azac-delete-system-item" data-id="${item.raw_id}" data-type="${item.type}" style="color:#a00; border-color:#a00;">Xóa</button>
                                       </td>
                                   </tr>

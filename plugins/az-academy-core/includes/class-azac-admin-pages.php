@@ -1168,7 +1168,7 @@ class AzAC_Admin_Pages
 
                 // Actions
                 echo '<td data-label="Hành động">';
-                echo '<div style="display:flex;gap:5px;">';
+                echo '<div class="azac-actions-buttons-student">';
                 echo '<button type="button" class="button button-small azac-view-student-btn" data-student="' . $modal_data . '"><span class="dashicons dashicons-visibility" style="line-height:1.3"></span></button>';
 
                 if (in_array('administrator', $user->roles, true) || in_array('az_manager', (array) $user->roles)) {

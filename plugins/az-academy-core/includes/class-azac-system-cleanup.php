@@ -120,7 +120,7 @@ class AzAC_System_Cleanup
     // --- LOGGING HELPERS ---
     public static function log($action, $message, $user_id = null)
     {
-                global $wpdb;
+        global $wpdb;
         if (!$user_id)
             $user_id = get_current_user_id();
         $user = get_user_by('id', $user_id);
@@ -254,7 +254,7 @@ class AzAC_System_Cleanup
                     class="nav-tab <?php echo $active_tab === 'logs' ? 'nav-tab-active' : ''; ?>">Nhật ký</a>
             </nav>
 
-            <div class="azac-system-content" style="margin-top: 20px;">
+            <div class="azac-system-content azac-admin-teal" style="margin-top: 20px;">
                 <?php if ($active_tab === 'scan'): ?>
                     <?php self::render_scan_tab(); ?>
                 <?php else: ?>
@@ -272,20 +272,81 @@ class AzAC_System_Cleanup
         <div class="azac-layout-wrapper"
             style="background:#fff; padding:20px; border:1px solid #c3c4c7; box-sizing:border-box;">
 
-            <?php if ($can_delete): ?>
-            <div class="azac-session-filters-toolbar"
-                style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; margin-left:0; padding-left:0;">
-                <div style="display:flex; gap:5px; align-items:center;">
-                    <select id="azac-bulk-action-system">
-                        <option value="-1">Hành động hàng loạt</option>
-                        <option value="delete">Dọn dẹp (Xóa vĩnh viễn)</option>
-                    </select>
-                    <button type="button" id="azac-do-system-bulk" class="button action">Áp dụng</button>
+            <div class="azac-action-grid-layout">
+                <!-- Card 1: Physical Scan -->
+                <div class="azac-action-card">
+                    <div class="azac-action-icon dashicons dashicons-search"></div>
+                    <div class="azac-action-info">
+                        <h3>Quét dọn File vật lý</h3>
+                        <p>Quét toàn bộ thư mục uploads để tìm các file không được quản lý bởi Media Library. Giúp giải phóng
+                            dung lượng đĩa.</p>
+                    </div>
+                    <div class="azac-action-btn-wrapper">
+                        <button type="button" id="azac-start-physical-scan" class="button button-primary">Bắt đầu quét File
+                            rác</button>
+                    </div>
+                    <!-- Progress Bar for Scan -->
+                    <div id="azac-physical-scan-status" style="margin-top:10px; display:none;">
+                        <span class="spinner is-active" style="float:none; margin:0 5px;"></span>
+                        <span class="status-text">Đang chuẩn bị...</span>
+                        <span class="progress-percent" style="font-weight:bold;">0%</span>
+                    </div>
+                    <div id="azac-physical-scan-progress-bar"
+                        style="height:5px; background:#f0f0f1; margin-top:10px; display:none;">
+                        <div class="bar" style="height:100%; width:0%; background:#2271b1; transition: width 0.3s;"></div>
+                    </div>
                 </div>
-                <div style="margin-left:auto;">
-                    <strong id="azac-scan-total-count">Đang tải dữ liệu...</strong>
+
+                <!-- Card 2: Clear Old Logs -->
+                <div class="azac-action-card">
+                    <div class="azac-action-icon dashicons dashicons-calendar-alt"></div>
+                    <div class="azac-action-info">
+                        <h3>Dọn dẹp Nhật ký cũ</h3>
+                        <p>Xóa các nhật ký hệ thống đã cũ hơn 30 ngày. Giữ lại các nhật ký mới nhất để tra cứu.</p>
+                    </div>
+                    <div class="azac-action-btn-wrapper">
+                        <?php if ($can_delete): ?>
+                            <button type="button" id="azac-cleanup-logs-old" class="button button-secondary">Xóa log > 30
+                                ngày</button>
+                        <?php else: ?>
+                            <button type="button" class="button button-secondary" disabled>Không có quyền</button>
+                        <?php endif; ?>
+                    </div>
+                </div>
+
+                <!-- Card 3: Clear All Logs -->
+                <div class="azac-action-card">
+                    <div class="azac-action-icon dashicons dashicons-trash"></div>
+                    <div class="azac-action-info">
+                        <h3>Xóa toàn bộ Nhật ký</h3>
+                        <p>Xóa vĩnh viễn tất cả nhật ký hệ thống. Hành động này không thể hoàn tác, hãy cân nhắc trước khi thực
+                            hiện.</p>
+                    </div>
+                    <div class="azac-action-btn-wrapper">
+                        <?php if ($can_delete): ?>
+                            <button type="button" id="azac-cleanup-logs-all" class="button button-secondary delete">Xóa toàn
+                                bộ</button>
+                        <?php else: ?>
+                            <button type="button" class="button button-secondary" disabled>Không có quyền</button>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </div>
+
+            <?php if ($can_delete): ?>
+                <div class="azac-session-filters-toolbar"
+                    style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; margin-left:0; padding-left:0;">
+                    <div style="display:flex; gap:5px; align-items:center;">
+                        <select id="azac-bulk-action-system">
+                            <option value="-1">Hành động hàng loạt</option>
+                            <option value="delete">Dọn dẹp (Xóa vĩnh viễn)</option>
+                        </select>
+                        <button type="button" id="azac-do-system-bulk" class="button action">Áp dụng</button>
+                    </div>
+                    <div style="margin-left:auto;">
+                        <strong id="azac-scan-total-count">Đang tải dữ liệu...</strong>
+                    </div>
+                </div>
             <?php else: ?>
                 <div class="azac-session-filters-toolbar"
                     style="display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-bottom:15px; margin-left:0; padding-left:0;">
@@ -315,39 +376,39 @@ class AzAC_System_Cleanup
     {
         // $logs_ignored is ignored because we load via AJAX now
         ?>
-            <div class="wrap">
-                <!-- Log Filters -->
-                <div class="tablenav top" style="height:auto; margin-bottom:10px;">
-                    <div class="alignleft actions">
-                        <select id="azac-log-filter-action">
-                            <option value="">Tất cả hành động</option>
-                            <option value="USER">Thành viên (USER_...)</option>
-                            <option value="CLASS">Lớp học (CLASS_...)</option>
-                            <option value="SESSION">Buổi học (SESSION_...)</option>
-                            <option value="ATTENDANCE">Điểm danh (ATTENDANCE_...)</option>
-                        </select>
-                        <input type="date" id="azac-log-filter-date-start" placeholder="Từ ngày">
-                        <input type="date" id="azac-log-filter-date-end" placeholder="Đến ngày">
-                        <button type="button" id="azac-log-filter-submit" class="button">Lọc</button>
-                    </div>
-                </div>
-
-
-
-                <div id="azac-logs-container">
-                    <p class="spinner is-active" style="float:none;"></p> Đang tải nhật ký...
+        <div class="wrap">
+            <!-- Log Filters -->
+            <div class="tablenav top" style="height:auto; margin-bottom:10px;">
+                <div class="alignleft actions">
+                    <select id="azac-log-filter-action">
+                        <option value="">Tất cả hành động</option>
+                        <option value="USER">Thành viên (USER_...)</option>
+                        <option value="CLASS">Lớp học (CLASS_...)</option>
+                        <option value="SESSION">Buổi học (SESSION_...)</option>
+                        <option value="ATTENDANCE">Điểm danh (ATTENDANCE_...)</option>
+                    </select>
+                    <input type="date" id="azac-log-filter-date-start" placeholder="Từ ngày">
+                    <input type="date" id="azac-log-filter-date-end" placeholder="Đến ngày">
+                    <button type="button" id="azac-log-filter-submit" class="button">Lọc</button>
                 </div>
             </div>
 
-            <script>
-                jQuery(document).ready(function ($) {
-                    // Init load
-                    if (typeof window.loadLogs === 'function') {
-                        window.loadLogs(1);
-                    }
-                });
-            </script>
-            <?php
+
+
+            <div id="azac-logs-container">
+                <p class="spinner is-active" style="float:none;"></p> Đang tải nhật ký...
+            </div>
+        </div>
+
+        <script>
+            jQuery(document).ready(function ($) {
+                // Init load
+                if (typeof window.loadLogs === 'function') {
+                    window.loadLogs(1);
+                }
+            });
+        </script>
+        <?php
     }
 
     // --- AJAX HANDLERS ---
@@ -414,78 +475,93 @@ class AzAC_System_Cleanup
 
             ob_start();
             ?>
-                                <div class="tablenav top">
-                                    <?php if ($can_delete): ?>
-                                    <div class="alignleft actions bulkactions">
-                                    <select id="azac-log-bulk-action">
-                                        <option value="-1">Hành động hàng loạt</option>
-                                        <option value="delete_selected">Xóa đã chọn</option>
-                                        <option value="older_30">Xóa cũ hơn 30 ngày</option>
-                                        <option value="delete_all">Xóa toàn bộ nhật ký</option>
-                                    </select>
-                                    <button type="button" id="azac-log-do-bulk" class="button action">Áp dụng</button>
-                                </div>
-                                <?php endif; ?>
-                                    <div class="alignright">
-                                        <?php self::render_pagination($total_items, $page, $limit, 'logs'); ?>
+            <div class="tablenav top">
+                <?php if ($can_delete): ?>
+                    <div class="alignleft actions bulkactions">
+                        <select id="azac-log-bulk-action">
+                            <option value="-1">Hành động hàng loạt</option>
+                            <option value="delete_selected">Xóa đã chọn</option>
+                            <option value="older_30">Xóa cũ hơn 30 ngày</option>
+                            <option value="delete_all">Xóa toàn bộ nhật ký</option>
+                        </select>
+                        <button type="button" id="azac-log-do-bulk" class="button action">Áp dụng</button>
+                    </div>
+                <?php endif; ?>
+                <div class="alignright">
+                    <?php self::render_pagination($total_items, $page, $limit, 'logs'); ?>
+                </div>
+                <div class="alignleft">
+                    <strong>Tổng cộng: <?php echo number_format($total_items); ?> dòng</strong>
+                </div>
+            </div>
+
+            <div class="azac-table-responsive">
+                <table class="wp-list-table widefat fixed striped">
+                    <thead>
+                        <tr>
+                            <td id="cb" class="manage-column column-cb check-column">
+                                <input type="checkbox" id="cb-select-all-logs">
+                            </td>
+                            <th>ID</th>
+                            <th>Thành viên</th>
+                            <th>Hành động</th>
+                            <th>Nội dung</th>
+                            <th>Thời gian</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php if (empty($logs)): ?>
+                            <tr>
+                                <td colspan="6">
+                                    <div class="notice notice-info inline">
+                                        <p>Chưa có nhật ký nào.</p>
                                     </div>
-                                    <div class="alignleft">
-                                        <strong>Tổng cộng: <?php echo number_format($total_items); ?> dòng</strong>
-                                    </div>
-                                </div>
+                                </td>
+                            </tr>
+                        <?php else: ?>
+                            <?php foreach ($logs as $log):
+                                $val = $log->id;
+                                ?>
+                                <tr>
+                                    <td class="check-column" data-label="Chọn">
+                                        <input type="checkbox" class="cb-select-log" value="<?php echo esc_attr($val); ?>">
+                                    </td>
+                                    <td data-label="ID">#<?php echo esc_html($log->id); ?></td>
+                                    <td data-label="Thành viên">
+                                        <strong><?php echo esc_html($log->user_login); ?></strong>
+                                    </td>
+                                    <td data-label="Hành động">
+                                        <?php
+                                        $action_label = $log->action_type;
+                                        $bg_color = '#f0f0f1';
+                                        $text_color = '#333';
 
-                                <table class="wp-list-table widefat fixed striped">
-                                    <thead>
-                                        <tr>
-                                            <td id="cb" class="manage-column column-cb check-column"><input type="checkbox" id="cb-select-all-logs">
-                                            </td>
-                                            <th style="width:180px;">Thời gian</th>
-                                            <th style="width:150px;">User thực hiện</th>
-                                            <th style="width:150px;">Loại hành động</th>
-                                            <th>Nội dung chi tiết</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="azac-logs-tbody">
-                                        <?php if (empty($logs)): ?>
-                                                                    <tr>
-                                                                        <td colspan="5">Chưa có nhật ký nào.</td>
-                                                                    </tr>
-                                        <?php else: ?>
-                                                                    <?php foreach ($logs as $log):
-                                                                        $val = $log->id;
-                                                                        ?>
-                                                                                                <tr>
-                                                                                                    <th scope="row" class="check-column">
-                                                                                                        <input type="checkbox" class="cb-select-log" value="<?php echo esc_attr($val); ?>">
-                                                                                                    </th>
-                                                                                                    <td><?php echo date('d/m/Y h:i A', strtotime($log->created_at)); ?></td>
-                                                                                                    <td><?php echo esc_html($log->user_login); ?></td>
-                                                                                                    <td>
-                                                                                                        <?php
-                                                                                                        $action_label = $log->action_type;
-                                                                                                        $bg_color = '#f0f0f1';
-                                                                                                        $text_color = '#333';
+                                        if (strpos($action_label, 'CREATE') !== false || strpos($action_label, 'NEW') !== false) {
+                                            $bg_color = '#d4edda';
+                                            $text_color = '#155724';
+                                        } elseif (strpos($action_label, 'UPDATE') !== false || strpos($action_label, 'SAVE') !== false) {
+                                            $bg_color = '#fff3cd';
+                                            $text_color = '#856404';
+                                        } elseif (strpos($action_label, 'DELETE') !== false) {
+                                            $bg_color = '#f8d7da';
+                                            $text_color = '#721c24';
+                                        }
 
-                                                                                                        if (strpos($action_label, 'CREATE') !== false || strpos($action_label, 'NEW') !== false) {
-                                                                                                            $bg_color = '#d4edda';
-                                                                                                            $text_color = '#155724';
-                                                                                                        } elseif (strpos($action_label, 'UPDATE') !== false || strpos($action_label, 'SAVE') !== false) {
-                                                                                                            $bg_color = '#fff3cd';
-                                                                                                            $text_color = '#856404';
-                                                                                                        } elseif (strpos($action_label, 'DELETE') !== false) {
-                                                                                                            $bg_color = '#f8d7da';
-                                                                                                            $text_color = '#721c24';
-                                                                                                        }
-
-                                                                                                        echo '<span style="background:' . $bg_color . '; color:' . $text_color . '; padding:2px 6px; border-radius:3px; font-weight:500; font-size:11px;">' . esc_html($action_label) . '</span>';
-                                                                                                        ?>
-                                        </td>
-                                        <td><?php echo esc_html($log->message); ?></td>
-                                    </tr>
+                                        echo '<span style="background:' . $bg_color . '; color:' . $text_color . '; padding:2px 6px; border-radius:3px; font-weight:500; font-size:11px;">' . esc_html($action_label) . '</span>';
+                                        ?>
+                                    </td>
+                                    <td data-label="Nội dung">
+                                        <?php echo nl2br(esc_html($log->message)); ?>
+                                    </td>
+                                    <td data-label="Thời gian">
+                                        <?php echo date('d/m/Y h:i A', strtotime($log->created_at)); ?>
+                                    </td>
+                                </tr>
                             <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
+                        <?php endif; ?>
+                    </tbody>
+                </table>
+            </div>
             <div class="tablenav bottom">
                 <div class="alignright">
                     <?php self::render_pagination($total_items, $page, $limit, 'logs'); ?>
@@ -621,7 +697,7 @@ class AzAC_System_Cleanup
                             <td id="cb" class="manage-column column-cb check-column"
                                 style="width:30px; text-align:center; padding:8px 0;">
                                 <?php if ($can_delete): ?>
-                                                                    <input type="checkbox" id="cb-select-all-system">
+                                    <input type="checkbox" id="cb-select-all-system">
                                 <?php endif; ?>
                             </td>
                             <th style="width:120px;">Loại dữ liệu</th>
@@ -629,7 +705,7 @@ class AzAC_System_Cleanup
                             <th>Mô tả chi tiết</th>
                             <th style="width:150px;">Ngày phát hiện</th>
                             <?php if ($can_delete): ?>
-                            <th style="width:100px; text-align:right;">Hành động</th>
+                                <th style="width:100px; text-align:right;">Hành động</th>
                             <?php endif; ?>
                         </tr>
                     </thead>
@@ -644,46 +720,49 @@ class AzAC_System_Cleanup
                             </tr>
                         <?php else: ?>
                             <?php foreach ($all_items as $item): ?>
-                                                                                                                                                        <tr data-id="<?php echo esc_attr($item['raw_id']); ?>" data-type="<?php echo esc_attr($item['type']); ?>">
-                                                                                                                                        <td class="check-column" style="text-align:center; vertical-align:middle;">
+                                <tr data-id="<?php echo esc_attr($item['raw_id']); ?>" data-type="<?php echo esc_attr($item['type']); ?>">
+                                    <td class="check-column" data-label="Chọn" style="text-align:center; vertical-align:middle;">
                                         <?php if ($can_delete): ?>
-                                                                                            <input type="checkbox" class="cb-select-system" value="<?php echo esc_attr($item['type'] . '|' . $item['raw_id']); ?>">
+
+                                            <input type="checkbox" class="cb-select-system"
+                                                value="<?php echo esc_attr($item['type'] . '|' . $item['raw_id']); ?>">
                                         <?php endif; ?>
-                                                        </td>
-                                                        <td>
-                                                                                <?php
-                                                                                $badge_color = '#999';
-                                                                                $label = $item['type'];
-                                                                                switch ($item['type']) {
-                                                                                    case 'media':
-                                                                                        $badge_color = '#0073aa';
-                                                                                        $label = 'MEDIA';
-                                                                                        break;
-                                                                                    case 'attendance':
-                                                                                        $badge_color = '#e65100';
-                                                                                        $label = 'ATTENDANCE';
-                                                                                        break;
-                                                                                    case 'review':
-                                                                                        $badge_color = '#8e44ad';
-                                                                                        $label = 'REVIEW';
-                                                                                        break;
-                                                                                    case 'teaching_hours':
-                                                                                        $badge_color = '#d35400';
-                                                                                        $label = 'TEACHING';
-                                                                                        break;
-                                                                                }
-                                                                                echo '<span style="background:' . $badge_color . '; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">' . esc_html($label) . '</span>';
-                                                                                ?>
                                     </td>
-                                    <td><?php echo isset($item['size']) ? esc_html($item['size']) : '-'; ?></td>
-                                    <td><?php echo $item['desc']; ?></td>
-                                    <td><?php echo esc_html(date_i18n('d/m/Y', strtotime($item['date']))); ?></td>
+                                    <td data-label="Loại dữ liệu">
+                                        <?php
+                                        $badge_color = '#999';
+                                        $label = $item['type'];
+                                        switch ($item['type']) {
+                                            case 'media':
+                                                $badge_color = '#0073aa';
+                                                $label = 'MEDIA';
+                                                break;
+                                            case 'attendance':
+                                                $badge_color = '#e65100';
+                                                $label = 'ATTENDANCE';
+                                                break;
+                                            case 'review':
+                                                $badge_color = '#8e44ad';
+                                                $label = 'REVIEW';
+                                                break;
+                                            case 'teaching_hours':
+                                                $badge_color = '#d35400';
+                                                $label = 'TEACHING';
+                                                break;
+                                        }
+                                        echo '<span style="background:' . $badge_color . '; color:#fff; padding:2px 6px; border-radius:4px; font-size:11px; text-transform:uppercase;">' . esc_html($label) . '</span>';
+                                        ?>
+                                    </td>
+                                    <td data-label="Dung lượng"><?php echo isset($item['size']) ? esc_html($item['size']) : '-'; ?></td>
+                                    <td data-label="Mô tả chi tiết"><?php echo $item['desc']; ?></td>
+                                    <td data-label="Ngày phát hiện"><?php echo esc_html(date_i18n('d/m/Y', strtotime($item['date']))); ?>
+                                    </td>
                                     <?php if ($can_delete): ?>
-                                    <td style="text-align:right;">
-                                                                    <button type="button" class="button button-small button-link-delete azac-delete-system-item"
-                                                                        data-id="<?php echo esc_attr($item['raw_id']); ?>"
+                                        <td data-label="Hành động" style="text-align:right;">
+                                            <button type="button" class="button button-small button-link-delete azac-delete-system-item"
+                                                data-id="<?php echo esc_attr($item['raw_id']); ?>"
                                                 data-type="<?php echo esc_attr($item['type']); ?>" style="color:#a00;">Xóa vĩnh viễn</button>
-                                    </td>
+                                        </td>
                                     <?php endif; ?>
                                 </tr>
                             <?php endforeach; ?>

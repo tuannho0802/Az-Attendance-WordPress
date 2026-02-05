@@ -1,0 +1,183 @@
+/* 
+ * AZAC System Logs & Cleanup Responsive Styles
+ * Logic: Table on Desktop (> 782px), Card on Mobile (<= 782px)
+ */
+
+/* ==========================================================================
+   DESKTOP DEFAULT (Tables)
+   ========================================================================== */
+/* Ensure tables behave normally on desktop */
+.wp-list-table.widefat {
+  border-collapse: collapse;
+}
+
+/* Action Cards Grid (Always Grid/Card for Tools) */
+.azac-action-grid-layout {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-bottom: 30px;
+}
+
+.azac-action-card {
+  background: #fff;
+  border: 1px solid #ccd0d4;
+  border-left: 4px solid #008080; /* Teal accent */
+  border-radius: 4px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.azac-action-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.azac-action-card .azac-action-icon {
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  color: #008080;
+  margin-bottom: 15px;
+}
+
+.azac-action-card .azac-action-info h3 {
+  margin: 0 0 10px 0;
+  font-size: 16px;
+  color: #1d2327;
+}
+
+.azac-action-card .azac-action-info p {
+  margin: 0 0 20px 0;
+  font-size: 13px;
+  color: #646970;
+  line-height: 1.5;
+  flex-grow: 1;
+}
+
+.azac-action-card .azac-action-btn-wrapper {
+  margin-top: auto;
+}
+
+.azac-action-card .button {
+  width: 100%;
+  text-align: center;
+  justify-content: center;
+}
+
+/* Responsive Action Grid */
+@media (max-width: 1200px) {
+  .azac-action-grid-layout {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .azac-action-grid-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   MOBILE RESPONSIVE TABLES (The "Card" Transformation)
+   ========================================================================== */
+@media screen and (max-width: 782px) {
+  /* Force table elements to display as block */
+  .wp-list-table.widefat,
+  .wp-list-table.widefat thead,
+  .wp-list-table.widefat tbody,
+  .wp-list-table.widefat tr,
+  .wp-list-table.widefat td,
+  .wp-list-table.widefat th {
+    display: block !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* Hide Table Header */
+  .wp-list-table.widefat thead {
+    display: none !important;
+  }
+
+  /* Style Rows as Cards */
+  .wp-list-table.widefat tbody tr {
+    background: #fff;
+    border: 1px solid #ccd0d4 !important;
+    margin-bottom: 20px !important;
+    border-radius: 8px !important;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05) !important;
+    padding: 10px !important;
+    position: relative;
+  }
+
+  /* Ép mỗi ô td thành một hàng có nhãn và giá trị */
+  .azac-admin-teal table.widefat tbody td {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    text-align: right !important;
+    padding: 12px 10px !important;
+    border-bottom: 1px solid #f0f0f1 !important;
+  }
+
+  /* Hiển thị nhãn bên trái */
+  .azac-admin-teal
+    table.widefat
+    tbody
+    td::before {
+    content: attr(data-label) ":"; /* Thêm dấu hai chấm để rõ ràng */
+    font-weight: 700 !important;
+    color: #15345a !important;
+    text-align: left !important;
+    padding-right: 15px !important;
+    min-width: 40% !important; /* Đảm bảo nhãn không bị co lại */
+    display: block !important;
+  }
+
+  /* Ẩn nhãn cho cột checkbox nếu cần */
+  .azac-admin-teal
+    table.widefat
+    td.check-column::before,
+  .azac-admin-teal
+    table.widefat
+    th.check-column::before {
+    display: none !important;
+  }
+
+  /* Special handling for Checkbox Column Position */
+  .wp-list-table.widefat tbody td.check-column {
+    border: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    justify-content: flex-end !important;
+  }
+
+  /* Remove border from last cell */
+  .wp-list-table.widefat tbody td:last-child {
+    border-bottom: none !important;
+  }
+
+  /* Adjust content alignment for readability */
+  .wp-list-table.widefat
+    tbody
+    td
+    span.description {
+    display: block;
+    text-align: left; /* Keep descriptions left aligned if long */
+  }
+
+  /* Buttons in actions column */
+  .wp-list-table.widefat tbody td .button {
+    margin-left: auto;
+  }
+}
+.azac-pagination {
+  display: flex;
+}

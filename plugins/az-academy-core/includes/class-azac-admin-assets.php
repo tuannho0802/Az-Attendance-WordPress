@@ -9,6 +9,12 @@ class AzAC_Admin_Assets
         wp_enqueue_style('azac-admin-style', AZAC_CORE_URL . 'admin/css/admin-style.css', [], AZAC_CORE_VERSION);
 
         $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+
+        // System Logs Grid Layout
+        if ($page === 'azac-system') {
+            wp_enqueue_style('azac-system-logs-v2', AZAC_CORE_URL . 'admin/css/azac-system-logs.css', [], AZAC_CORE_VERSION);
+        }
+
         if ($page === 'azac-classes-list' || $hook === 'toplevel_page_azac-attendance') {
             // Đảm bảo đường dẫn này đúng với thư mục bạn đặt file class-list.css
             wp_enqueue_style('azac-class-list-new', AZAC_CORE_URL . 'admin/css/class-list.css', [], time());
@@ -165,12 +171,6 @@ class AzAC_Admin_Assets
         }
         $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
         if ($page === 'azac-classes-list') {
-            // Enqueue Teacher View CSS if user is teacher
-            $user = wp_get_current_user();
-            if (in_array('az_teacher', (array) $user->roles, true)) {
-                wp_enqueue_style('azac-teacher-view-style', AZAC_CORE_URL . 'admin/css/azac-teacher-view.css', [], AZAC_CORE_VERSION);
-            }
-
             $cid = isset($_GET['class_id']) ? absint($_GET['class_id']) : 0;
             if ($cid) {
                 wp_enqueue_style('azac-attendance-style', AZAC_CORE_URL . 'admin/css/attendance.css', [], AZAC_CORE_VERSION);
@@ -251,6 +251,8 @@ class AzAC_Admin_Assets
                 'isTeacher' => in_array('az_teacher', (array) $user->roles, true),
                 'isAdmin' => current_user_can('manage_options'),
             ]);
+        } elseif ($page === 'azac-system') {
+            wp_enqueue_style('azac-system-logs-style', AZAC_CORE_URL . 'admin/css/azac-system-logs.css', [], AZAC_CORE_VERSION);
         }
     }
 }
