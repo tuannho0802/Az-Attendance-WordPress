@@ -1,0 +1,59 @@
+/* Container bọc ngoài cùng của lưới */
+.azac-main-grid-layout {
+  display: grid !important;
+  /* Chia chính xác 4 cột trên Desktop */
+  grid-template-columns: repeat(
+    4,
+    1fr
+  ) !important;
+  gap: 20px !important;
+  padding: 15px 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Từng cột chứa Card */
+.azac-grid-col {
+  display: flex !important;
+  flex-direction: column !important;
+  min-width: 0 !important; /* Ngăn chặn nội dung bên trong đẩy phình card */
+}
+
+/* Đảm bảo Card chiếm hết chiều rộng cột */
+.azac-grid-col .azac-card,
+.azac-grid-col .azac-tv-card {
+  width: 100% !important;
+  margin: 0 !important;
+  height: 100% !important; /* Giúp các card trong 1 hàng cao bằng nhau */
+  box-sizing: border-box !important;
+}
+
+/* === RESPONSIVE === */
+
+/* Màn hình Laptop nhỏ (Dưới 1200px): Xuống còn 3 cột */
+@media screen and (max-width: 1200px) {
+  .azac-main-grid-layout {
+    grid-template-columns: repeat(
+      3,
+      1fr
+    ) !important;
+  }
+}
+
+/* Màn hình Tablet (Dưới 900px): Xuống còn 2 cột */
+@media screen and (max-width: 900px) {
+  .azac-main-grid-layout {
+    grid-template-columns: repeat(
+      2,
+      1fr
+    ) !important;
+  }
+}
+
+/* Màn hình Mobile (Dưới 600px): Xuống còn 1 cột đứng */
+@media screen and (max-width: 600px) {
+  .azac-main-grid-layout {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+}

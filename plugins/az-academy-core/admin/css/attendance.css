@@ -366,8 +366,6 @@
 .wp-core-ui
   .azac-tabs
   .azac-tab-btn.button-primary:hover {
-    display: flex;
-    justify-content: center;
   background-color: #0d233e !important;
   border-color: #0d233e !important;
   color: #ffffff !important;

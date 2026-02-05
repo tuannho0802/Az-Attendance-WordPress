@@ -8,6 +8,12 @@ class AzAC_Admin_Assets
     {
         wp_enqueue_style('azac-admin-style', AZAC_CORE_URL . 'admin/css/admin-style.css', [], AZAC_CORE_VERSION);
 
+        $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+        if ($page === 'azac-classes-list' || $hook === 'toplevel_page_azac-attendance') {
+            // Đảm bảo đường dẫn này đúng với thư mục bạn đặt file class-list.css
+            wp_enqueue_style('azac-class-list-new', AZAC_CORE_URL . 'admin/css/class-list.css', [], time());
+        }
+
         // Teacher View Independent Styles
         $user = wp_get_current_user();
         if (in_array('az_teacher', $user->roles, true)) {

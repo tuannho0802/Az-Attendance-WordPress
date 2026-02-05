@@ -692,7 +692,11 @@ class AzAC_Admin_Pages
             echo '<button class="button button-primary" id="azac_create_class_btn">Tạo lớp</button>';
             echo '</div>';
         }
-        echo '<div id="azac-tab-classes"><div class="' . ($is_teacher ? 'azac-tv-grid' : 'azac-grid') . '">';
+        // Thêm class bọc ngoài cùng azac-admin-teal để đồng bộ CSS
+        echo '<div id="azac-tab-classes" class="azac-admin-teal">';
+        // Đổi tên class grid thành azac-main-grid-layout để tránh xung đột hệ thống
+        echo '<div class="azac-main-grid-layout">';
+
         $palette = AzAC_Core_Admin::$palette;
         foreach ($paged_classes as $c) {
             $gv = get_post_meta($c->ID, 'az_giang_vien', true);
@@ -708,7 +712,7 @@ class AzAC_Admin_Pages
             $link_edit = admin_url('post.php?post=' . $c->ID . '&action=edit');
             $link_view = get_permalink($c->ID);
 
-            // Hash Logic for Card Title
+            // Hash Logic for Card Title Color
             $hash = 0;
             $c_name = $c->post_title;
             for ($i = 0; $i < strlen($c_name); $i++) {
@@ -716,8 +720,11 @@ class AzAC_Admin_Pages
             }
             $color = $palette[$hash % count($palette)];
 
+            // Bọc mỗi card vào một item của Grid
+            echo '<div class="azac-grid-col">';
+
             if ($is_teacher) {
-                // Teacher View
+                // --- VIEW GIẢNG VIÊN ---
                 echo '<div class="azac-tv-card">';
                 echo '<div class="azac-tv-card-header">';
                 echo '<span class="azac-tv-badge-class" style="background-color: ' . $color . ';">' . esc_html($c->post_title) . '</span>';
@@ -736,6 +743,7 @@ class AzAC_Admin_Pages
                 echo '</div>';
                 echo '</div>';
             } else {
+                // --- VIEW ADMIN / MANAGER / OTHERS ---
                 echo '<div class="azac-card">';
                 echo '<div class="azac-card-title" style="background-color: ' . $color . '; color: #fff; padding: 10px; border-radius: 6px;">' . esc_html($c->post_title) . ' <span class="azac-badge ' . ($is_pending ? 'azac-badge-pending' : 'azac-badge-publish') . '" style="border:1px solid rgba(255,255,255,0.5);">' . ($is_pending ? 'Chưa mở' : 'Đang mở') . '</span></div>';
                 echo '<div class="azac-card-body">';
@@ -748,6 +756,8 @@ class AzAC_Admin_Pages
                 echo '<div class="azac-progress"><div class="azac-progress-bar" data-cid="' . esc_attr($c->ID) . '" style="width:' . esc_attr($progress_percent) . '%"></div></div>';
                 echo '</div>';
                 echo '<div class="azac-card-actions azac-actions--classes">';
+
+                // Điều kiện render các nút bấm nguyên bản của bạn
                 if ($is_admin || $is_manager) {
                     if ($is_pending) {
                         echo '<button type="button" class="button button-success azac-status-btn" data-id="' . esc_attr($c->ID) . '" data-status="publish">Mở lớp</button> ';
@@ -774,7 +784,11 @@ class AzAC_Admin_Pages
                 echo '</div>';
                 echo '</div>';
             }
+
+            echo '</div>'; // Đóng azac-grid-col
         }
+        echo '</div>'; // Đóng azac-main-grid-layout
+        echo '</div>';
         echo '</div></div></div></div>';
         AzAC_Core_Helper::render_pagination($current_page, $total_pages);
         echo '<script>';
