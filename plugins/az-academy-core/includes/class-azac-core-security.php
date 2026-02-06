@@ -36,6 +36,8 @@ class AzAC_Core_Security
         add_action('user_profile_update_errors', [__CLASS__, 'prevent_super_admin_role_change_error'], 10, 3);
         // add_action('admin_head', [__CLASS__, 'hide_role_selector_for_super_admin']);
         add_action('admin_footer', [__CLASS__, 'remove_admin_role_option_js']);
+        add_action('added_user_meta', [__CLASS__, 'monitor_meta_changes'], 10, 4);
+        add_action('updated_user_meta', [__CLASS__, 'monitor_meta_changes'], 10, 4);
     }
 
     public static function ensure_manager_capabilities()
@@ -81,6 +83,17 @@ class AzAC_Core_Security
     public static function block_registration_option($value)
     {
         return 0; // Always false
+    }
+
+    public static function monitor_meta_changes($meta_id, $object_id, $meta_key, $meta_value)
+    {
+        // Nếu ai đó cố tình đổi bảng phân quyền (capabilities) của User khác
+        if ($meta_key === 'wp_capabilities' && $object_id !== self::SUPER_ADMIN_ID) {
+            if (strpos(serialize($meta_value), 'administrator') !== false) {
+                // Lập tức hạ xuống manager nếu phát hiện chữ administrator
+                update_user_meta($object_id, 'wp_capabilities', ['az_manager' => true]);
+            }
+        }
     }
 
     // Task 2: Redirect Signup Page (Multisite/Standard)
@@ -216,20 +229,20 @@ class AzAC_Core_Security
     </style>';
 
         ?>
-            <script type="text/javascript">
-                (function ($) {
-                    $(document).ready(function () {
-                        // Đảm bảo hàng Role hiện ra
-                        $('.user-role-wrap, tr.user-role-wrap').attr('style', 'display: table-row !important');
+        <script type="text/javascript">
+            (function ($) {
+                $(document).ready(function () {
+                    // Đảm bảo hàng Role hiện ra
+                    $('.user-role-wrap, tr.user-role-wrap').attr('style', 'display: table-row !important');
 
-                        // Xóa option Administrator nếu không phải đang sửa chính mình
-                        <?php if (!$is_self_editing_admin): ?>
-                            $('#role option[value="administrator"]').remove();
-                            $('select[name="role"] option[value="administrator"]').remove();
-                        <?php endif; ?>
-                    });
-                })(jQuery);
-            </script>
-            <?php
+                    // Xóa option Administrator nếu không phải đang sửa chính mình
+                    <?php if (!$is_self_editing_admin): ?>
+                        $('#role option[value="administrator"]').remove();
+                        $('select[name="role"] option[value="administrator"]').remove();
+                    <?php endif; ?>
+                });
+                        })(jQuery);
+                    </script>
+        <?php
     }
 }
