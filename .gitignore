@@ -15,6 +15,12 @@
 # 4. Mở khóa file cấu hình
 !/.gitignore
 !/README.md
+!/HUONGDAN.MD
+!/INSTRUCTION.MD
+!/00_START_HERE.txt
+!/FILES_OVERVIEW.txt
+!QUICK_START.md
+
 
 # 5. Rác hệ thống
 .DS_Store
