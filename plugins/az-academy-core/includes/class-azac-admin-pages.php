@@ -1952,7 +1952,12 @@ class AzAC_Admin_Pages
                 $joined = intval($r['joined']);
                 $issues = isset($r['issues']) && is_array($r['issues']) ? $r['issues'] : [];
                 $notes_html = '';
-                if ($issues) {
+
+                if ($joined === 0) {
+                    // Case 1: New student, no sessions joined yet
+                    $notes_html = '<span class="azac-badge azac-issue-badge" style="background:#eee; color:#666;"><span class="dashicons dashicons-clock"></span> Chưa tham gia buổi học nào</span>';
+                } elseif ($issues) {
+                    // Case 2: Has issues (Absent/Half)
                     foreach ($issues as $it) {
                         $date = esc_html($it['date']);
                         $type = $it['type'];
@@ -1965,6 +1970,7 @@ class AzAC_Admin_Pages
                         $notes_html .= '<span class="azac-badge azac-issue-badge ' . $badge_cls . '"><span class="dashicons ' . $icon . '"></span> ' . $date . '<span class="azac-tip"><span class="tip-badge ' . ($ch_ok ? 'present' : 'absent') . '">Đầu giờ: ' . $ch_text . '</span><span class="tip-badge ' . ($mid_ok ? 'present' : 'absent') . '">Giữa giờ: ' . $mid_text . '</span></span></span> ';
                     }
                 } else {
+                    // Case 3: Joined > 0 and No Issues
                     $notes_html = '<span class="azac-badge azac-issue-badge azac-issue-safe"><span class="dashicons dashicons-yes"></span> Đủ 2 lần</span>';
                 }
                 echo '<tr>';
