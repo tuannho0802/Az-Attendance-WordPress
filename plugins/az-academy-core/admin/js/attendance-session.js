@@ -284,6 +284,42 @@
     // Initial Build
     initCustomSelect();
 
+    // Function to update Student Card UI
+    function updateStudentCardUI(data) {
+        var $cardCheckin = $('#student-card-checkin');
+        var $cardMid = $('#student-card-midsession');
+
+        if ($cardCheckin.length === 0 || $cardMid.length === 0) return;
+
+        // Reset classes
+        $cardCheckin.removeClass('status-present status-absent status-pending');
+        $cardMid.removeClass('status-present status-absent status-pending');
+
+        // Check-in
+        var statusCheckin = parseInt(data.check_in);
+        if (statusCheckin === 1) {
+            $cardCheckin.addClass('status-present');
+            $cardCheckin.find('.status-text').text('Đã điểm danh');
+            $cardCheckin.find('.status-icon i').attr('class', 'dashicons dashicons-yes');
+        } else {
+            $cardCheckin.addClass('status-absent');
+            $cardCheckin.find('.status-text').text('Chưa điểm danh');
+            $cardCheckin.find('.status-icon i').attr('class', 'dashicons dashicons-no');
+        }
+
+        // Mid-session
+        var statusMid = parseInt(data.mid_session);
+        if (statusMid === 1) {
+            $cardMid.addClass('status-present');
+            $cardMid.find('.status-text').text('Đã điểm danh');
+            $cardMid.find('.status-icon i').attr('class', 'dashicons dashicons-yes');
+        } else {
+            $cardMid.addClass('status-absent');
+            $cardMid.find('.status-text').text('Chưa điểm danh');
+            $cardMid.find('.status-icon i').attr('class', 'dashicons dashicons-no');
+        }
+    }
+
     $("#azac_session_select").on(
       "change",
       function () {
@@ -296,6 +332,25 @@
           updatePermissions(val);
         }
         window.azacData.sessionDate = val;
+
+        // Fetch Student Status via AJAX if isStudent is true and studentId exists
+        if (window.azacData && window.azacData.isStudent && window.azacData.studentId && window.azacData.studentId > 0) {
+             $.post(
+                window.azacData.ajaxUrl,
+                {
+                    action: 'azac_get_student_attendance_status',
+                    nonce: window.azacData.nonce,
+                    class_id: window.azacData.classId,
+                    session_date: val,
+                    student_id: window.azacData.studentId
+                },
+                function(res) {
+                    if (res.success && res.data) {
+                        updateStudentCardUI(res.data);
+                    }
+                }
+            );
+        }
         if (
           window.AZACU &&
           typeof window.AZACU
@@ -1365,5 +1420,9 @@
     });
 
 
+    // Trigger change if value exists to load initial student status
+    if ($("#azac_session_select").val()) {
+        $("#azac_session_select").trigger("change");
+    }
   });
 })(jQuery);

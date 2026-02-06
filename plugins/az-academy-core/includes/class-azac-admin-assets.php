@@ -25,6 +25,11 @@ class AzAC_Admin_Assets
         if (in_array('az_teacher', $user->roles, true)) {
             wp_enqueue_style('azac-teacher-view', AZAC_CORE_URL . 'admin/css/azac-teacher-view.css', [], AZAC_CORE_VERSION);
         }
+        
+        // Student View Independent Styles
+        if (in_array('az_student', $user->roles, true)) {
+            wp_enqueue_style('azac-student-view', AZAC_CORE_URL . 'admin/css/azac-student-view.css', [], AZAC_CORE_VERSION);
+        }
 
         // Enqueue Add Student JS only on the specific page
         if (isset($_GET['page']) && $_GET['page'] === 'azac-add-student') {

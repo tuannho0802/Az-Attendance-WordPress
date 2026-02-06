@@ -10,6 +10,7 @@ class AzAC_Core_Attendance
         add_action('wp_ajax_azac_get_attendance', [__CLASS__, 'ajax_get_attendance']);
         add_action('wp_ajax_azac_add_student', [__CLASS__, 'ajax_add_student']);
         add_action('wp_ajax_azac_search_students', [__CLASS__, 'ajax_search_students']);
+        add_action('wp_ajax_azac_get_student_attendance_status', [__CLASS__, 'ajax_get_student_attendance_status']);
     }
     public static function ajax_search_students()
     {
@@ -371,4 +372,55 @@ class AzAC_Core_Attendance
         }
         wp_send_json_success(['id' => $student_post_id, 'title' => get_the_title($student_post_id)]);
     }
+
+    public static function ajax_get_student_attendance_status()
+    {
+        // Security Check
+        if (!isset($_POST['nonce']) || !wp_verify_nonce($_POST['nonce'], 'azac_attendance_save')) {
+            ob_clean();
+            wp_send_json_error(['message' => 'Invalid Nonce'], 403);
+        }
+
+        $class_id = isset($_POST['class_id']) ? absint($_POST['class_id']) : 0;
+        $student_id = isset($_POST['student_id']) ? absint($_POST['student_id']) : 0;
+        $session_date = isset($_POST['session_date']) ? sanitize_text_field($_POST['session_date']) : '';
+
+        if (!$class_id || !$session_date || !$student_id) {
+            ob_clean();
+            wp_send_json_error(['message' => 'Invalid params'], 400);
+        }
+
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_attendance';
+
+        // Query both check-in and mid-session status
+        $results = $wpdb->get_results($wpdb->prepare(
+            "SELECT attendance_type, status FROM $table WHERE class_id = %d AND student_id = %d AND session_date = %s",
+            $class_id,
+            $student_id,
+            $session_date
+        ));
+
+        $check_in = 0;
+        $mid_session = 0;
+
+        if ($results) {
+            foreach ($results as $row) {
+                if ($row->attendance_type === 'check-in') {
+                    $check_in = intval($row->status);
+                }
+                if ($row->attendance_type === 'mid-session') {
+                    $mid_session = intval($row->status);
+                }
+            }
+        }
+
+        ob_clean();
+        wp_send_json_success([
+            'check_in' => $check_in,
+            'mid_session' => $mid_session
+        ]);
+    }
 }
+
+

@@ -1,0 +1,98 @@
+.azac-student-view-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+    margin-top: 20px;
+}
+
+@media (min-width: 768px) {
+    .azac-student-view-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+.azac-student-card {
+    background: #fff;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); /* Nhẹ hơn */
+    border: 1px solid #e2e2e2;
+    text-align: center;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 180px;
+}
+
+.azac-student-card h3 {
+    margin: 0 0 15px 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: #333;
+}
+
+.azac-student-card .card-status-icon {
+    font-size: 48px;
+    margin-bottom: 15px;
+    line-height: 1;
+    height: 48px;
+    width: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.azac-student-card .card-status-icon .dashicons {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+}
+
+.azac-student-card .status-text {
+    font-size: 16px;
+    font-weight: 500;
+}
+
+/* Status: Present */
+.azac-student-card.status-present {
+    background-color: #e6ffed; /* Xanh nhạt */
+    border: 1px solid #28a745;
+}
+
+.azac-student-card.status-present .card-status-icon {
+    color: #28a745;
+}
+
+.azac-student-card.status-present .status-text {
+    color: #28a745;
+}
+
+/* Status: Absent */
+.azac-student-card.status-absent {
+    background-color: #ffeef0; /* Đỏ nhạt */
+    border: 1px solid #dc3545;
+}
+
+.azac-student-card.status-absent .card-status-icon {
+    color: #dc3545;
+}
+
+.azac-student-card.status-absent .status-text {
+    color: #dc3545;
+}
+
+/* Status: Pending/Default */
+.azac-student-card.status-pending {
+    background-color: #f9fafb;
+    border: 1px solid #e5e7eb;
+}
+
+.azac-student-card.status-pending .card-status-icon {
+    color: #9ca3af;
+}
+
+.azac-student-card.status-pending .status-text {
+    color: #6b7280;
+}

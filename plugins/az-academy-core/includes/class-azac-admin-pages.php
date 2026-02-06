@@ -1644,11 +1644,40 @@ class AzAC_Admin_Pages
         }
         echo '</div>';
         echo '<h2 id="azac_session_title">Buổi học thứ: ' . esc_html($sessions_count) . ' • Ngày: ' . esc_html(date_i18n('d/m/Y', strtotime($selected_date))) . '</h2>';
-        echo '<div class="azac-tabs">';
-        echo '<button class="button button-primary azac-tab-btn" data-target="#azac-checkin">Điểm danh đầu giờ</button> ';
-        echo '<button class="button azac-tab-btn" data-target="#azac-mid">Điểm danh giữa giờ</button> ';
-        echo '</div>';
+        if (!$is_student) {
+            echo '<div class="azac-tabs">';
+            echo '<button class="button button-primary azac-tab-btn" data-target="#azac-checkin">Điểm danh đầu giờ</button> ';
+            echo '<button class="button azac-tab-btn" data-target="#azac-mid">Điểm danh giữa giờ</button> ';
+            echo '</div>';
+        }
         $can_edit = $is_admin || $is_manager || ($is_teacher && $selected_date === $today);
+
+        // Student View Cards (Appended before Admin Table)
+        if ($is_student) {
+            echo '<div id="azac-student-status-container" class="azac-student-view-grid">';
+            // Card Đầu Buổi
+            echo '<div id="student-card-checkin" class="azac-student-card status-pending">';
+            echo '<h3>Điểm danh đầu giờ</h3>';
+            echo '<div class="card-content">';
+            echo '<span class="status-icon"><i class="dashicons dashicons-clock"></i></span>';
+            echo '<span class="status-text">Đang tải dữ liệu...</span>';
+            echo '</div>';
+            echo '</div>';
+
+            // Card Giữa Buổi
+            echo '<div id="student-card-midsession" class="azac-student-card status-pending">';
+            echo '<h3>Điểm danh giữa giờ</h3>';
+            echo '<div class="card-content">';
+            echo '<span class="status-icon"><i class="dashicons dashicons-clock"></i></span>';
+            echo '<span class="status-text">Đang tải dữ liệu...</span>';
+            echo '</div>';
+            echo '</div>';
+            echo '</div>';
+        }
+
+        // Admin Table Wrapper (Hidden if Student)
+        $admin_view_style = $is_student ? ' style="display:none;"' : '';
+        echo '<div class="azac-admin-only-view"' . $admin_view_style . '>';
         echo '<div id="azac-checkin" class="azac-tab active">';
         echo '<div class="azac-table-wrapper">';
         echo '<table class="widefat fixed striped"><thead><tr><th>STT</th><th>Họ và Tên</th><th>Trạng thái</th><th>Ghi chú</th></tr></thead><tbody>';
@@ -1691,7 +1720,8 @@ class AzAC_Admin_Pages
             $btn_style = $can_edit ? '' : ' style="display:none"';
             echo '<p><button class="button button-primary" id="azac-submit-mid" data-type="mid-session"' . $btn_style . '>Xác nhận điểm danh giữa giờ</button></p>';
         }
-        echo '</div>';
+        echo '</div>'; // End azac-mid
+        echo '</div>'; // End azac-admin-only-view
         echo '<div id="azac-mid-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center">';
         echo '<div style="background:#fff;border-radius:12px;box-shadow:0 10px 20px rgba(0,0,0,.2);padding:16px;max-width:640px;width:90%;display:flex;flex-direction:column;gap:12px">';
         echo '<div style="display:flex;align-items:center;justify-content:space-between"><div style="font-weight:700;color:#0f6d5e">Công cụ Review buổi học</div><button type="button" class="button" id="azac_mid_close_modal">Đóng</button></div>';
@@ -1703,6 +1733,8 @@ class AzAC_Admin_Pages
         echo '</div>';
         echo '<script>window.azacData=' . wp_json_encode([
             'classId' => $class_id,
+            'isStudent' => $is_student,
+            'studentId' => isset($student_post_id) ? $student_post_id : 0,
             'className' => get_the_title($class_id),
             'isAdmin' => $is_admin || $is_manager,
             'nonce' => $nonce,
