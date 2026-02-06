@@ -1358,6 +1358,28 @@ class AzAC_Admin_Pages
     public static function render_admin_registration_page()
     {
         ?>
+                <style>
+                    #btn-submit-student:disabled {
+                        opacity: 0.5;
+                        cursor: not-allowed;
+                        filter: grayscale(1);
+                    }
+                
+                    .form-table input:focus {
+                        border-color: #007cba;
+                        box-shadow: 0 0 0 1px #007cba;
+                    }
+                
+                    .input-error {
+                        border-color: #dc3232 !important;
+                        box-shadow: 0 0 0 1px #dc3232 !important;
+                    }
+                
+                    .input-success {
+                        border-color: #46b450 !important;
+                        box-shadow: 0 0 0 1px #46b450 !important;
+                    }
+                </style>
                 <div class="wrap">
                     <h1 class="wp-heading-inline">Thêm học viên mới</h1>
                     <hr class="wp-header-end">
@@ -1396,13 +1418,18 @@ class AzAC_Admin_Pages
                                         <tr class="form-field form-required">
                                             <th scope="row"><label for="user_pass">Mật khẩu <span class="description">(bắt buộc)</span></label></th>
                                             <td>
-                                                <input name="user_pass" type="password" id="user_pass" value="" autocomplete="new-password">
+                                                <div style="display:flex; align-items:center; gap:10px;">
+                                                    <input name="user_pass" type="password" id="user_pass" value="" autocomplete="new-password" style="flex:1; max-width:25em;">
+                                                    <button type="button" id="toggle-password" class="button" title="Hiện/Ẩn mật khẩu"><span class="dashicons dashicons-visibility" style="line-height: 1.3;"></span></button>
+                                                    <button type="button" id="generate-password" class="button">Tạo mật khẩu</button>
+                                                </div>
                                             </td>
                                         </tr>
                                         <tr class="form-field form-required">
                                             <th scope="row"><label for="user_pass_confirm">Nhập lại mật khẩu <span class="description">(bắt buộc)</span></label></th>
                                             <td>
                                                 <input name="user_pass_confirm" type="password" id="user_pass_confirm" value="" autocomplete="new-password">
+                                                <span id="pass-match-msg" style="display:none; margin-left:10px; font-weight:bold;"></span>
                                             </td>
                                         </tr>
                                         <tr class="form-field">
