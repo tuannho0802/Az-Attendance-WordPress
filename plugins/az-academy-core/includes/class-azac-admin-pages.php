@@ -1074,12 +1074,18 @@ class AzAC_Admin_Pages
                 }
             }
 
+            // Permission Check for Sensitive Data
+            $can_view_sensitive_data = current_user_can('administrator') || current_user_can('az_manager');
+
             echo '<div style="overflow-x:auto;">';
             echo '<table class="wp-list-table widefat fixed striped table-view-list">';
             echo '<thead><tr>';
             echo '<th><a href="' . esc_url($sort_link('display_name')) . '" style="color:#fff;">Học viên ' . ($orderby == 'display_name' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
-            echo '<th><a href="' . esc_url($sort_link('email')) . '" style="color:#fff;">Email ' . ($orderby == 'email' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
-            echo '<th>Số điện thoại</th>';
+
+            if ($can_view_sensitive_data) {
+                echo '<th><a href="' . esc_url($sort_link('email')) . '" style="color:#fff;">Email ' . ($orderby == 'email' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
+                echo '<th>Số điện thoại</th>';
+            }
             echo '<th>Lĩnh vực kinh doanh</th>';
             echo '<th>Trạng thái lớp</th>';
             echo '<th><a href="' . esc_url($sort_link('attendance')) . '" style="color:#fff;">Chuyên cần ' . ($orderby == 'attendance' ? ($order == 'ASC' ? '▲' : '▼') : '') . '</a></th>';
@@ -1123,8 +1129,8 @@ class AzAC_Admin_Pages
                     'id' => $cpt_id, // Pass CPT ID (0 if none)
                     'name' => $u->display_name,
                     'avatar' => $avatar_url,
-                    'email' => $u->user_email,
-                    'phone' => $phone,
+                    'email' => $can_view_sensitive_data ? $u->user_email : '---',
+                    'phone' => $can_view_sensitive_data ? $phone : '---',
                     'business' => $business_field,
                     'date' => date_i18n(get_option('date_format'), strtotime($registered_date))
                 ]), ENT_QUOTES, 'UTF-8');
@@ -1137,11 +1143,13 @@ class AzAC_Admin_Pages
                 echo '<strong>' . esc_html($u->display_name) . '</strong>';
                 echo '</td>';
 
-                // Email
-                echo '<td data-label="Email">' . esc_html($u->user_email) . '</td>';
+                if ($can_view_sensitive_data) {
+                    // Email
+                    echo '<td data-label="Email">' . esc_html($u->user_email) . '</td>';
 
-                // Phone
-                echo '<td data-label="Số điện thoại">' . ($phone ? esc_html($phone) : '<span style="color:#999">Chưa có SĐT</span>') . '</td>';
+                    // Phone
+                    echo '<td data-label="Số điện thoại">' . ($phone ? esc_html($phone) : '<span style="color:#999">Chưa có SĐT</span>') . '</td>';
+                }
 
                 // Business
                 echo '<td data-label="Lĩnh vực kinh doanh">' . esc_html($business_field) . '</td>';
