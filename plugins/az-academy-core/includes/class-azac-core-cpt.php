@@ -54,6 +54,16 @@ class AzAC_Core_CPT
         update_post_meta($class_id, 'az_students', $new_students);
         update_post_meta($class_id, 'az_so_hoc_vien', count($new_students));
 
+        // CLEANUP: Remove attendance history for this student
+        if (class_exists('AzAC_Core_Attendance') && method_exists('AzAC_Core_Attendance', 'cleanup_student_attendance')) {
+            AzAC_Core_Attendance::cleanup_student_attendance($student_id, $class_id);
+        } else {
+            // Fallback direct cleanup
+            global $wpdb;
+            $table_att = $wpdb->prefix . 'az_attendance';
+            $wpdb->query($wpdb->prepare("DELETE FROM $table_att WHERE class_id = %d AND student_id = %d", $class_id, $student_id));
+        }
+
         wp_send_json_success(['count' => count($new_students)]);
     }
 
@@ -661,7 +671,32 @@ class AzAC_Core_CPT
             return;
         }
         $ids = isset($_POST['az_students']) && is_array($_POST['az_students']) ? array_map('absint', $_POST['az_students']) : [];
+
+        // CLEANUP CHECK: Identify removed students
+        $old_students = get_post_meta($post_id, 'az_students', true);
+        if (!is_array($old_students))
+            $old_students = [];
+
+        $removed_ids = array_diff($old_students, $ids);
+
         update_post_meta($post_id, 'az_students', array_values(array_filter($ids)));
         update_post_meta($post_id, 'az_so_hoc_vien', count($ids));
+
+        // Execute Cleanup
+        if (!empty($removed_ids)) {
+            // Try method first, fallback to direct SQL to ensure cleanup happens
+            if (class_exists('AzAC_Core_Attendance') && method_exists('AzAC_Core_Attendance', 'cleanup_student_attendance')) {
+                foreach ($removed_ids as $sid) {
+                    AzAC_Core_Attendance::cleanup_student_attendance($sid, $post_id);
+                }
+            } else {
+                global $wpdb;
+                $table_att = $wpdb->prefix . 'az_attendance';
+                $ids_sql = implode(',', array_map('absint', $removed_ids));
+                if ($ids_sql) {
+                    $wpdb->query($wpdb->prepare("DELETE FROM $table_att WHERE class_id = %d AND student_id IN ($ids_sql)", $post_id));
+                }
+            }
+        }
     }
 }

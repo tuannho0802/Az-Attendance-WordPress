@@ -421,6 +421,19 @@ class AzAC_Core_Attendance
             'mid_session' => $mid_session
         ]);
     }
+
+    public static function cleanup_student_attendance($student_id, $class_id)
+    {
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_attendance';
+
+        // Delete all records for this student in this class
+        $wpdb->query($wpdb->prepare(
+            "DELETE FROM $table WHERE class_id = %d AND student_id = %d",
+            $class_id,
+            $student_id
+        ));
+    }
 }
 
 
