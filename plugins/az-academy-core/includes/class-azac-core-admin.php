@@ -158,6 +158,7 @@ class AzAC_Core_Admin
     private static function send_welcome_email($user_id, $username, $email, $password, $role)
     {
         $site_name = get_bloginfo('name');
+        $logo_url = get_stylesheet_directory_uri() . '/assets/img/logo.png'; // CHÈN LINK LOGO TẠI ĐÂY
 
         // Lấy thông tin bổ sung từ User Meta (nếu có) để tránh lỗi unassigned variable
         $user_phone = get_user_meta($user_id, 'billing_phone', true) ?: (get_user_meta($user_id, 'phone', true) ?: 'N/A');
@@ -210,12 +211,8 @@ class AzAC_Core_Admin
                             <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                 <tr>
                                     <td align='left'>
-                                        <table border='0' cellspacing='0' cellpadding='0'>
-                                            <tr>
-                                                <td style='background: linear-gradient(135deg, #38bdf8, #2563eb); width: 32px; height: 32px; border-radius: 8px; text-align: center; color: #ffffff; font-weight: bold; font-size: 18px; line-height: 32px;'>A</td>
-                                                <td style='padding-left: 12px; color: #ffffff; font-weight: 800; font-size: 20px; letter-spacing: 1px;'>AZACADEMY</td>
-                                            </tr>
-                                        </table>
+                                        <!-- Logo Image -->
+                                        <img src='{$logo_url}' alt='AZACADEMY' style='height: 40px; width: auto; display: block; border: 0;'>
                                     </td>
                                 </tr>
                             </table>
@@ -255,10 +252,11 @@ class AzAC_Core_Admin
                                                 <td width='48' valign='top'>
                                                     <div style='width: 36px; height: 36px; background-color: #fef2f2; border-radius: 10px; text-align: center; line-height: 38px; font-size: 18px;'>🔑</div>
                                                 </td>
-                                                < style='padding-left: 15px;'>
-                                                <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Chi tiết đăng nhập</div>
-                                                <div style='color: #1e293b; font-size: 14px; margin-top: 4px;'>Email: <b>{$user_email}</b></div> <div style='color: #1e293b; font-size: 14px;'>User: <b>{$user_login}</b></div>
-                                                <div style='color: #ef4444; font-size: 14px; font-weight: 700; font-family: monospace;'>Pass: {$plain_password}</div>
+                                                <td style='padding-left: 15px;'>
+                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Chi tiết đăng nhập</div>
+                                                    <div style='color: #1e293b; font-size: 14px; margin-top: 4px;'>📧 Email: <b>{$user_email}</b></div>
+                                                    <div style='color: #1e293b; font-size: 14px; margin-top: 4px;'>👤 User: <b>{$user_login}</b></div>
+                                                    <div style='color: #ef4444; font-size: 14px; font-weight: 700; font-family: monospace; margin-top: 4px;'>🔑 Pass: {$plain_password}</div>
                                                 </td>
                                             </tr>
                                         </table>
