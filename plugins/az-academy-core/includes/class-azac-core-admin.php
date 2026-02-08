@@ -157,41 +157,75 @@ class AzAC_Core_Admin
 
     private static function send_welcome_email($user_id, $username, $email, $password, $role) {
         $site_name = get_bloginfo('name');
-        $login_url = wp_login_url();
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        
-        $role_label = 'Học viên';
-        $content_note = '<p>Chào mừng bạn gia nhập lớp học. Hãy đăng nhập để xem lịch học và điểm danh nhé.</p>';
+
+        // Define variables for template
+        $user_login = $username;
+        $user_email = $email;
+        $plain_password = $password;
+
+        // Determine Role specific content
+        $role_color = '#2271b1'; // Default blue (Student)
+        $role_icon = '🎓';
+        $welcome_msg = 'Chào mừng bạn tham gia khóa học!';
 
         if ($role === 'az_teacher') {
-            $role_label = 'Giảng viên';
-            $content_note = '<p>Chào mừng bạn gia nhập đội ngũ giảng viên. Hãy đăng nhập để quản lý lớp học và điểm danh cho học viên.</p>';
+            $role_color = '#722ed1'; // Purple
+            $role_icon = '👨‍🏫';
+            $welcome_msg = 'Chào mừng Giảng viên mới của hệ thống!';
         } elseif ($role === 'az_manager') {
-            $role_label = 'Quản lý';
-            $content_note = '<p>Tài khoản quản lý của bạn đã được tạo. Vui lòng bảo mật thông tin đăng nhập và sử dụng quyền hạn đúng mục đích.</p>';
+            $role_color = '#fa8c16'; // Orange
+            $role_icon = '🛡️';
+            $welcome_msg = 'Chào mừng Quản trị viên hệ thống!';
         }
 
-        $subject = "[$site_name] Thông tin tài khoản $role_label mới";
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        $subject = "[$site_name] Thông tin tài khoản mới";
         
         $message = "
+        <!DOCTYPE html>
         <html>
         <head>
-            <title>Chào mừng thành viên mới</title>
+            <meta charset='UTF-8'>
+            <style>
+                .email-wrapper { background-color: #f4f7f6; padding: 30px; font-family: 'Segoe UI', Arial, sans-serif; }
+                .email-card { max-width: 500px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+                .header { background-color: {$role_color}; padding: 30px; text-align: center; color: white; }
+                .content { padding: 30px; color: #333; line-height: 1.6; }
+                .info-box { background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 20px; margin: 20px 0; }
+                .info-item { margin-bottom: 10px; font-size: 15px; }
+                .info-label { font-weight: bold; color: #64748b; width: 100px; display: inline-block; }
+                .btn { display: inline-block; background: {$role_color}; color: white !important; padding: 12px 25px; text-decoration: none; border-radius: 6px; font-weight: bold; margin-top: 20px; }
+                .footer { text-align: center; padding: 20px; font-size: 12px; color: #94a3b8; }
+            </style>
         </head>
         <body>
-            <h2>Xin chào,</h2>
-            <p>Tài khoản của bạn tại <strong>$site_name</strong> đã được khởi tạo thành công.</p>
-            $content_note
-            <hr>
-            <h3>Thông tin đăng nhập:</h3>
-            <ul>
-                <li><strong>Đường dẫn:</strong> <a href='$login_url'>$login_url</a></li>
-                <li><strong>Tên đăng nhập:</strong> $username</li>
-                <li><strong>Email:</strong> $email</li>
-                <li><strong>Mật khẩu:</strong> $password</li>
-            </ul>
-            <p><em>Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu để bảo mật tài khoản.</em></p>
-            <p>Trân trọng,<br>Ban quản trị $site_name</p>
+            <div class='email-wrapper'>
+                <div class='email-card'>
+                    <div class='header'>
+                        <div style='font-size: 40px;'>{$role_icon}</div>
+                        <h2 style='margin: 10px 0 0;'>Tài Khoản Đã Sẵn Sàng</h2>
+                    </div>
+                    <div class='content'>
+                        <p>Xin chào <strong>{$user_login}</strong>,</p>
+                        <p>{$welcome_msg}</p>
+                        
+                        <div class='info-box'>
+                            <div class='info-item'><span class='info-label'>📧 Email:</span> {$user_email}</div>
+                            <div class='info-item'><span class='info-label'>👤 User:</span> {$user_login}</div>
+                            <div class='info-item'><span class='info-label'>🔑 Pass:</span> <code style='color: #e11d48; font-weight: bold;'>{$plain_password}</code></div>
+                        </div>
+
+                        <p style='font-size: 13px; color: #666;'>* Vui lòng đổi mật khẩu ngay sau lần đăng nhập đầu tiên để bảo mật tài khoản.</p>
+                        
+                        <div style='text-align: center;'>
+                            <a href='" . wp_login_url() . "' class='btn'>Đăng Nhập Ngay</a>
+                        </div>
+                    </div>
+                    <div class='footer'>
+                        © " . date('Y') . " AzAcademy System. All rights reserved.
+                    </div>
+                </div>
+            </div>
         </body>
         </html>
         ";
