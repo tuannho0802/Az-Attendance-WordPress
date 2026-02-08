@@ -207,7 +207,7 @@ class AzAC_Core_Admin
                 <table width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.05);'>
                     
                     <tr>
-                        <td style='background-color: #0f172a; padding: 30px 45px;'>
+                        <td style='background-color: #294c9ee3; padding: 30px 45px;'>
                             <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                 <tr>
                                     <td align='left'>
@@ -238,7 +238,7 @@ class AzAC_Core_Admin
                                                     <div style='width: 36px; height: 36px; background-color: #e0f2fe; border-radius: 10px; text-align: center; line-height: 38px; font-size: 18px;'>📱</div>
                                                 </td>
                                                 <td style='padding-left: 15px;'>
-                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Thông tin liên hệ</div>
+                                                    <div style='color: #fff; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Thông tin liên hệ</div>
                                                     <div style='color: #1e293b; font-size: 15px; font-weight: 600; margin-top: 4px;'>{$user_phone} • {$business_field}</div>
                                                 </td>
                                             </tr>
@@ -301,7 +301,7 @@ class AzAC_Core_Admin
                     </tr>
 
                     <tr>
-                        <td style='padding: 30px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;'>
+                        <td style='padding: 30px; background-color: #294c9ee3; border-top: 1px solid #f1f5f9; text-align: center;'>
                             <p style='margin: 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;'>© {$year} {$site_name} SYSTEM</p>
                         </td>
                     </tr>
