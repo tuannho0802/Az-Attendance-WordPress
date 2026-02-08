@@ -526,7 +526,7 @@ class AzAC_Admin_Pages
         $is_admin = current_user_can('manage_options');
         $is_student = in_array('az_student', $user->roles, true);
         echo '<div class="azac-tabs" style="margin-bottom:10px;">';
-       
+
         echo '</div>';
         if ($is_teacher || $is_admin || $is_student) {
             echo '<div id="azac-tab-sessions" class="azac-tab active">';
@@ -643,7 +643,7 @@ class AzAC_Admin_Pages
             echo '</form>';
         }
 
-        
+
 
         $args = [
             'post_type' => 'az_class',
@@ -1358,105 +1358,148 @@ class AzAC_Admin_Pages
     public static function render_admin_registration_page()
     {
         ?>
-                <style>
-                    #btn-submit-student:disabled {
-                        opacity: 0.5;
-                        cursor: not-allowed;
-                        filter: grayscale(1);
-                    }
-                
-                    .form-table input:focus {
-                        border-color: #007cba;
-                        box-shadow: 0 0 0 1px #007cba;
-                    }
-                
-                    .input-error {
-                        border-color: #dc3232 !important;
-                        box-shadow: 0 0 0 1px #dc3232 !important;
-                    }
-                
-                    .input-success {
-                        border-color: #46b450 !important;
-                        box-shadow: 0 0 0 1px #46b450 !important;
-                    }
-                </style>
-                <div class="wrap">
-                    <h1 class="wp-heading-inline">Thêm học viên mới</h1>
-                    <hr class="wp-header-end">
-            
-                    <div class="card" style="max-width: 800px; margin-top: 20px; padding: 0;">
-                        <h2 style="padding: 15px 20px; margin: 0; border-bottom: 1px solid #eee; background: #f9f9f9;">Thông tin học viên</h2>
-                        <div style="padding: 20px;">
-                            <div id="register-message" class="notice inline" style="display:none; margin: 0 0 20px 0;"><p></p></div>
-                            <form id="azac-add-student-form" method="post" autocomplete="off">
-                                <table class="form-table" role="presentation">
-                                    <tbody>
-                                        <tr class="form-field form-required">
-                                            <th scope="row"><label for="user_login">Tên đăng nhập <span class="description">(bắt buộc)</span></label></th>
-                                            <td>
-                                                <input name="user_login" type="text" id="user_login" value="" aria-required="true" autocapitalize="none" autocorrect="off" maxlength="60">
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field form-required">
-                                            <th scope="row"><label for="user_email">Email <span class="description">(bắt buộc)</span></label></th>
-                                            <td>
-                                                <input name="user_email" type="email" id="user_email" value="" aria-required="true">
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field">
-                                            <th scope="row"><label for="first_name">Họ và tên lót</label></th>
-                                            <td>
-                                                <input name="first_name" type="text" id="first_name" value="">
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field">
-                                            <th scope="row"><label for="last_name">Tên</label></th>
-                                            <td>
-                                                <input name="last_name" type="text" id="last_name" value="">
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field form-required">
-                                            <th scope="row"><label for="user_pass">Mật khẩu <span class="description">(bắt buộc)</span></label></th>
-                                            <td>
-                                                <div style="display:flex; align-items:center; gap:10px;">
-                                                    <input name="user_pass" type="password" id="user_pass" value="" autocomplete="new-password" style="flex:1; max-width:25em;">
-                                                    <button type="button" id="toggle-password" class="button" title="Hiện/Ẩn mật khẩu"><span class="dashicons dashicons-visibility" style="line-height: 1.3;"></span></button>
-                                                    <button type="button" id="generate-password" class="button">Tạo mật khẩu</button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field form-required">
-                                            <th scope="row"><label for="user_pass_confirm">Nhập lại mật khẩu <span class="description">(bắt buộc)</span></label></th>
-                                            <td>
-                                                <input name="user_pass_confirm" type="password" id="user_pass_confirm" value="" autocomplete="new-password">
-                                                <span id="pass-match-msg" style="display:none; margin-left:10px; font-weight:bold;"></span>
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field">
-                                            <th scope="row"><label for="az_phone">Số điện thoại</label></th>
-                                            <td>
-                                                <input name="az_phone" type="text" id="az_phone" value="">
-                                            </td>
-                                        </tr>
-                                        <tr class="form-field">
-                                            <th scope="row"><label for="az_business_field">Lĩnh vực kinh doanh</label></th>
-                                            <td>
-                                                <input name="az_business_field" type="text" id="az_business_field" value="">
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                        
-                                <p class="submit" style="padding-top: 20px;">
-                                    <button type="submit" name="createuser" id="btn-submit-student" class="button button-primary">
-                                        <span class="btn-text">Thêm học viên mới</span>
-                                    </button>
-                                </p>
-                            </form>
-                        </div>
+        <style>
+            /* Màu nút trạng thái bình thường */
+            #btn-submit-student {
+                background-color: #2271b1 !important;
+                /* Thay màu bạn muốn ở đây */
+                color: #fff !important;
+                border: none;
+                padding: 10px 20px;
+                border-radius: 4px;
+                cursor: pointer;
+                transition: background 0.3s ease;
+            }
+
+            /* Màu nút khi di chuột qua (Hover) */
+            #btn-submit-student:hover {
+                background-color: #135e96 !important;
+                /* Màu đậm hơn một chút khi hover */
+            }
+
+            /* Màu nút khi bị disable (đang xử lý AJAX) */
+            #btn-submit-student:disabled {
+                background-color: #a7aaad !important;
+                cursor: not-allowed;
+            }
+
+            .form-table input:focus {
+                border-color: #007cba;
+                box-shadow: 0 0 0 1px #007cba;
+            }
+
+            .input-error {
+                border-color: #dc3232 !important;
+                box-shadow: 0 0 0 1px #dc3232 !important;
+            }
+
+            .input-success {
+                border-color: #46b450 !important;
+                box-shadow: 0 0 0 1px #46b450 !important;
+            }
+        </style>
+        <div class="wrap">
+            <h1 class="wp-heading-inline">Thêm người dùng mới</h1>
+            <hr class="wp-header-end">
+
+            <div class="card" style="max-width: 800px; margin-top: 20px; padding: 0;">
+                <h2 style="padding: 15px 20px; margin: 0; border-bottom: 1px solid #eee; background: #f9f9f9;">Thông tin người
+                    dùng</h2>
+                <div style="padding: 20px;">
+                    <div id="register-message" class="notice inline" style="display:none; margin: 0 0 20px 0;">
+                        <p></p>
                     </div>
+                    <form id="azac-add-student-form" method="post" autocomplete="off">
+                        <table class="form-table" role="presentation">
+                            <tbody>
+                                <tr class="form-field form-required">
+                                    <th scope="row"><label for="user_login">Tên đăng nhập <span class="description">(bắt
+                                                buộc)</span></label></th>
+                                    <td>
+                                        <input name="user_login" type="text" id="user_login" value="" aria-required="true"
+                                            autocapitalize="none" autocorrect="off" maxlength="60">
+                                    </td>
+                                </tr>
+                                <tr class="form-field form-required">
+                                    <th scope="row"><label for="user_email">Email <span class="description">(bắt
+                                                buộc)</span></label></th>
+                                    <td>
+                                        <input name="user_email" type="email" id="user_email" value="" aria-required="true">
+                                    </td>
+                                </tr>
+                                <tr class="form-field form-required">
+                                    <th scope="row"><label for="role">Vai trò <span class="description">(bắt
+                                                buộc)</span></label></th>
+                                    <td>
+                                        <select name="role" id="role">
+                                            <option value="az_student">Học viên (Student)</option>
+                                            <option value="az_teacher">Giảng viên (Teacher)</option>
+                                            <option value="az_manager">Quản lý (Manager)</option>
+                                        </select>
+                                    </td>
+                                </tr>
+                                <tr class="form-field">
+                                    <th scope="row"><label for="first_name">Họ và tên lót</label></th>
+                                    <td>
+                                        <input name="first_name" type="text" id="first_name" value="">
+                                    </td>
+                                </tr>
+                                <tr class="form-field">
+                                    <th scope="row"><label for="last_name">Tên</label></th>
+                                    <td>
+                                        <input name="last_name" type="text" id="last_name" value="">
+                                    </td>
+                                </tr>
+                                <tr class="form-field form-required">
+                                    <th scope="row"><label for="user_pass">Mật khẩu <span class="description">(bắt
+                                                buộc)</span></label></th>
+                                    <td>
+                                        <div style="display:flex; align-items:center; gap:10px;">
+                                            <input name="user_pass" type="password" id="user_pass" value=""
+                                                autocomplete="new-password" style="flex:1; max-width:25em;">
+                                            <button type="button" id="toggle-password" class="button"
+                                                title="Hiện/Ẩn mật khẩu"><span class="dashicons dashicons-visibility"
+                                                    style="line-height: 1.3;"></span></button>
+                                            <button type="button" id="generate-password" class="button">Tạo mật khẩu</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <tr class="form-field form-required">
+                                    <th scope="row"><label for="user_pass_confirm">Nhập lại mật khẩu <span
+                                                class="description">(bắt buộc)</span></label></th>
+                                    <td>
+                                        <input name="user_pass_confirm" type="password" id="user_pass_confirm" value=""
+                                            autocomplete="new-password">
+                                        <span id="pass-match-msg"
+                                            style="display:none; margin-left:10px; font-weight:bold;"></span>
+                                    </td>
+                                </tr>
+                                <tr class="form-field">
+                                    <th scope="row"><label for="az_phone">Số điện thoại <span class="description">(bắt
+                                                buộc)</span></label></th>
+                                    <td>
+                                        <input name="az_phone" type="text" id="az_phone" value="">
+                                    </td>
+                                </tr>
+                                <tr class="form-field">
+                                    <th scope="row"><label for="az_business_field">Lĩnh vực kinh doanh</label></th>
+                                    <td>
+                                        <input name="az_business_field" type="text" id="az_business_field" value="">
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+
+                        <p class="submit" style="padding-top: 20px;">
+                            <button type="submit" name="createuser" id="btn-submit-student" class="button button-primary">
+                                <span class="btn-text">Thêm người dùng mới</span>
+                            </button>
+                        </p>
+                    </form>
                 </div>
-                <?php
+            </div>
+        </div>
+        <?php
     }
     public static function render_class_dashboard_page()
     {

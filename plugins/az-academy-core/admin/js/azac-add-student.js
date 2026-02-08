@@ -138,7 +138,10 @@
             $passMatchMsg.hide();
             validateForm(); // Re-validate (will disable button)
             
-            showSuccess(response.data.message || "Thêm học viên thành công!");
+            showSuccess(
+              response.data.message ||
+                "Thêm người dùng thành công!",
+            );
           } else {
             showError(response.data.message || "Đã có lỗi xảy ra.");
           }
@@ -148,7 +151,9 @@
         },
         complete: function () {
           // Restore button text but keep disabled state based on validation
-          $btn.find(".btn-text").text("Thêm học viên mới");
+          $btn
+            .find(".btn-text")
+            .text("Thêm người dùng mới");
           validateForm();
         },
       });

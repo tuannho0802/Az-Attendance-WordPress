@@ -104,6 +104,13 @@ class AzAC_Core_Admin
         $confirm = isset($_POST['user_pass_confirm']) ? $_POST['user_pass_confirm'] : '';
         $phone = isset($_POST['az_phone']) ? sanitize_text_field($_POST['az_phone']) : '';
         $business = isset($_POST['az_business_field']) ? sanitize_text_field($_POST['az_business_field']) : '';
+        
+        // Get Role
+        $role = isset($_POST['role']) ? sanitize_text_field($_POST['role']) : 'az_student';
+        $allowed_roles = ['az_student', 'az_teacher', 'az_manager'];
+        if (!in_array($role, $allowed_roles)) {
+            wp_send_json_error(['message' => 'Vai trò người dùng không hợp lệ.']);
+        }
 
         if (empty($username) || empty($email) || empty($password)) {
             wp_send_json_error(['message' => 'Vui lòng điền đầy đủ các trường bắt buộc.']);
@@ -125,7 +132,7 @@ class AzAC_Core_Admin
             'first_name' => $first_name,
             'last_name' => $last_name,
             'display_name' => $first_name . ' ' . $last_name,
-            'role' => 'az_student',
+            'role' => $role,
         ]);
 
         if (is_wp_error($user_id)) {
@@ -137,12 +144,59 @@ class AzAC_Core_Admin
 
             // Also update billing_phone for consistency if needed, but keeping strictly to requirements
             update_user_meta($user_id, 'billing_phone', $phone);
+            
+            // Send Welcome Email
+            self::send_welcome_email($user_id, $username, $email, $password, $role);
 
             // Set Flash Toast for next page load if redirecting, but here we return JSON
-            AzAC_Core_Helper::set_flash_toast('Thêm học viên mới thành công!', 'success');
+            AzAC_Core_Helper::set_flash_toast('Thêm người dùng mới thành công!', 'success');
 
-            wp_send_json_success(['message' => 'Thêm học viên mới thành công!']);
+            wp_send_json_success(['message' => 'Thêm người dùng mới thành công và đã gửi email thông báo!']);
         }
+    }
+
+    private static function send_welcome_email($user_id, $username, $email, $password, $role) {
+        $site_name = get_bloginfo('name');
+        $login_url = wp_login_url();
+        $headers = array('Content-Type: text/html; charset=UTF-8');
+        
+        $role_label = 'Học viên';
+        $content_note = '<p>Chào mừng bạn gia nhập lớp học. Hãy đăng nhập để xem lịch học và điểm danh nhé.</p>';
+
+        if ($role === 'az_teacher') {
+            $role_label = 'Giảng viên';
+            $content_note = '<p>Chào mừng bạn gia nhập đội ngũ giảng viên. Hãy đăng nhập để quản lý lớp học và điểm danh cho học viên.</p>';
+        } elseif ($role === 'az_manager') {
+            $role_label = 'Quản lý';
+            $content_note = '<p>Tài khoản quản lý của bạn đã được tạo. Vui lòng bảo mật thông tin đăng nhập và sử dụng quyền hạn đúng mục đích.</p>';
+        }
+
+        $subject = "[$site_name] Thông tin tài khoản $role_label mới";
+        
+        $message = "
+        <html>
+        <head>
+            <title>Chào mừng thành viên mới</title>
+        </head>
+        <body>
+            <h2>Xin chào,</h2>
+            <p>Tài khoản của bạn tại <strong>$site_name</strong> đã được khởi tạo thành công.</p>
+            $content_note
+            <hr>
+            <h3>Thông tin đăng nhập:</h3>
+            <ul>
+                <li><strong>Đường dẫn:</strong> <a href='$login_url'>$login_url</a></li>
+                <li><strong>Tên đăng nhập:</strong> $username</li>
+                <li><strong>Email:</strong> $email</li>
+                <li><strong>Mật khẩu:</strong> $password</li>
+            </ul>
+            <p><em>Vui lòng đổi mật khẩu sau khi đăng nhập lần đầu để bảo mật tài khoản.</em></p>
+            <p>Trân trọng,<br>Ban quản trị $site_name</p>
+        </body>
+        </html>
+        ";
+
+        wp_mail($email, $subject, $message, $headers);
     }
 
     public static function render_flash_toast()
