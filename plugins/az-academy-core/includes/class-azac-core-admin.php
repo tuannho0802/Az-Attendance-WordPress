@@ -104,7 +104,7 @@ class AzAC_Core_Admin
         $confirm = isset($_POST['user_pass_confirm']) ? $_POST['user_pass_confirm'] : '';
         $phone = isset($_POST['az_phone']) ? sanitize_text_field($_POST['az_phone']) : '';
         $business = isset($_POST['az_business_field']) ? sanitize_text_field($_POST['az_business_field']) : '';
-        
+
         // Get Role
         $role = isset($_POST['role']) ? sanitize_text_field($_POST['role']) : 'az_student';
         $allowed_roles = ['az_student', 'az_teacher', 'az_manager'];
@@ -144,7 +144,7 @@ class AzAC_Core_Admin
 
             // Also update billing_phone for consistency if needed, but keeping strictly to requirements
             update_user_meta($user_id, 'billing_phone', $phone);
-            
+
             // Send Welcome Email
             self::send_welcome_email($user_id, $username, $email, $password, $role);
 
@@ -155,8 +155,13 @@ class AzAC_Core_Admin
         }
     }
 
-    private static function send_welcome_email($user_id, $username, $email, $password, $role) {
+    private static function send_welcome_email($user_id, $username, $email, $password, $role)
+    {
         $site_name = get_bloginfo('name');
+
+        // Lấy thông tin bổ sung từ User Meta (nếu có) để tránh lỗi unassigned variable
+        $user_phone = get_user_meta($user_id, 'billing_phone', true) ?: (get_user_meta($user_id, 'phone', true) ?: 'N/A');
+        $business_field = get_user_meta($user_id, 'business_field', true) ?: 'Thành viên mới';
 
         // Define variables for template
         $user_login = $username;
@@ -164,112 +169,151 @@ class AzAC_Core_Admin
         $plain_password = $password;
 
         // Determine Role specific content
-        $role_color = '#2271b1'; // Default blue (Student)
+        $role_color = '#2563eb'; // Blue (Student)
         $role_icon = '🎓';
-        $welcome_msg = 'Chào mừng bạn tham gia khóa học!';
+        $welcome_msg = 'Tài khoản của bạn đã được thiết lập thành công trên hệ thống.';
 
         if ($role === 'az_teacher') {
             $role_color = '#722ed1'; // Purple
             $role_icon = '👨‍🏫';
-            $welcome_msg = 'Chào mừng Giảng viên mới của hệ thống!';
+            $welcome_msg = 'Chào mừng Giảng viên mới! Hãy cùng tạo nên những bài giảng tuyệt vời.';
         } elseif ($role === 'az_manager') {
             $role_color = '#fa8c16'; // Orange
             $role_icon = '🛡️';
-            $welcome_msg = 'Chào mừng Quản trị viên hệ thống!';
+            $welcome_msg = 'Chào mừng Quản trị viên! Quyền truy cập hệ thống đã sẵn sàng.';
         }
 
         $headers = array('Content-Type: text/html; charset=UTF-8');
-        $subject = "[$site_name] Thông tin tài khoản mới";
+        $subject = "[$site_name] Thông tin tài khoản mới của bạn";
 
-        $logo_url = get_stylesheet_directory_uri() . '/assets/img/logo.png';
         $login_url = wp_login_url();
         $year = date('Y');
 
         $message = "
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset='UTF-8'>
-            <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-            <title>Chào mừng thành viên mới</title>
-        </head>
-        <body style='margin: 0; padding: 0; background-color: #f4f7f6; font-family: \"Segoe UI\", Arial, sans-serif;'>
-            <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #f4f7f6; width: 100%;'>
-                <tr>
-                    <td align='center' style='padding: 40px 15px;'>
-                        <!-- Logo Section -->
-                        <table width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width: 500px; margin: 0 auto;'>
-                            <tr>
-                                <td align='center' style='padding-bottom: 25px;'>
-                                    <img src='{$logo_url}' alt='Logo' style='max-width: 180px; height: auto; display: block; border: 0;'>
-                                </td>
-                            </tr>
-                        </table>
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='UTF-8'>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+    </style>
+</head>
+<body style='margin: 0; padding: 0; background-color: #f1f5f9; font-family: \"Plus Jakarta Sans\", \"Segoe UI\", Helvetica, Arial, sans-serif;'>
+    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #f1f5f9;'>
+        <tr>
+            <td align='center' style='padding: 40px 15px;'>
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.05);'>
+                    
+                    <tr>
+                        <td style='background-color: #0f172a; padding: 30px 45px;'>
+                            <table width='100%' border='0' cellspacing='0' cellpadding='0'>
+                                <tr>
+                                    <td align='left'>
+                                        <table border='0' cellspacing='0' cellpadding='0'>
+                                            <tr>
+                                                <td style='background: linear-gradient(135deg, #38bdf8, #2563eb); width: 32px; height: 32px; border-radius: 8px; text-align: center; color: #ffffff; font-weight: bold; font-size: 18px; line-height: 32px;'>A</td>
+                                                <td style='padding-left: 12px; color: #ffffff; font-weight: 800; font-size: 20px; letter-spacing: 1px;'>AZACADEMY</td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-                        <!-- Main Card -->
-                        <table width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width: 500px; margin: 0 auto; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.08);'>
-                            <!-- Colored Header -->
-                            <tr>
-                                <td align='center' style='background-color: {$role_color}; padding: 35px 30px;'>
-                                    <div style='font-size: 48px; line-height: 1; margin-bottom: 15px;'>{$role_icon}</div>
-                                    <h2 style='margin: 0; color: #ffffff; font-size: 24px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;'>Tài Khoản Đã Sẵn Sàng</h2>
-                                </td>
-                            </tr>
+                    <tr>
+                        <td style='padding: 50px 45px 30px; text-align: center;'>
+                            <div style='font-size: 48px; margin-bottom: 20px;'>{$role_icon}</div>
+                            <h1 style='margin: 0; color: #1e293b; font-size: 28px; font-weight: 800; line-height: 1.2;'>Kích hoạt tài khoản <br><span style='color: {$role_color};'>thành công!</span></h1>
+                            <p style='margin: 15px 0 0; color: #64748b; font-size: 16px; line-height: 1.6;'>Chào <strong>{$user_login}</strong>, {$welcome_msg}</p>
+                        </td>
+                    </tr>
 
-                            <!-- Content -->
-                            <tr>
-                                <td style='padding: 35px 30px; color: #333333; line-height: 1.6;'>
-                                    <p style='margin: 0 0 15px; font-size: 16px;'>Xin chào <strong>{$user_login}</strong>,</p>
-                                    <p style='margin: 0 0 25px; font-size: 15px; color: #555;'>{$welcome_msg}</p>
-                                    
-                                    <!-- Account Info Box -->
-                                    <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; margin-bottom: 25px;'>
-                                        <tr>
-                                            <td style='padding: 20px;'>
-                                                <table width='100%' cellpadding='0' cellspacing='0' border='0'>
-                                                    <tr>
-                                                        <td width='80' style='font-weight: bold; color: #64748b; font-size: 14px; padding-bottom: 8px;'>📧 Email:</td>
-                                                        <td style='font-size: 14px; color: #333; padding-bottom: 8px;'>{$user_email}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td width='80' style='font-weight: bold; color: #64748b; font-size: 14px; padding-bottom: 8px;'>👤 User:</td>
-                                                        <td style='font-size: 14px; color: #333; padding-bottom: 8px;'>{$user_login}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td width='80' style='font-weight: bold; color: #64748b; font-size: 14px;'>🔑 Pass:</td>
-                                                        <td style='font-size: 16px; color: #e11d48; font-weight: bold; font-family: monospace;'>{$plain_password}</td>
-                                                    </tr>
-                                                </table>
-                                            </td>
-                                        </tr>
-                                    </table>
+                    <tr>
+                        <td style='padding: 0 45px;'>
+                            <table width='100%' border='0' cellspacing='0' cellpadding='0' style='background-color: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; padding: 30px;'>
+                                <tr>
+                                    <td style='padding-bottom: 25px;'>
+                                        <table width='100%' border='0' cellspacing='0' cellpadding='0'>
+                                            <tr>
+                                                <td width='48' valign='top'>
+                                                    <div style='width: 36px; height: 36px; background-color: #e0f2fe; border-radius: 10px; text-align: center; line-height: 38px; font-size: 18px;'>📱</div>
+                                                </td>
+                                                <td style='padding-left: 15px;'>
+                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Thông tin liên hệ</div>
+                                                    <div style='color: #1e293b; font-size: 15px; font-weight: 600; margin-top: 4px;'>{$user_phone} • {$business_field}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style='border-top: 1px solid #e2e8f0; padding-top: 25px;'>
+                                        <table width='100%' border='0' cellspacing='0' cellpadding='0'>
+                                            <tr>
+                                                <td width='48' valign='top'>
+                                                    <div style='width: 36px; height: 36px; background-color: #fef2f2; border-radius: 10px; text-align: center; line-height: 38px; font-size: 18px;'>🔑</div>
+                                                </td>
+                                                < style='padding-left: 15px;'>
+                                                <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Chi tiết đăng nhập</div>
+                                                <div style='color: #1e293b; font-size: 14px; margin-top: 4px;'>Email: <b>{$user_email}</b></div> <div style='color: #1e293b; font-size: 14px;'>User: <b>{$user_login}</b></div>
+                                                <div style='color: #ef4444; font-size: 14px; font-weight: 700; font-family: monospace;'>Pass: {$plain_password}</div>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
 
-                                    <p style='font-size: 13px; color: #888; margin: 0 0 25px; font-style: italic;'>* Vui lòng đổi mật khẩu ngay sau lần đăng nhập đầu tiên để bảo mật tài khoản.</p>
-                                    
-                                    <!-- CTA Button -->
-                                    <table width='100%' cellpadding='0' cellspacing='0' border='0'>
-                                        <tr>
-                                            <td align='center'>
-                                                <a href='{$login_url}' style='display: inline-block; background-color: {$role_color}; color: #ffffff; padding: 14px 35px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px; transition: opacity 0.2s;'>Đăng Nhập Ngay</a>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </td>
-                            </tr>
+                    <tr>
+                        <td style='padding: 40px 45px;'>
+                            <a href='{$login_url}' style='display: block; background-color: {$role_color}; color: #ffffff; padding: 20px; text-decoration: none; border-radius: 14px; font-weight: 700; font-size: 16px; text-align: center; box-shadow: 0 10px 15px rgba(37, 99, 235, 0.2);'>Đăng Nhập Ngay</a>
+                        </td>
+                    </tr>
 
-                            <!-- Footer -->
-                            <tr>
-                                <td align='center' style='padding: 20px; background-color: #ffffff; border-top: 1px solid #f0f0f0; font-size: 12px; color: #94a3b8;'>
-                                    &copy; {$year} AzAcademy System. All rights reserved.
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-        ";
+                    <tr>
+                        <td style='padding: 0 45px 50px;'>
+                            <div style='padding-top: 30px; border-top: 2px solid #f1f5f9;'>
+                                <h3 style='margin: 0 0 20px; color: #1e293b; font-size: 16px; font-weight: 700;'>💡 Hướng dẫn nhanh:</h3>
+                                <table width='100%' border='0' cellspacing='0' cellpadding='0'>
+                                    <tr>
+                                        <td width='35' valign='top'>
+                                            <div style='width: 24px; height: 24px; background-color: {$role_color}; color: #fff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;'>1</div>
+                                        </td>
+                                        <td style='padding-bottom: 20px; padding-left: 10px;'>
+                                            <div style='color: #1e293b; font-size: 14px; font-weight: 700;'>Đổi mật khẩu</div>
+                                            <div style='color: #64748b; font-size: 13px; margin-top: 4px;'>Vui lòng đổi mật khẩu trong phần 'Cài đặt' để bảo mật.</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td width='35' valign='top'>
+                                            <div style='width: 24px; height: 24px; background-color: {$role_color}; color: #fff; border-radius: 50%; text-align: center; line-height: 24px; font-size: 12px; font-weight: bold;'>2</div>
+                                        </td>
+                                        <td style='padding-left: 10px;'>
+                                            <div style='color: #1e293b; font-size: 14px; font-weight: 700;'>Cập nhật Profile</div>
+                                            <div style='color: #64748b; font-size: 13px; margin-top: 4px;'>Hoàn thiện hồ sơ để nhận hỗ trợ tốt nhất.</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <td style='padding: 30px; background-color: #f8fafc; border-top: 1px solid #f1f5f9; text-align: center;'>
+                            <p style='margin: 0; color: #94a3b8; font-size: 12px; letter-spacing: 0.5px;'>© {$year} {$site_name} SYSTEM</p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+";
 
         wp_mail($email, $subject, $message, $headers);
     }
@@ -653,7 +697,7 @@ class AzAC_Core_Admin
                 // Stats per class
                 $total_sessions = 0;
                 $checked_sessions = 0;
-                
+
                 // Query sessions for THIS class only
                 $sql = "SELECT teacher_checkin FROM {$sess_table} WHERE class_id = %d";
                 $params = [$c->ID];
@@ -677,7 +721,7 @@ class AzAC_Core_Admin
                 }
 
                 $missing = $total_sessions - $checked_sessions;
-                
+
                 $rows[] = [
                     'id' => $u->ID,
                     'name' => $u->display_name ?: $u->user_login,
@@ -723,7 +767,7 @@ class AzAC_Core_Admin
             'azac-students-list',
             [__CLASS__, 'render_students_list_page']
         );
-        
+
     }
     public static function enqueue_admin_assets($hook)
     {
@@ -761,7 +805,7 @@ class AzAC_Core_Admin
             wp_localize_script('azac-attendance-list-sessions-js', 'AZAC_LIST', $azac_list);
             wp_localize_script('azac-attendance-list-stats-js', 'AZAC_LIST', $azac_list);
         }
-        
+
         if ($hook === 'azac-attendance_page_azac-classes-list') {
             wp_enqueue_style('azac-attendance-list-style', AZAC_CORE_URL . 'admin/css/attendance-list.css', [], AZAC_CORE_VERSION);
             wp_enqueue_script('azac-attendance-utils', AZAC_CORE_URL . 'admin/js/attendance-utils.js', ['jquery'], AZAC_CORE_VERSION, true);
