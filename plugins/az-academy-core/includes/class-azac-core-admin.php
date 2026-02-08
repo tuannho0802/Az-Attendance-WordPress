@@ -157,44 +157,45 @@ class AzAC_Core_Admin
 
     private static function send_welcome_email($user_id, $username, $email, $password, $role)
     {
+        global $wpdb; // Gọi đối tượng database để lấy prefix
+        $prefix = $wpdb->prefix; // Sẽ là 'wp_', 'az_' hoặc bất cứ thứ gì tùy môi trường
+
         $site_name = get_bloginfo('name');
         $logo_url = get_stylesheet_directory_uri() . '/assets/img/logo.png';
 
-        // 1. LẤY DỮ LIỆU LĨNH VỰC KINH DOANH (Business Field)
-        // Thường được lưu dưới key 'business_field' hoặc 'nganh_nghe' tùy vào form đăng ký của bạn
-        $business_field = get_user_meta($user_id, 'business_field', true);
+        // 1. LẤY DỮ LIỆU LĨNH VỰC KINH DOANH (Dùng prefix động)
+        // Code sẽ thử tìm theo 'az_business_field', nếu không thấy sẽ tìm 'business_field'
+        $business_field = get_user_meta($user_id, $prefix . 'business_field', true);
         if (!$business_field) {
-            $business_field = isset($_POST['business_field']) ? sanitize_text_field($_POST['business_field']) : 'Thành viên mới';
+            $business_field = get_user_meta($user_id, 'business_field', true);
         }
 
-        // 2. LẤY SỐ ĐIỆN THOẠI
-        $user_phone = get_user_meta($user_id, 'billing_phone', true) ?: (get_user_meta($user_id, 'phone', true) ?: 'Chưa cập nhật');
+        // Nếu cả 2 meta đều không có, lấy từ dữ liệu Form gửi lên
+        if (!$business_field) {
+            $business_field = isset($_POST['business_field']) ? sanitize_text_field($_POST['business_field']) :
+                (isset($_POST[$prefix . 'business_field']) ? sanitize_text_field($_POST[$prefix . 'business_field']) : 'Thành viên mới');
+        }
 
-        // 3. XỬ LÝ ROLE & GIAO DIỆN THEO ROLE
-        $role_display = 'Học viên'; // Mặc định
-        $role_color = '#2563eb';    // Xanh dương
+        // 2. LẤY SỐ ĐIỆN THOẠI (Như bạn nói: không cần prefix hoặc thử cả hai)
+        $user_phone = get_user_meta($user_id, 'az_phone', true) ?:
+            (get_user_meta($user_id, $prefix . 'phone', true) ?:
+                (get_user_meta($user_id, 'phone', true) ?: 'Chưa cập nhật'));
+
+        // --- Giữ nguyên logic xử lý Role và UI phía dưới ---
+        $role_display = 'Học viên';
+        $role_color = '#2563eb';
         $role_icon = '🎓';
-        $welcome_msg = 'Tài khoản Học viên của bạn đã sẵn sàng để bắt đầu hành trình học tập.';
-
-        if ($role === 'az_teacher' || $role === 'teacher') {
+        if ($role === 'az_teacher' || strpos($role, 'teacher') !== false) {
             $role_display = 'Giảng viên';
-            $role_color = '#722ed1'; // Tím
+            $role_color = '#722ed1';
             $role_icon = '👨‍🏫';
-            $welcome_msg = 'Chào mừng Giảng viên! Hãy cùng tạo nên những bài giảng tuyệt vời.';
         } elseif ($role === 'az_manager' || $role === 'administrator') {
             $role_display = 'Quản trị viên';
-            $role_color = '#fa8c16'; // Cam
+            $role_color = '#fa8c16';
             $role_icon = '🛡️';
-            $welcome_msg = 'Quyền truy cập Quản trị hệ thống của bạn đã được kích hoạt.';
         }
 
-        $user_login = $username;
-        $user_email = $email;
-        $plain_password = $password;
-
-        $headers = array('Content-Type: text/html; charset=UTF-8');
-        $subject = "[$site_name] Chào mừng $role_display mới - Thông tin tài khoản";
-
+        $subject = "[$site_name] Kích hoạt tài khoản $role_display thành công";
         $login_url = wp_login_url();
         $year = date('Y');
 
@@ -203,63 +204,56 @@ class AzAC_Core_Admin
 <html>
 <head>
     <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700&display=swap');
     </style>
 </head>
-<body style='margin: 0; padding: 0; background-color: #f1f5f9; font-family: \"Plus Jakarta Sans\", \"Segoe UI\", Helvetica, Arial, sans-serif;'>
+<body style='margin: 0; padding: 0; background-color: #f1f5f9; font-family: \"Plus Jakarta Sans\", Arial, sans-serif;'>
     <table width='100%' cellpadding='0' cellspacing='0' border='0' style='background-color: #f1f5f9;'>
         <tr>
             <td align='center' style='padding: 40px 15px;'>
-                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.05);'>
+                <table width='100%' cellpadding='0' cellspacing='0' border='0' style='max-width: 600px; background-color: #ffffff; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.05);'>
                     
                     <tr>
-                        <td style='background-color: #294c9ee3; padding: 30px 45px;'>
-                            <img src='{$logo_url}' alt='AZACADEMY' style='height: 40px; width: auto; display: block; border: 0;'>
+                        <td style='background-color: #294c9ee3; padding: 25px 45px;'>
+                            <img src='{$logo_url}' alt='AZACADEMY' style='height: 40px; width: auto; display: block;'>
                         </td>
                     </tr>
 
                     <tr>
-                        <td style='padding: 50px 45px 30px; text-align: center;'>
-                            <div style='font-size: 48px; margin-bottom: 20px;'>{$role_icon}</div>
-                            <h1 style='margin: 0; color: #1e293b; font-size: 26px; font-weight: 800; line-height: 1.2;'>Kích hoạt tài khoản <br><span style='color: {$role_color};'>{$role_display} thành công!</span></h1>
-                            <p style='margin: 15px 0 0; color: #64748b; font-size: 15px; line-height: 1.6;'>Chào <strong>{$user_login}</strong>, {$welcome_msg}</p>
+                        <td style='padding: 45px 45px 30px; text-align: center;'>
+                            <div style='font-size: 48px; margin-bottom: 15px;'>{$role_icon}</div>
+                            <h1 style='margin: 0; color: #1e293b; font-size: 26px; font-weight: 800;'>Kích hoạt tài khoản <br><span style='color: {$role_color};'>{$role_display} thành công!</span></h1>
+                            <p style='margin: 15px 0 0; color: #64748b; font-size: 15px;'>Chào <strong>{$username}</strong>, tài khoản của bạn đã sẵn sàng.</p>
                         </td>
                     </tr>
 
                     <tr>
                         <td style='padding: 0 45px;'>
                             <table width='100%' border='0' cellspacing='0' cellpadding='0' style='background-color: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; padding: 25px;'>
-                                
                                 <tr>
                                     <td style='padding-bottom: 20px;'>
                                         <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
-                                                <td width='40' valign='top'>
-                                                    <div style='width: 32px; height: 32px; background-color: #e0f2fe; border-radius: 8px; text-align: center; line-height: 32px; font-size: 16px;'>📱</div>
-                                                </td>
+                                                <td width='40' valign='top'><div style='width: 32px; height: 32px; background-color: #e0f2fe; border-radius: 8px; text-align: center; line-height: 32px; font-size: 16px;'>📱</div></td>
                                                 <td style='padding-left: 12px;'>
-                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Thông tin liên hệ & Lĩnh vực</div>
+                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase;'>Thông tin liên hệ & Lĩnh vực</div>
                                                     <div style='color: #1e293b; font-size: 14px; font-weight: 600; margin-top: 4px;'>{$user_phone} • {$business_field}</div>
                                                 </td>
                                             </tr>
                                         </table>
                                     </td>
                                 </tr>
-
                                 <tr>
                                     <td style='border-top: 1px solid #e2e8f0; padding-top: 20px;'>
                                         <table width='100%' border='0' cellspacing='0' cellpadding='0'>
                                             <tr>
-                                                <td width='40' valign='top'>
-                                                    <div style='width: 32px; height: 32px; background-color: #fef2f2; border-radius: 8px; text-align: center; line-height: 32px; font-size: 16px;'>🔑</div>
-                                                </td>
+                                                <td width='40' valign='top'><div style='width: 32px; height: 32px; background-color: #fef2f2; border-radius: 8px; text-align: center; line-height: 32px; font-size: 16px;'>🔑</div></td>
                                                 <td style='padding-left: 12px;'>
-                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;'>Chi tiết đăng nhập bảo mật</div>
-                                                    <div style='color: #1e293b; font-size: 13px; margin-top: 8px;'>📧 Email: <b>{$user_email}</b></div>
-                                                    <div style='color: #1e293b; font-size: 13px; margin-top: 4px;'>👤 User: <b>{$user_login}</b></div>
-                                                    <div style='color: #ef4444; font-size: 13px; font-weight: 700; font-family: monospace; margin-top: 4px;'>🔑 Pass: {$plain_password}</div>
+                                                    <div style='color: #94a3b8; font-size: 11px; font-weight: 700; text-transform: uppercase;'>Chi tiết đăng nhập bảo mật</div>
+                                                    <div style='color: #1e293b; font-size: 13px; margin-top: 8px;'>📧 Email: <b>{$email}</b></div>
+                                                    <div style='color: #1e293b; font-size: 13px; margin-top: 4px;'>👤 User: <b>{$username}</b></div>
+                                                    <div style='color: #ef4444; font-size: 13px; font-weight: 700; font-family: monospace; margin-top: 4px;'>🔑 Pass: {$password}</div>
                                                 </td>
                                             </tr>
                                         </table>
@@ -271,40 +265,13 @@ class AzAC_Core_Admin
 
                     <tr>
                         <td style='padding: 35px 45px;'>
-                            <a href='{$login_url}' style='display: block; background-color: {$role_color}; color: #ffffff; padding: 18px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; text-align: center; box-shadow: 0 10px 15px rgba(37, 99, 235, 0.1);'>Vào Trang Quản Lý Ngay</a>
-                        </td>
-                    </tr>
-
-                    <tr>
-                        <td style='padding: 0 45px 40px;'>
-                            <div style='padding-top: 25px; border-top: 2px solid #f1f5f9;'>
-                                <table width='100%' border='0' cellspacing='0' cellpadding='0'>
-                                    <tr>
-                                        <td width='30' valign='top'>
-                                            <div style='width: 20px; height: 20px; background-color: {$role_color}; color: #fff; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; font-weight: bold;'>1</div>
-                                        </td>
-                                        <td style='padding-bottom: 15px; padding-left: 10px;'>
-                                            <div style='color: #1e293b; font-size: 14px; font-weight: 700;'>Bảo mật tài khoản</div>
-                                            <div style='color: #64748b; font-size: 12px; margin-top: 2px;'>Hãy đổi mật khẩu riêng của bạn trong phần Cài đặt sau khi đăng nhập.</div>
-                                        </td>
-                                    </tr>
-                                    <tr>
-                                        <td width='30' valign='top'>
-                                            <div style='width: 20px; height: 20px; background-color: {$role_color}; color: #fff; border-radius: 50%; text-align: center; line-height: 20px; font-size: 11px; font-weight: bold;'>2</div>
-                                        </td>
-                                        <td style='padding-left: 10px;'>
-                                            <div style='color: #1e293b; font-size: 14px; font-weight: 700;'>Hoàn thiện hồ sơ</div>
-                                            <div style='color: #64748b; font-size: 12px; margin-top: 2px;'>Cập nhật ảnh đại diện để nhận được hỗ trợ tốt hơn từ đội ngũ.</div>
-                                        </td>
-                                    </tr>
-                                </table>
-                            </div>
+                            <a href='{$login_url}' style='display: block; background-color: {$role_color}; color: #ffffff; padding: 18px; text-decoration: none; border-radius: 12px; font-weight: 700; font-size: 16px; text-align: center;'>Vào Trang Quản Lý Ngay</a>
                         </td>
                     </tr>
 
                     <tr>
                         <td style='padding: 25px; background-color: #294c9ee3; text-align: center;'>
-                            <p style='margin: 0; color: #ffffff; font-size: 11px; letter-spacing: 0.5px;'>© {$year} {$site_name} SYSTEM • All Rights Reserved</p>
+                            <p style='margin: 0; color: #ffffff; font-size: 11px;'>© {$year} {$site_name} SYSTEM • All Rights Reserved</p>
                         </td>
                     </tr>
                 </table>
@@ -315,7 +282,7 @@ class AzAC_Core_Admin
 </html>
 ";
 
-        wp_mail($email, $subject, $message, $headers);
+        wp_mail($email, $subject, $message, array('Content-Type: text/html; charset=UTF-8'));
     }
 
     public static function render_flash_toast()
