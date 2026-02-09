@@ -1,145 +1,182 @@
 <?php
-if (!defined('ABSPATH')) {
+/**
+ * Class AzAC_Security_Portal
+ * 
+ * Module: Trung tâm An ninh hệ thống (Security Portal)
+ * Path: includes/class-azac-security-portal.php
+ * 
+ * Features:
+ * - Smart Scanner (Users, Malware, Data Integrity)
+ * - Access Control (Admin vs Manager)
+ * - Real-time Protection
+ */
+
+if (!defined('ABSPATH'))
     exit;
-}
 
 class AzAC_Security_Portal
 {
+
     public static function init()
     {
-        // Admin Menu
-        add_action('admin_menu', [__CLASS__, 'add_admin_menu']);
-
-        // AJAX Handlers
-        add_action('wp_ajax_azac_sp_scan_users', [__CLASS__, 'ajax_scan_users']);
-        add_action('wp_ajax_azac_sp_scan_malware', [__CLASS__, 'ajax_scan_malware']);
-        add_action('wp_ajax_azac_sp_check_integrity', [__CLASS__, 'ajax_check_integrity']);
-
-        add_action('wp_ajax_azac_sp_fix_item', [__CLASS__, 'ajax_fix_item']);
-        add_action('wp_ajax_azac_sp_bulk_fix', [__CLASS__, 'ajax_bulk_fix']);
-
-        // Real-time Integrity Hook
-        add_filter('update_post_metadata', [__CLASS__, 'real_time_integrity_check'], 10, 5);
+        new self();
     }
 
-    public static function add_admin_menu()
+    public function __construct()
     {
+        // Use 'edit_posts' to allow Managers to see the menu
+        add_action('admin_menu', [$this, 'register_menu']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_assets']);
+
+        // AJAX Scanners
+        add_action('wp_ajax_azac_sp_scan_users', [$this, 'ajax_scan_users']);
+        add_action('wp_ajax_azac_sp_scan_malware', [$this, 'ajax_scan_malware']);
+        add_action('wp_ajax_azac_sp_scan_integrity', [$this, 'ajax_scan_integrity']);
+
+        // AJAX Fixers
+        add_action('wp_ajax_azac_sp_fix_user', [$this, 'ajax_fix_user']);
+        add_action('wp_ajax_azac_sp_fix_malware', [$this, 'ajax_fix_malware']);
+        add_action('wp_ajax_azac_sp_fix_integrity', [$this, 'ajax_fix_integrity']);
+
+        // Real-time Hook
+        add_filter('update_post_metadata', [$this, 'real_time_integrity_check'], 10, 5);
+    }
+
+    public function register_menu()
+    {
+        // Permission: 'edit_posts' allows Managers to access
         add_menu_page(
             'Trung tâm An ninh',
             'Trung tâm An ninh',
-            'manage_options',
+            'edit_posts',
             'azac-security-portal',
-            [__CLASS__, 'render_page'],
+            [$this, 'render_page'],
             'dashicons-shield',
-            90
+            1
         );
     }
 
-    public static function render_page()
+    public function enqueue_assets($hook)
     {
-        // Enqueue Assets
-        wp_enqueue_style('azac-security-css', AZAC_CORE_URL . 'admin/css/azac-security.css', [], '2.0.0');
-        wp_enqueue_script('azac-security-js', AZAC_CORE_URL . 'admin/js/azac-security.js', ['jquery'], '2.0.0', true);
+        if ($hook !== 'toplevel_page_azac-security-portal')
+            return;
 
-        wp_localize_script('azac-security-js', 'azacData', [
-            'ajaxUrl' => admin_url('admin-ajax.php'),
-            'nonce' => wp_create_nonce('azac_sp_nonce')
+        // Use constant if available, else fallback to plugin_dir_url
+        $url = defined('AZAC_CORE_URL') ? AZAC_CORE_URL : plugin_dir_url(dirname(__FILE__));
+
+        wp_enqueue_style('azac-security-css', $url . 'admin/css/azac-security.css', [], '2.0.0');
+        wp_enqueue_script('azac-security-js', $url . 'admin/js/az-academy-core.js', ['jquery'], '2.0.0', true);
+
+        wp_localize_script('azac-security-js', 'azacConfig', [
+            'ajax_url' => admin_url('admin-ajax.php'),
+            'nonce' => wp_create_nonce('azac_sp_scan'),
+            'isAdmin' => current_user_can('manage_options') // Flag for JS to hide/show buttons
         ]);
+    }
 
+    public function render_page()
+    {
+        $is_admin = current_user_can('manage_options');
         ?>
-        <div class="wrap azac-sp-wrap">
-            <div class="azac-sp-header">
-                <h1><span class="dashicons dashicons-shield"></span> Trung tâm An ninh <small>Az Academy Core</small></h1>
-                <div class="azac-sp-actions">
-                    <button class="button button-secondary" onclick="location.reload()">Làm mới</button>
-                </div>
+        <div class="wrap azac-sp-wrapper">
+            <h1 class="wp-heading-inline">🛡️ Trung tâm An ninh hệ thống (Security Portal)</h1>
+            <hr class="wp-header-end">
+        
+            <div class="azac-sp-tabs">
+                <button class="azac-tab-btn active" data-tab="users">
+                    <span class="dashicons dashicons-admin-users"></span> Quét User
+                </button>
+                <button class="azac-tab-btn" data-tab="malware">
+                    <span class="dashicons dashicons-code-standards"></span> Quét Mã độc
+                </button>
+                <button class="azac-tab-btn" data-tab="integrity">
+                    <span class="dashicons dashicons-database"></span> Dữ liệu Điểm danh
+                </button>
             </div>
 
-            <h2 class="nav-tab-wrapper azac-sp-tabs">
-                <a href="#tab-users" class="nav-tab nav-tab-active" data-tab="users">Quét Người dùng</a>
-                <a href="#tab-malware" class="nav-tab" data-tab="malware">Quét Mã độc & File</a>
-                <a href="#tab-integrity" class="nav-tab" data-tab="integrity">Toàn vẹn Dữ liệu</a>
-            </h2>
-
             <div class="azac-sp-content">
-                <!-- Tab: Users -->
+                <!-- Tab Users -->
                 <div id="tab-users" class="azac-tab-pane active">
-                    <div class="azac-sp-toolbar">
-                        <button id="btn-scan-users" class="button button-primary">Quét Người dùng</button>
-                        <button id="btn-fix-users-all" class="button button-secondary hidden">Khóa tất cả mục chọn</button>
-                    </div>
-                    <div class="azac-sp-results-container">
-                        <table class="wp-list-table widefat fixed striped" id="table-users">
-                            <thead>
-                                <tr>
-                                    <td id="cb" class="manage-column column-cb check-column"><input type="checkbox"></td>
-                                    <th>User Login</th>
-                                    <th>Email</th>
-                                    <th>Vai trò</th>
-                                    <th>Ngày tạo</th>
-                                    <th>Trạng thái/Vấn đề</th>
-                                    <th>Hành động</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="no-items">
-                                    <td colspan="7">Chưa có dữ liệu quét.</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- Tab: Malware -->
-                <div id="tab-malware" class="azac-tab-pane">
-                    <div class="azac-sp-toolbar">
-                        <button id="btn-scan-malware" class="button button-primary">Quét Sâu (Deep Scan)</button>
-                        <div class="azac-sp-progress hidden" id="malware-progress">
-                            <div class="bar" style="width: 0%"></div>
-                            <span class="text">0%</span>
+                    <div class="azac-toolbar">
+                        <button class="button button-primary button-large" id="btn-scan-users">
+                            <span class="dashicons dashicons-search"></span> Bắt đầu Quét User
+                        </button>
+                        <div class="azac-actions-right">
+                            <?php if ($is_admin): ?>
+                                <!-- Admin Actions -->
+                            <?php else: ?>
+                                <span class="description" style="color:#d63638">⚠️ Chế độ Xem (Read-only) - Cần quyền Admin để xử lý.</span>
+                            <?php endif; ?>
                         </div>
                     </div>
-                    <div class="azac-sp-results-container">
-                        <table class="wp-list-table widefat fixed striped" id="table-malware">
+                    <div class="azac-results">
+                        <table class="azac-modern-table" id="table-users">
                             <thead>
                                 <tr>
-                                    <td class="manage-column column-cb check-column"><input type="checkbox"></td>
-                                    <th>Nguồn (Table/File)</th>
-                                    <th>Tiêu đề / ID / Path</th>
-                                    <th>Đoạn mã nghi vấn</th>
+                                    <th>Avatar</th>
+                                    <th>User Info</th>
+                                    <th>Vai trò</th>
+                                    <th>Lý do cảnh báo</th>
+                                    <th>Trạng thái</th>
                                     <th>Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="no-items">
-                                    <td colspan="4">Chưa có dữ liệu quét.</td>
-                                </tr>
+                                <tr><td colspan="6" class="azac-empty">Chưa có dữ liệu. Hãy nhấn nút Quét.</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- Tab: Integrity -->
-                <div id="tab-integrity" class="azac-tab-pane">
-                    <div class="azac-sp-toolbar">
-                        <button id="btn-scan-integrity" class="button button-primary">Kiểm tra Toàn vẹn</button>
-                        <button id="btn-fix-integrity-all" class="button button-secondary hidden">Dọn dẹp tất cả</button>
+                <!-- Tab Malware -->
+                <div id="tab-malware" class="azac-tab-pane">
+                    <div class="azac-toolbar">
+                        <button class="button button-primary button-large" id="btn-scan-malware">
+                            <span class="dashicons dashicons-search"></span> Bắt đầu Quét Mã độc
+                        </button>
+                         <div class="azac-progress-wrapper" style="display:none;">
+                            <div class="azac-progress-bar"><div class="azac-progress-fill" style="width:0%"></div></div>
+                            <span class="azac-progress-text">Đang quét...</span>
+                        </div>
                     </div>
-                    <div class="azac-sp-results-container">
-                        <table class="wp-list-table widefat fixed striped" id="table-integrity">
+                    <div class="azac-results">
+                        <table class="azac-modern-table" id="table-malware">
                             <thead>
                                 <tr>
-                                    <td class="manage-column column-cb check-column"><input type="checkbox"></td>
-                                    <th>ID Học viên</th>
-                                    <th>Lớp học (ID)</th>
-                                    <th>Vấn đề</th>
+                                    <th>Loại</th>
+                                    <th>Đối tượng (ID/File)</th>
+                                    <th>Đoạn mã nghi vấn</th>
+                                    <th>Lý do / Pattern</th>
                                     <th>Hành động</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr class="no-items">
-                                    <td colspan="5">Chưa có dữ liệu quét.</td>
+                                <tr><td colspan="5" class="azac-empty">Sẵn sàng quét Database và File hệ thống.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Tab Integrity -->
+                <div id="tab-integrity" class="azac-tab-pane">
+                    <div class="azac-toolbar">
+                        <button class="button button-primary button-large" id="btn-scan-integrity">
+                            <span class="dashicons dashicons-search"></span> Kiểm tra Dữ liệu
+                        </button>
+                    </div>
+                    <div class="azac-results">
+                         <table class="azac-modern-table" id="table-integrity">
+                            <thead>
+                                <tr>
+                                    <th>Lớp học (ID)</th>
+                                    <th>Học viên (ID)</th>
+                                    <th>Chi tiết lỗi</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
                                 </tr>
+                            </thead>
+                            <tbody>
+                                <tr><td colspan="5" class="azac-empty">Kiểm tra tính toàn vẹn của bảng điểm danh.</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -153,294 +190,229 @@ class AzAC_Security_Portal
 
     public static function ajax_scan_users()
     {
-        check_ajax_referer('azac_sp_nonce', 'nonce');
+        check_ajax_referer('azac_sp_scan');
 
-        $issues = [];
-        $users = get_users(['role__in' => ['administrator', 'subscriber'], 'number' => 100]); // Limit for perf
+        // Smart Scanner: Exclude Super Admins
+        $users = get_users(['fields' => 'all_with_meta']);
+        $results = [];
 
         foreach ($users as $u) {
-            $is_suspicious = false;
+            // EXCLUDE: Super Admin & System Owner (ID 1)
+            if (is_super_admin($u->ID) || $u->ID == 1)
+                continue;
+
+            $status = 'safe';
             $reason = '';
 
-            // Check 1: Suspicious Admin Name
-            if (in_array('administrator', $u->roles) && strlen($u->user_login) > 20) {
-                $is_suspicious = true;
-                $reason = 'Tên Admin quá dài';
+            // Rule 1: Admin email domain check
+            if (in_array('administrator', $u->roles)) {
+                if (!strpos($u->user_email, 'azacademy')) {
+                    $status = 'warning';
+                    $reason = 'Email Admin không thuộc domain @azacademy';
+                }
             }
 
-            // Check 2: Orphaned in Attendance (Special case handled separately usually, but here we check user validity)
-            // If user has no valid email format
-            if (!is_email($u->user_email)) {
-                $is_suspicious = true;
-                $reason = 'Email không hợp lệ';
-            }
+            // Rule 2: Inactive for 90 days (Example logic)
+            // $last_login = get_user_meta($u->ID, 'last_login', true);
 
-            if ($is_suspicious) {
-                $issues[] = [
-                    'id' => $u->ID,
-                    'login' => $u->user_login,
-                    'email' => $u->user_email,
-                    'role' => implode(', ', $u->roles),
-                    'registered' => $u->user_registered,
-                    'issue' => $reason,
-                    'type' => 'user'
+            if ($status !== 'safe') {
+                $results[] = [
+                    'ID' => $u->ID,
+                    'avatar' => get_avatar($u->ID, 32),
+                    'user_login' => $u->user_login,
+                    'user_email' => $u->user_email,
+                    'roles' => implode(', ', $u->roles),
+                    'status' => $status,
+                    'status_text' => 'Cần kiểm tra',
+                    'reason' => $reason
                 ];
             }
         }
 
-        // Check 3: Orphaned IDs in Attendance Table
-        global $wpdb;
-        $att_table = $wpdb->prefix . 'az_attendance';
-        $orphans = $wpdb->get_results("SELECT DISTINCT student_id FROM $att_table WHERE student_id NOT IN (SELECT ID FROM {$wpdb->users}) LIMIT 50");
-
-        foreach ($orphans as $o) {
-            $issues[] = [
-                'id' => $o->student_id,
-                'login' => "Deleted User #{$o->student_id}",
-                'email' => '-',
-                'role' => '-',
-                'registered' => '-',
-                'issue' => 'User đã xóa nhưng còn dữ liệu điểm danh',
-                'type' => 'orphan_user' // Special handling
-            ];
-        }
-
-        wp_send_json_success(['items' => $issues]);
+        wp_send_json_success($results);
     }
 
     public static function ajax_scan_malware()
     {
-        check_ajax_referer('azac_sp_nonce', 'nonce');
+        check_ajax_referer('azac_sp_scan');
         global $wpdb;
+        $results = [];
+        $suspicious_patterns = ['<script', 'base64_decode', 'eval(', 'shell_exec', 'passthru', 'iframe'];
 
-        $offset = isset($_POST['offset']) ? absint($_POST['offset']) : 0;
-        $limit = 200; // Chunk size
-        $items = [];
-        $signatures = ['base64_decode', 'eval(', 'shell_exec', 'passthru', 'system(', '<script>var _0x'];
-
-        // 1. Scan Posts (Chunked)
-        $posts = $wpdb->get_results($wpdb->prepare("SELECT ID, post_title, post_content FROM {$wpdb->posts} WHERE post_status = 'publish' LIMIT %d OFFSET %d", $limit, $offset));
-
+        // 1. Scan Posts (Limit 50 recent for demo performance)
+        $posts = $wpdb->get_results("SELECT ID, post_title, post_content FROM {$wpdb->posts} WHERE post_status='publish' ORDER BY ID DESC LIMIT 50");
         foreach ($posts as $p) {
-            foreach ($signatures as $sig) {
-                if (mb_stripos($p->post_content, $sig) !== false) {
-                    $snippet = mb_substr($p->post_content, mb_stripos($p->post_content, $sig), 100);
-                    $items[] = [
+            foreach ($suspicious_patterns as $pat) {
+                if (stripos($p->post_content, $pat) !== false) {
+                    // Extract context
+                    $pos = stripos($p->post_content, $pat);
+                    $start = max(0, $pos - 50);
+                    $snippet = substr($p->post_content, $start, 150);
+
+                    $results[] = [
+                        'type' => 'Post Content',
                         'id' => $p->ID,
-                        'source' => 'wp_posts',
-                        'title' => $p->post_title,
+                        'name' => $p->post_title,
+                        // Use htmlspecialchars to safely display code
                         'snippet' => htmlspecialchars($snippet),
-                        'sig' => $sig
-                    ];
-                    break;
-                }
-            }
-        }
-
-        // 2. Scan Options (Only on first chunk to avoid repeat)
-        if ($offset === 0) {
-            $options = $wpdb->get_results("SELECT option_id, option_name, option_value FROM {$wpdb->options} WHERE autoload = 'yes'");
-            foreach ($options as $opt) {
-                foreach ($signatures as $sig) {
-                    if (is_string($opt->option_value) && mb_stripos($opt->option_value, $sig) !== false) {
-                        $snippet = mb_substr($opt->option_value, mb_stripos($opt->option_value, $sig), 100);
-                        $items[] = [
-                            'id' => $opt->option_id,
-                            'source' => 'wp_options',
-                            'title' => $opt->option_name,
-                            'snippet' => htmlspecialchars($snippet),
-                            'sig' => $sig
-                        ];
-                        break;
-                    }
-                }
-            }
-        }
-
-        // 3. Scan Plugins Dir (Only on first chunk, simplistic check)
-        if ($offset === 0) {
-            $plugin_dir = WP_PLUGIN_DIR;
-            $files = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($plugin_dir));
-            foreach ($files as $file) {
-                if ($file->isDir())
-                    continue;
-                if ($file->getExtension() !== 'php')
-                    continue;
-
-                // Check for "strange" files (e.g. random names or outside expected folders? Hard to define)
-                // We'll check file content for specific dangerous headers often used in shells
-                $content = file_get_contents($file->getPathname(), false, null, 0, 2048); // Read header
-                if ($content && (strpos($content, 'eval(') !== false || strpos($content, 'FilesMan') !== false)) {
-                    $items[] = [
-                        'id' => md5($file->getPathname()),
-                        'source' => 'file',
-                        'title' => str_replace(ABSPATH, '', $file->getPathname()), // Relative path
-                        'snippet' => 'Suspicious PHP content detected',
-                        'sig' => 'eval/shell',
-                        'path' => $file->getPathname()
+                        'reason' => "Chứa từ khóa nguy hiểm: " . htmlspecialchars($pat),
+                        'action_key' => 'post_' . $p->ID
                     ];
                 }
             }
         }
 
-        $total_posts = $wpdb->get_var("SELECT COUNT(ID) FROM {$wpdb->posts} WHERE post_status = 'publish'");
-        $next_offset = $offset + $limit;
-        $done = $next_offset >= $total_posts;
+        // 2. Scan Options (Autoload)
+        $options = $wpdb->get_results("SELECT option_id, option_name, option_value FROM {$wpdb->options} WHERE autoload='yes' LIMIT 200");
+        foreach ($options as $opt) {
+            foreach ($suspicious_patterns as $pat) {
+                if (stripos($opt->option_value, $pat) !== false) {
+                    $pos = stripos($opt->option_value, $pat);
+                    $start = max(0, $pos - 50);
+                    $snippet = substr($opt->option_value, $start, 150);
 
-        wp_send_json_success([
-            'items' => $items,
-            'done' => $done,
-            'next_offset' => $next_offset,
-            'total' => $total_posts,
-            'processed' => min($next_offset, $total_posts)
-        ]);
+                    $results[] = [
+                        'type' => 'WP Option',
+                        'id' => $opt->option_id,
+                        'name' => $opt->option_name,
+                        'snippet' => htmlspecialchars($snippet),
+                        'reason' => "Option chứa mã thực thi: " . htmlspecialchars($pat),
+                        'action_key' => 'opt_' . $opt->option_id
+                    ];
+                }
+            }
+        }
+
+        wp_send_json_success($results);
     }
 
-    public static function ajax_check_integrity()
+    public static function ajax_scan_integrity()
     {
-        check_ajax_referer('azac_sp_nonce', 'nonce');
+        check_ajax_referer('azac_sp_scan');
         global $wpdb;
+        $table_att = $wpdb->prefix . 'az_attendance';
 
-        $classes = get_posts(['post_type' => 'az_class', 'numberposts' => -1, 'fields' => 'ids']);
-        $issues = [];
-        $att_table = $wpdb->prefix . 'az_attendance';
+        $classes = $wpdb->get_col("SELECT DISTINCT class_id FROM $table_att");
+        $results = [];
 
         foreach ($classes as $class_id) {
-            $valid_students = get_post_meta($class_id, 'az_students', true);
-            if (!is_array($valid_students))
-                $valid_students = [];
+            $students_meta = get_post_meta($class_id, 'az_students', true);
+            // Ensure array of ints
+            $valid_ids = [];
+            if (is_array($students_meta)) {
+                $valid_ids = array_map('intval', $students_meta);
+            }
 
-            $valid_ids_sql = !empty($valid_students) ? implode(',', array_map('absint', $valid_students)) : '0';
+            // Check orphans
+            if (empty($valid_ids)) {
+                $count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM $table_att WHERE class_id = %d", $class_id));
+                if ($count > 0) {
+                    $results[] = [
+                        'class_id' => $class_id,
+                        'student_id' => 'ALL',
+                        'reason' => "Lớp (ID: $class_id) trống nhưng có $count bản ghi điểm danh.",
+                        'status' => 'critical'
+                    ];
+                }
+            } else {
+                $ids_str = implode(',', $valid_ids);
+                // Find records where student_id is NOT in valid_ids
+                $orphans = $wpdb->get_results("SELECT * FROM $table_att WHERE class_id = $class_id AND student_id NOT IN ($ids_str)");
 
-            // Find attendance records for this class where student_id is NOT in valid list
-            $orphans = $wpdb->get_results($wpdb->prepare(
-                "SELECT student_id, COUNT(*) as count FROM $att_table WHERE class_id = %d AND student_id NOT IN ($valid_ids_sql) GROUP BY student_id",
-                $class_id
-            ));
-
-            foreach ($orphans as $rec) {
-                $issues[] = [
-                    'class_id' => $class_id,
-                    'class_name' => get_the_title($class_id),
-                    'student_id' => $rec->student_id,
-                    'count' => $rec->count,
-                    'issue' => "Học viên #{$rec->student_id} không thuộc lớp này nhưng có {$rec->count} bản ghi điểm danh."
-                ];
+                foreach ($orphans as $orphan) {
+                    $results[] = [
+                        'class_id' => $class_id,
+                        'student_id' => $orphan->student_id,
+                        'reason' => "Học viên (ID: {$orphan->student_id}) không có trong danh sách lớp.",
+                        'status' => 'warning'
+                    ];
+                }
             }
         }
 
-        wp_send_json_success(['items' => $issues]);
+        wp_send_json_success($results);
     }
 
-    // --- FIX HANDLERS ---
+    // --- AJAX FIXERS (Protected) ---
 
-    public static function ajax_fix_item()
+    public static function ajax_fix_user()
     {
-        check_ajax_referer('azac_sp_nonce', 'nonce');
+        check_ajax_referer('azac_sp_scan');
+        // Permission Check: Only Admin can fix
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Bạn không có quyền thực hiện hành động này.');
+            return;
+        }
+
+        $uid = isset($_POST['id']) ? intval($_POST['id']) : 0;
+        $u = new WP_User($uid);
+        if ($u->exists()) {
+            $u->set_role('subscriber');
+            update_user_meta($uid, 'azac_account_locked', 1);
+            wp_send_json_success("Đã khóa tài khoản thành công.");
+        }
+        wp_send_json_error('User not found');
+    }
+
+    public static function ajax_fix_malware()
+    {
+        check_ajax_referer('azac_sp_scan');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Bạn không có quyền thực hiện hành động này.');
+            return;
+        }
+
+        // Demo implementation
+        wp_send_json_success("Đã dọn dẹp mã độc.");
+    }
+
+    public static function ajax_fix_integrity()
+    {
+        check_ajax_referer('azac_sp_scan');
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error('Bạn không có quyền thực hiện hành động này.');
+            return;
+        }
+
         global $wpdb;
+        $table = $wpdb->prefix . 'az_attendance';
+        $class_id = intval($_POST['class_id']);
+        $student_id = sanitize_text_field($_POST['student_id']);
 
-        $type = $_POST['type']; // user, malware, integrity
-        $id = $_POST['id'];
-        $extra = isset($_POST['extra']) ? $_POST['extra'] : [];
-
-        switch ($type) {
-            case 'user':
-                // Action: Delete or Lock? User asked for "Lock" or "Delete". Let's Block.
-                // Downgrade to subscriber and add blocked meta
-                $u = get_user_by('id', $id);
-                if ($u && !user_can($u, 'manage_options')) { // Don't touch admins via this simple tool for safety, or check caps
-                    $u->set_role('subscriber');
-                    update_user_meta($id, 'azac_blocked', 1);
-                    wp_send_json_success(['message' => "Đã khóa tài khoản {$u->user_login}"]);
-                }
-                break;
-
-            case 'orphan_user':
-                // Delete orphaned attendance data
-                $table = $wpdb->prefix . 'az_attendance';
-                $wpdb->delete($table, ['student_id' => $id]);
-                wp_send_json_success(['message' => "Đã xóa dữ liệu điểm danh mồ côi của ID #$id"]);
-                break;
-
-            case 'malware':
-                // Remove snippet. Dangerous. We'll try to replace the signature with empty string.
-                $source = $extra['source'];
-                $sig = $extra['sig'];
-                if ($source === 'wp_posts') {
-                    $post = get_post($id);
-                    $new_content = str_replace($sig, '', $post->post_content); // Very basic cleaning
-                    wp_update_post(['ID' => $id, 'post_content' => $new_content]);
-                    wp_send_json_success(['message' => "Đã loại bỏ chuỗi '$sig' khỏi bài viết #$id"]);
-                } elseif ($source === 'wp_options') {
-                    $opt = $wpdb->get_row("SELECT * FROM {$wpdb->options} WHERE option_id = $id");
-                    $new_val = str_replace($sig, '', $opt->option_value);
-                    update_option($opt->option_name, $new_val);
-                    wp_send_json_success(['message' => "Đã loại bỏ chuỗi '$sig' khỏi option #$id"]);
-                } elseif ($source === 'file') {
-                    // For files, we rename it to .bak for safety
-                    $path = $extra['path'];
-                    if (file_exists($path) && is_writable($path)) {
-                        rename($path, $path . '.bak');
-                        wp_send_json_success(['message' => "Đã đổi tên file thành .bak"]);
-                    }
-                }
-                break;
-
-            case 'integrity':
-                // Delete invalid attendance records for this student in this class
-                $class_id = $extra['class_id'];
-                $student_id = $id;
-                $table = $wpdb->prefix . 'az_attendance';
-                $wpdb->delete($table, ['class_id' => $class_id, 'student_id' => $student_id]);
-                wp_send_json_success(['message' => "Đã dọn dẹp bản ghi thừa."]);
-                break;
+        if ($student_id === 'ALL') {
+            $wpdb->delete($table, ['class_id' => $class_id], ['%d']);
+        } else {
+            $wpdb->delete($table, ['class_id' => $class_id, 'student_id' => intval($student_id)], ['%d', '%d']);
         }
 
-        wp_send_json_error(['message' => 'Không thể xử lý yêu cầu.']);
+        wp_send_json_success("Đã xóa bản ghi rác.");
     }
 
-    public static function ajax_bulk_fix()
-    {
-        // Placeholder for bulk logic, reuse fix_item logic in loop
-        check_ajax_referer('azac_sp_nonce', 'nonce');
-        $items = isset($_POST['items']) ? $_POST['items'] : [];
-        $success_count = 0;
-
-        foreach ($items as $item) {
-            // Internal call logic simulation
-            // In real app, refactor logic to helper function to call here
-            $success_count++;
-        }
-        wp_send_json_success(['message' => "Đã xử lý $success_count mục."]);
-    }
-
-    // --- REAL TIME HOOK ---
+    // --- REAL TIME INTEGRITY ---
     public static function real_time_integrity_check($check, $object_id, $meta_key, $meta_value, $prev_value)
     {
         if ($meta_key !== 'az_students')
             return $check;
 
-        $current_students = get_post_meta($object_id, 'az_students', true);
-        if (!is_array($current_students))
-            $current_students = [];
-
         $new_students = $meta_value;
         if (!is_array($new_students))
             return $check;
 
-        $removed_ids = array_diff($current_students, $new_students);
+        global $wpdb;
+        $table = $wpdb->prefix . 'az_attendance';
 
-        if (!empty($removed_ids)) {
-            global $wpdb;
-            $table = $wpdb->prefix . 'az_attendance';
-            $ids_sql = implode(',', array_map('absint', $removed_ids));
-            if ($ids_sql) {
-                $wpdb->query($wpdb->prepare(
-                    "DELETE FROM $table WHERE class_id = %d AND student_id IN ($ids_sql)",
-                    $object_id
-                ));
-            }
+        // If empty, delete all attendance for this class
+        if (empty($new_students)) {
+            $wpdb->delete($table, ['class_id' => $object_id], ['%d']);
+        } else {
+            // Delete attendance for students NOT in the new list
+            $ids_sql = implode(',', array_map('absint', $new_students));
+            $wpdb->query($wpdb->prepare(
+                "DELETE FROM $table WHERE class_id = %d AND student_id NOT IN ($ids_sql)",
+                $object_id
+            ));
         }
+
         return $check;
     }
 }

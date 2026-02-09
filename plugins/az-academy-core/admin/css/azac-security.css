@@ -1,120 +1,161 @@
-/* AZAC Security Portal v2.0 */
-
-.azac-sp-wrap {
-  background: #f0f0f1;
-  padding: 20px;
+/* Security Portal Styles */
+.azac-sp-wrapper {
+    background: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    margin-top: 20px;
 }
 
-.azac-sp-header {
-  background: #fff;
-  padding: 15px 20px;
-  border-bottom: 1px solid #ddd;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
-}
-
-.azac-sp-header h1 {
-  margin: 0;
-  font-size: 22px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
+/* Tabs */
 .azac-sp-tabs {
-  margin-bottom: 0 !important;
-  padding-left: 20px;
+    display: flex;
+    border-bottom: 1px solid #ddd;
+    margin-bottom: 20px;
+    gap: 10px;
+}
+.azac-tab-btn {
+    background: #f1f1f1;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-weight: 600;
+    border-radius: 5px 5px 0 0;
+    transition: all 0.2s;
+}
+.azac-tab-btn:hover { background: #e5e5e5; }
+.azac-tab-btn.active {
+    background: #0073aa;
+    color: white;
+}
+.azac-tab-pane { display: none; }
+.azac-tab-pane.active { display: block; }
+
+/* Toolbar */
+.azac-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding: 10px;
+    background: #f9f9f9;
+    border-radius: 4px;
 }
 
-.azac-tab-pane {
-  display: none;
-  background: #fff;
-  padding: 20px;
-  border: 1px solid #c3c4c7;
-  border-top: none;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+/* Table */
+.azac-modern-table {
+    width: 100%;
+    border-collapse: collapse;
 }
-
-.azac-tab-pane.active {
-  display: block;
+.azac-modern-table th, .azac-modern-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
 }
-
-.azac-sp-toolbar {
-  margin-bottom: 15px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.azac-modern-table th {
+    background: #f8f9fa;
+    font-weight: 700;
 }
-
-.azac-sp-progress {
-  flex-grow: 1;
-  height: 20px;
-  background: #e5e5e5;
-  border-radius: 10px;
-  overflow: hidden;
-  position: relative;
-  max-width: 300px;
-}
-
-.azac-sp-progress .bar {
-  height: 100%;
-  background: #2271b1;
-  width: 0;
-  transition: width 0.3s;
-}
-
-.azac-sp-progress .text {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 11px;
-  line-height: 20px;
-  color: #fff;
-  text-shadow: 0 0 2px #000;
-}
-
-.hidden {
-  display: none !important;
-}
+.azac-modern-table tr:hover { background: #fafafa; }
 
 /* Badges */
 .azac-badge {
-  display: inline-block;
-  padding: 2px 8px;
-  border-radius: 12px;
-  font-size: 11px;
-  font-weight: 600;
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
 }
-.azac-badge.warning {
-  background: #fef3c7;
-  color: #92400e;
-}
-.azac-badge.danger {
-  background: #fee2e2;
-  color: #b91c1c;
-}
-.azac-badge.info {
-  background: #dbeafe;
-  color: #1e40af;
+.badge-success { background: #d4edda; color: #155724; }
+.badge-warning { background: #fff3cd; color: #856404; }
+.badge-danger { background: #f8d7da; color: #721c24; }
+
+/* Code Snippet */
+.azac-code-block {
+    background: #23282d;
+    color: #81ecff;
+    padding: 10px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 11px;
+    max-width: 400px;
+    overflow-x: auto;
+    white-space: pre-wrap;
 }
 
-.malware-snippet {
-  display: block;
-  max-width: 300px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  background: #f6f7f7;
-  padding: 4px;
-  border: 1px solid #dcdcde;
-  color: #b32d2e;
+/* Reason Text */
+.azac-reason-text {
+    color: #d63638;
+    font-style: italic;
 }
 
-.wp-list-table th {
-  font-weight: 600;
+/* Progress Bar */
+.azac-progress-wrapper {
+    flex-grow: 1;
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.azac-progress-bar {
+    flex-grow: 1;
+    height: 10px;
+    background: #e0e0e0;
+    border-radius: 5px;
+    overflow: hidden;
+}
+.azac-progress-fill {
+    height: 100%;
+    background: #0073aa;
+    transition: width 0.3s;
+}
+
+/* --- MOBILE RESPONSIVE (CARD VIEW) --- */
+@media (max-width: 768px) {
+    .azac-sp-nav { flex-wrap: nowrap; padding-bottom: 10px; }
+    .azac-nav-item { flex-shrink: 0; }
+    
+    .azac-modern-table thead { display: none; }
+    .azac-modern-table, .azac-modern-table tbody, .azac-modern-table tr, .azac-modern-table td {
+        display: block;
+        width: 100%;
+    }
+    .azac-modern-table tr {
+        margin-bottom: 15px;
+        border: 1px solid #e5e5e5;
+        border-radius: 8px; /* Variable replacement */
+        background: #fff;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .azac-modern-table td {
+        padding: 10px 15px;
+        border-bottom: 1px solid #f0f0f1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+    }
+    .azac-modern-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #555;
+        margin-right: 15px;
+        text-align: left;
+        flex-shrink: 0;
+    }
+    
+    /* Mobile Highlight Reason */
+    .azac-modern-table td[data-label="Lý do cảnh báo"],
+    .azac-modern-table td[data-label="Lý do / Pattern"],
+    .azac-modern-table td[data-label="Chi tiết lỗi"] {
+        background-color: #fff8e5;
+        border-left: 3px solid #ffba00; /* Warning color */
+        display: block;
+        text-align: left;
+    }
+    
+    .azac-modern-table td:last-child { border-bottom: none; justify-content: flex-end; }
+    
+    .azac-code-block { max-width: 100%; }
+    .azac-avatar { width: 32px; height: 32px; }
 }
