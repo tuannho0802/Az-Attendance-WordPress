@@ -144,7 +144,20 @@ class AzAC_System_Cleanup
 
     public static function log_user_update($user_id)
     {
-        self::log('USER_UPDATE', "Cập nhật hồ sơ thành viên: ID $user_id", $user_id);
+        // $user_id là ID người bị sửa (Target)
+        // wp_get_current_user() là người thực hiện (Actor)
+        $current_user = wp_get_current_user();
+
+        $target_user = get_userdata($user_id);
+        $target_name = $target_user ? $target_user->user_login : "ID $user_id";
+
+        $actor_name = ($current_user && $current_user->exists()) ? $current_user->user_login : 'System';
+        $actor_id = ($current_user && $current_user->exists()) ? $current_user->ID : 0;
+
+        // Format: "User [Actor] đã cập nhật hồ sơ của [Target]"
+        $msg = "User $actor_name đã cập nhật hồ sơ của $target_name";
+
+        self::log('USER_UPDATE', $msg, $actor_id);
     }
 
     public static function log_post_update($post_id, $post, $update)

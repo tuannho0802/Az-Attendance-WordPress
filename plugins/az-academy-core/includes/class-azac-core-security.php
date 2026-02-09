@@ -52,6 +52,8 @@ class AzAC_Core_Security
         add_filter('option_users_can_register', [__CLASS__, 'block_registration_option']);
         add_action('signup_header', [__CLASS__, 'redirect_signup']);
         add_action('init', [__CLASS__, 'ensure_manager_capabilities'], 5);
+        // Force Check Fake Admin (Priority 1)
+        add_action('admin_init', [__CLASS__, 'force_check_current_user_role'], 1);
 
         // Chống Brute Force & Login Security
         add_filter('authenticate', [__CLASS__, 'check_brute_force_on_login'], 30, 3);
@@ -693,5 +695,41 @@ class AzAC_Core_Security
         }
 
         return $error;
+    }
+
+    /**
+     * FORCE CHECK: Ngăn chặn Admin giả mạo (ID != 1)
+     * Chạy ngay khi vào Admin (admin_init priority 1)
+     */
+    public static function force_check_current_user_role()
+    {
+        if (!is_user_logged_in()) {
+            return;
+        }
+
+        $user = wp_get_current_user();
+
+        // Luôn bỏ qua Super Admin (ID 1)
+        if ($user->ID === self::SUPER_ADMIN_ID) {
+            return;
+        }
+
+        // Kiểm tra nếu user có role 'administrator'
+        if (in_array('administrator', (array) $user->roles, true)) {
+            // 1. Tước quyền ngay lập tức -> set về subscriber
+            $user->set_role('subscriber');
+
+            // 2. Ghi log (nếu có class log, ở đây ta dùng error_log hoặc wp_die message)
+            // error_log("SECURITY ALERT: User {$user->user_login} (ID {$user->ID}) stripped of admin role.");
+
+            // 3. Đẩy ra khỏi Admin
+            wp_die(
+                '<h1>VI PHẠM BẢO MẬT</h1>' .
+                '<p>Tài khoản của bạn không được phép sở hữu quyền Administrator (Chỉ dành cho ID 1).</p>' .
+                '<p>Hệ thống đã tự động tước quyền và hạ cấp tài khoản xuống Subscriber.</p>',
+                'Security Violation',
+                ['response' => 403]
+            );
+        }
     }
 }
