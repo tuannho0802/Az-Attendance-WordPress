@@ -10,6 +10,15 @@ if (!defined('ABSPATH')) {
     exit;
 }
 
+add_action('init', function() {
+    if (is_admin() && isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], 'profile.php') !== false) {
+        ini_set('display_errors', 0);
+        error_reporting(E_ALL);
+        if (!defined('WP_DEBUG')) define('WP_DEBUG', true);
+        if (!defined('WP_DEBUG_LOG')) define('WP_DEBUG_LOG', true);
+    }
+}, 1);
+
 define('AZAC_CORE_VERSION', '0.1.4');
 define('AZAC_CORE_DIR', plugin_dir_path(__FILE__));
 define('AZAC_CORE_URL', plugin_dir_url(__FILE__));

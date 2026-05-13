@@ -138,7 +138,7 @@ class AzAC_Core_Security
             (isset($_GET['action']) && $_GET['action'] === 'register')
         ) {
 
-            // Cho phép: Người đã đăng nhập AND (Admin hoặc Manager)
+            // Cho phép: Người đã đăng nhập AND có quyền quản lý
             if (
                 is_user_logged_in() &&
                 (current_user_can('administrator') || current_user_can('az_manager'))
@@ -441,6 +441,11 @@ class AzAC_Core_Security
      */
     public static function monitor_admin_capabilities($meta_id, $object_id, $meta_key, $meta_value)
     {
+        static $is_updating = false;
+        if ($is_updating) {
+            return;
+        }
+
         // Chỉ kiểm tra capabilities meta
         if ($meta_key !== $GLOBALS['wpdb']->prefix . 'capabilities') {
             return;
@@ -465,7 +470,9 @@ class AzAC_Core_Security
             $meta_value['az_manager'] = true;
 
             // Cập nhật meta
+            $is_updating = true;
             update_user_meta($object_id, $meta_key, $meta_value);
+            $is_updating = false;
         }
     }
 
@@ -502,9 +509,12 @@ class AzAC_Core_Security
 
         // Nếu target user là Super Admin (ID 1)
         if ($target_user_id === self::SUPER_ADMIN_ID) {
-            // Chặn các hành động: xóa, promote, demote, edit
-            if (in_array($cap, ['promote_user', 'remove_user', 'delete_user', 'edit_user'], true)) {
-                $caps[] = 'do_not_allow';
+            // Nếu người thực hiện KHÔNG PHẢI là chính Super Admin đó
+            if ($user_id !== self::SUPER_ADMIN_ID) {
+                // Chặn các hành động: xóa, promote, demote, edit
+                if (in_array($cap, ['promote_user', 'remove_user', 'delete_user', 'edit_user'], true)) {
+                    $caps[] = 'do_not_allow';
+                }
             }
         }
 
@@ -714,8 +724,8 @@ class AzAC_Core_Security
             return;
         }
 
-        // Kiểm tra nếu user có role 'administrator'
-        if (in_array('administrator', (array) $user->roles, true)) {
+        // Kiểm tra nếu user có quyền administrator nhưng không phải ID 1
+        if (current_user_can('administrator')) {
             // 1. Tước quyền ngay lập tức -> set về subscriber
             $user->set_role('subscriber');
 
