@@ -86,6 +86,9 @@ class AzAC_Core_Admin
 
         // Register Student AJAX
         add_action('wp_ajax_azac_register_student', [__CLASS__, 'ajax_register_student']);
+
+        // Protect sensitive pages from non-admins
+        add_action('admin_init', [__CLASS__, 'protect_sensitive_pages']);
     }
 
     public static function ajax_register_student()
@@ -331,8 +334,8 @@ class AzAC_Core_Admin
             // Danh sách các quyền được CẤP
             $caps_to_add = [
                 'read',
-                'manage_options',
-                'edit_theme_options',
+                // 'manage_options', // Removed to restrict access to system settings
+                // 'edit_theme_options', // Removed to restrict access to theme settings
                 'edit_posts',
                 'edit_others_posts',
                 'edit_published_posts',
@@ -379,6 +382,33 @@ class AzAC_Core_Admin
             
             foreach ($caps_to_remove as $cap) {
                 $role->remove_cap($cap);
+            }
+        }
+    }
+
+    /**
+     * Chặn truy cập các trang nhạy cảm đối với người dùng không phải Administrator
+     */
+    public static function protect_sensitive_pages()
+    {
+        if (!is_admin()) {
+            return;
+        }
+
+        $user = wp_get_current_user();
+        
+        // Nếu không phải Administrator
+        if (!in_array('administrator', $user->roles)) {
+            $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+            
+            // Danh sách các trang cần chặn
+            $sensitive_pages = [
+                'easy-wp-smtp',
+                'aiowpsec'
+            ];
+            
+            if (in_array($page, $sensitive_pages)) {
+                wp_die('Bạn không có quyền truy cập trang này.', 'Quyền truy cập bị từ chối', ['response' => 403]);
             }
         }
     }
