@@ -97,28 +97,29 @@ class AzAC_Core_RBAC
         }
 
         if ($role) {
-            $caps = [
-                'edit_posts',
-                'edit_others_posts',
-                'publish_posts',
-                'read_private_posts',
+            // Remove delete caps that might have been added previously
+            $caps_to_remove = [
                 'delete_posts',
                 'delete_others_posts',
                 'delete_published_posts',
-                'edit_published_posts',
-                'manage_categories',
-                'upload_files',
-                'list_users',
-                'create_users',
-                'edit_users',
                 'delete_users',
-                'promote_users'
+                'delete_pages',
+                'delete_others_pages',
+                'delete_published_pages',
+                'delete_private_posts',
+                'delete_private_pages',
+                'delete_plugins',
+                'delete_themes',
+                'delete_options',
+                'delete_attachments'
             ];
-            foreach ($caps as $cap) {
-                if (!$role->has_cap($cap)) {
-                    $role->add_cap($cap);
+            foreach ($caps_to_remove as $cap) {
+                if ($role->has_cap($cap)) {
+                    $role->remove_cap($cap);
                 }
             }
+            
+            // Note: Capabilities are now fully managed in AzAC_Core_Admin::ensure_manager_capabilities
         }
     }
     public static function prevent_teacher_pending($data, $postarr)

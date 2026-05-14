@@ -325,51 +325,61 @@ class AzAC_Core_Admin
 
     public static function ensure_manager_capabilities()
     {
-        if (!get_option('azac_manager_role_v7_updated')) {
-            $role = get_role('az_manager');
-            if ($role) {
-                // Core
-                $role->add_cap('manage_options');
-                $role->add_cap('edit_theme_options');
-                $role->add_cap('upload_files');
-                // Content
-                $caps = [
-                    'edit_posts',
-                    'edit_others_posts',
-                    'edit_published_posts',
-                    'publish_posts',
-                    'edit_pages',
-                    'edit_others_pages',
-                    'edit_published_pages',
-                    'publish_pages',
-                    'list_users',
-                    'create_users',
-                    'edit_users',
-                    'promote_users',
-                    'manage_categories',
-                    'az_manage_attendance',
-                    'az_view_system',
-                    'az_manage_classes',
-                    'az_manage_students',
-                    'az_manage_teachers',
-                    'az_take_attendance'
-                ];
-                foreach ($caps as $cap) {
-                    $role->add_cap($cap);
-                }
-                // Explicitly remove delete
-                $role->remove_cap('delete_posts');
-                $role->remove_cap('delete_others_posts');
-                $role->remove_cap('delete_published_posts');
-                $role->remove_cap('delete_private_posts');
-                $role->remove_cap('delete_pages');
-                $role->remove_cap('delete_others_pages');
-                $role->remove_cap('delete_published_pages');
-                $role->remove_cap('delete_private_pages');
-                $role->remove_cap('delete_users');
-                $role->remove_cap('delete_attachments');
+        // Khôi phục tất cả quyền hạn cho Manager (ngang Admin, chỉ trừ xóa dữ liệu)
+        $role = get_role('az_manager');
+        if ($role) {
+            // Danh sách các quyền được CẤP
+            $caps_to_add = [
+                'read',
+                'manage_options',
+                'edit_theme_options',
+                'edit_posts',
+                'edit_others_posts',
+                'edit_published_posts',
+                'publish_posts',
+                'edit_pages',
+                'edit_others_pages',
+                'edit_published_pages',
+                'publish_pages',
+                'upload_files',
+                'list_users',
+                'create_users',
+                'edit_users',
+                'promote_users',
+                'manage_categories',
+                'az_manage_attendance',
+                'az_view_system',
+                'az_manage_classes',
+                'az_manage_students',
+                'az_manage_teachers',
+                'az_take_attendance',
+                'az_manager' // Custom capability if any
+            ];
+            
+            foreach ($caps_to_add as $cap) {
+                $role->add_cap($cap);
             }
-            update_option('azac_manager_role_v7_updated', 1);
+            
+            // Danh sách các quyền liên quan đến XÓA bị LOẠI BỎ
+            $caps_to_remove = [
+                'delete_posts',
+                'delete_others_posts',
+                'delete_published_posts',
+                'delete_private_posts',
+                'delete_pages',
+                'delete_others_pages',
+                'delete_published_pages',
+                'delete_private_pages',
+                'delete_users',
+                'delete_plugins',
+                'delete_themes',
+                'delete_options',
+                'delete_attachments'
+            ];
+            
+            foreach ($caps_to_remove as $cap) {
+                $role->remove_cap($cap);
+            }
         }
     }
 
