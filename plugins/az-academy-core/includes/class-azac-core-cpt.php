@@ -362,8 +362,8 @@ class AzAC_Core_CPT
         $so_hoc_vien = get_post_meta($post->ID, 'az_so_hoc_vien', true);
         $teacher_user = $teacher_user_id ?: get_post_meta($post->ID, 'az_teacher_user', true);
         $user = wp_get_current_user();
-        $is_admin = in_array('administrator', $user->roles, true);
-        $disabled_admin = $is_admin ? '' : ' disabled';
+        $is_admin_or_manager = in_array('administrator', $user->roles, true) || in_array('az_manager', $user->roles, true);
+        $disabled_admin = $is_admin_or_manager ? '' : ' disabled';
         $disabled_name = ' disabled';
         echo '<p><label for="az_giang_vien">Giảng viên</label><br />';
         echo '<input type="text" id="az_giang_vien" name="az_giang_vien" class="regular-text" value="' . esc_attr($giang_vien) . '"' . $disabled_name . ' /></p>';
@@ -667,7 +667,7 @@ class AzAC_Core_CPT
             return;
         }
         $user = wp_get_current_user();
-        if (!in_array('administrator', $user->roles, true)) {
+        if (!in_array('administrator', $user->roles, true) && !in_array('az_manager', $user->roles, true)) {
             return;
         }
         $ids = isset($_POST['az_students']) && is_array($_POST['az_students']) ? array_map('absint', $_POST['az_students']) : [];
