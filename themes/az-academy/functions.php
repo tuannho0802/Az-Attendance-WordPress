@@ -173,17 +173,41 @@ function azac_protect_front_page()
 add_action('template_redirect', 'azac_protect_front_page');
 
 /**
- * Handle Custom 403 Forbidden Template
+ * Global 403 Forbidden handler for wp_die
+ * This ensures that any wp_die with ['response' => 403] will render the theme's 403.php
  */
-add_action('template_redirect', function () {
-    // If a request was meant to be 403, or if we want to force it for certain conditions
-    // Example: Trigger manually in code by setting status 403 then calling template_redirect
-    if (apply_filters('azac_is_403', false)) {
-        status_header(403);
-        include get_template_directory() . '/403.php';
-        exit;
+function azac_custom_403_die_handler($message, $title = '', $args = [])
+{
+    // Handle 403 Forbidden
+    if (isset($args['response']) && $args['response'] == 403) {
+        $template = get_template_directory() . '/403.php';
+        if (file_exists($template)) {
+            status_header(403);
+            include $template;
+            exit;
+        }
     }
-}, 1);
+
+    // Handle 500 Internal Server Error
+    if (isset($args['response']) && $args['response'] == 500) {
+        $template = get_template_directory() . '/500.php';
+        if (file_exists($template)) {
+            status_header(500);
+            include $template;
+            exit;
+        }
+    }
+
+    // Otherwise, fallback to default WordPress handlers
+    if (wp_doing_ajax()) {
+        return _ajax_wp_die_handler($message, $title, $args);
+    }
+
+    return _default_wp_die_handler($message, $title, $args);
+}
+add_filter('wp_die_handler', function () {
+    return 'azac_custom_403_die_handler';
+});
 
 /**
  * Hide Third-Party Plugin Menus for Manager Role
