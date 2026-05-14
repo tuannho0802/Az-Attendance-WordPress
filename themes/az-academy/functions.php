@@ -171,3 +171,31 @@ function azac_protect_front_page()
     exit;
 }
 add_action('template_redirect', 'azac_protect_front_page');
+
+/**
+ * Handle Custom 403 Forbidden Template
+ */
+add_action('template_redirect', function () {
+    // If a request was meant to be 403, or if we want to force it for certain conditions
+    // Example: Trigger manually in code by setting status 403 then calling template_redirect
+    if (apply_filters('azac_is_403', false)) {
+        status_header(403);
+        include get_template_directory() . '/403.php';
+        exit;
+    }
+}, 1);
+
+/**
+ * Hide Third-Party Plugin Menus for Manager Role
+ */
+add_action('admin_menu', function () {
+    // Check if user is NOT an administrator
+    if (!current_user_can('administrator')) {
+        // Hide Easy WP SMTP
+        remove_menu_page('easy-wp-smtp');
+        
+        // Hide All In One WP Security
+        remove_menu_page('aiowpsec');
+    }
+}, 999);
+
