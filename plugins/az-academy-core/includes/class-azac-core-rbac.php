@@ -83,6 +83,10 @@ class AzAC_Core_RBAC
             if (!$role->has_cap('edit_published_posts')) {
                 $role->add_cap('edit_published_posts');
             }
+            // Explicitly remove upload_files for Teacher
+            if ($role->has_cap('upload_files')) {
+                $role->remove_cap('upload_files');
+            }
         }
     }
     public static function ensure_manager_caps()

@@ -400,8 +400,9 @@ class AzAC_Core_Admin
         // Nếu không phải Administrator
         if (!in_array('administrator', $user->roles)) {
             $page = isset($_GET['page']) ? sanitize_text_field($_GET['page']) : '';
+            $pagenow = $GLOBALS['pagenow'] ?? '';
             
-            // Danh sách các trang cần chặn
+            // Danh sách các trang cần chặn (chung cho non-admins)
             $sensitive_pages = [
                 'easy-wp-smtp',
                 'aiowpsec'
@@ -409,6 +410,13 @@ class AzAC_Core_Admin
             
             if (in_array($page, $sensitive_pages)) {
                 wp_die('Bạn không có quyền truy cập trang này.', 'Quyền truy cập bị từ chối', ['response' => 403]);
+            }
+
+            // Chặn riêng cho Teacher
+            if (in_array('az_teacher', $user->roles)) {
+                if ($pagenow === 'upload.php' || $page === 'azac-security-portal') {
+                    wp_die('Bạn không có quyền truy cập trang này. Vui lòng liên hệ quản trị viên.', 'Quyền truy cập bị từ chối', ['response' => 403]);
+                }
             }
         }
     }
@@ -428,7 +436,13 @@ class AzAC_Core_Admin
         remove_menu_page('tools.php');                  // Tools
         remove_menu_page('options-general.php');        // Settings
 
-        // Note: Media, Users, LMS menus are KEPT visible.
+        // Hide specific menus for Teacher
+        if (in_array('az_teacher', (array) wp_get_current_user()->roles)) {
+            remove_menu_page('upload.php');             // Media
+            remove_menu_page('azac-security-portal');   // Security Portal
+        }
+
+        // Note: Media (for Manager), Users, LMS menus are KEPT visible.
     }
 
     public static function custom_login_redirect($redirect_to, $request, $user)
